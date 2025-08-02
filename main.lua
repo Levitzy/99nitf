@@ -49,6 +49,7 @@ local function loadModules()
         getItemCount = function() return 0 end,
         clearSelection = function() end,
         debugSelection = function() end,
+        forceRefresh = function() return {} end,
         isEnabled = function() return false end,
         toggle = function() return false end,
         stop = function() end
@@ -300,19 +301,31 @@ local function createRayfieldGUI()
     
     local function refreshAndUpdate()
         pcall(function()
-            if BringItems and BringItems.refreshItems then
-                local items = BringItems.refreshItems()
+            print("🔄 GUI: Starting refresh and update...")
+            
+            if BringItems then
+                print("🔄 GUI: BringItems module found, calling forceRefresh...")
+                local items = BringItems.forceRefresh and BringItems.forceRefresh() or BringItems.refreshItems()
+                
+                print("🔄 GUI: Refresh returned " .. #items .. " items")
+                print("🔄 GUI: Items found: " .. table.concat(items, ", "))
                 
                 if items and #items > 0 then
-                    print("🔄 Available items: " .. table.concat(items, ", "))
-                    
                     if selectedItemDropdown then
+                        print("🔄 GUI: Updating dropdown with items...")
                         selectedItemDropdown:Refresh(items)
+                        print("🔄 GUI: Dropdown refreshed!")
                     end
                     
                     updateSelectionDisplay()
                     return items
+                else
+                    print("❌ GUI: No items returned from refresh!")
+                    return {}
                 end
+            else
+                print("❌ GUI: BringItems module not found!")
+                return {}
             end
         end)
     end
@@ -368,19 +381,31 @@ local function createRayfieldGUI()
     local RefreshButton = BringTab:CreateButton({
         Name = "🔄 Scan Available Items",
         Callback = function()
+            print("🔄 SCAN BUTTON CLICKED!")
+            
             local items = refreshAndUpdate()
+            
             if items and #items > 0 then
+                print("✅ Scan successful - found " .. #items .. " items!")
                 Rayfield:Notify({
-                    Title = "Items Scanned",
+                    Title = "Items Found",
                     Content = "🔄 Found " .. #items .. " item types!",
-                    Duration = 2,
+                    Duration = 3,
                     Image = 4483345998
                 })
             else
+                print("❌ Scan failed - no items found!")
+                
+                -- Debug scan
+                if BringItems and BringItems.debugSelection then
+                    print("🐛 Running debug scan...")
+                    BringItems.debugSelection()
+                end
+                
                 Rayfield:Notify({
-                    Title = "No Items",
-                    Content = "❌ No items found in world!",
-                    Duration = 2,
+                    Title = "No Items Found",
+                    Content = "❌ Check console for debug info!",
+                    Duration = 3,
                     Image = 4483345998
                 })
             end
