@@ -46,9 +46,10 @@ local function loadModules()
         getSelectedItem = function() return "Log" end,
         refreshItems = function() return {"Log", "Stone", "Stick"} end,
         getAvailableItems = function() return {"Log", "Stone", "Stick"} end,
-        setAutoStore = function() end,
-        getAutoStore = function() return false end,
-        storeAllNearbyItems = function() return false end,
+        storeNearbyItems = function() return false end,
+        setBringHeight = function() end,
+        getBringHeight = function() return 3 end,
+        getItemCount = function() return 0 end,
         isEnabled = function() return false end,
         toggle = function() return false end,
         stop = function() end
@@ -97,9 +98,9 @@ local function createRayfieldGUI()
     local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
     
     local Window = Rayfield:CreateWindow({
-        Name = "🎯 Aura Farm Pro v7.0",
+        Name = "🎯 Aura Farm Pro v8.0",
         LoadingTitle = "Aura Farm Pro",
-        LoadingSubtitle = "Complete Automation Suite",
+        LoadingSubtitle = "Enhanced Item Collection System",
         ConfigurationSaving = {
             Enabled = true,
             FolderName = "AuraFarmPro",
@@ -117,8 +118,6 @@ local function createRayfieldGUI()
     local KillTab = Window:CreateTab("⚔️ Kill Aura", 4483345998)
     local BringTab = Window:CreateTab("📦 Bring Items", 4483345998)
     local SettingsTab = Window:CreateTab("⚙️ Settings", 4483345998)
-    
-    local AutoStoreToggle
     
     TreeTab:CreateSection("Tree Farm Controls")
     
@@ -255,15 +254,33 @@ local function createRayfieldGUI()
         Content = "Automatically attacks the closest target within range. Uses best available tool for maximum damage."
     })
     
-    BringTab:CreateSection("Bring Items Controls")
+    BringTab:CreateSection("Item Selection")
     
     local selectedItemDropdown
+    local itemCountLabel
+    
+    local function updateItemCount()
+        if BringItems and BringItems.getItemCount then
+            local count = BringItems.getItemCount()
+            local selectedItem = BringItems.getSelectedItem()
+            if itemCountLabel then
+                itemCountLabel:Set("Current Selection: " .. selectedItem .. " (Found: " .. count .. " items)")
+            end
+        end
+    end
     
     local function refreshItemDropdown()
         if BringItems and BringItems.refreshItems then
             local items = BringItems.refreshItems()
             if selectedItemDropdown and #items > 0 then
                 selectedItemDropdown:Refresh(items, BringItems.getSelectedItem())
+                updateItemCount()
+                Rayfield:Notify({
+                    Title = "Items Refreshed",
+                    Content = "🔄 Found " .. #items .. " item types!",
+                    Duration = 2,
+                    Image = 4483345998
+                })
             end
         end
     end
@@ -276,20 +293,21 @@ local function createRayfieldGUI()
         Callback = function(Value)
             if BringItems and BringItems.setSelectedItem then
                 BringItems.setSelectedItem(Value)
+                wait(0.1)
+                updateItemCount()
             end
         end,
+    })
+    
+    itemCountLabel = BringTab:CreateParagraph({
+        Title = "Current Selection: Log (Found: 0 items)",
+        Content = "Select an item type and refresh to see available items in the world."
     })
     
     local RefreshButton = BringTab:CreateButton({
         Name = "🔄 Refresh Item List",
         Callback = function()
             refreshItemDropdown()
-            Rayfield:Notify({
-                Title = "Items Refreshed",
-                Content = "📦 Item list updated!",
-                Duration = 2,
-                Image = 4483345998
-            })
         end,
     })
     
@@ -305,10 +323,12 @@ local function createRayfieldGUI()
                 if success then
                     Rayfield:Notify({
                         Title = "Items Brought",
-                        Content = "✅ Brought all " .. selectedItem .. " items!",
+                        Content = "✅ Brought all " .. selectedItem .. " items to you!",
                         Duration = 3,
                         Image = 4483345998
                     })
+                    wait(0.5)
+                    updateItemCount()
                 else
                     Rayfield:Notify({
                         Title = "No Items Found",
@@ -333,6 +353,8 @@ local function createRayfieldGUI()
                         Duration = 3,
                         Image = 4483345998
                     })
+                    wait(0.5)
+                    updateItemCount()
                 else
                     Rayfield:Notify({
                         Title = "No Items Found",
@@ -345,30 +367,18 @@ local function createRayfieldGUI()
         end,
     })
     
-    BringTab:CreateSection("Auto Storage")
+    BringTab:CreateSection("Storage & Settings")
     
-    AutoStoreToggle = BringTab:CreateToggle({
-        Name = "Auto Store in Bag",
-        CurrentValue = false,
-        Flag = "AutoStore",
+    local BringHeightSlider = BringTab:CreateSlider({
+        Name = "Bring Height",
+        Range = {1, 10},
+        Increment = 0.5,
+        Suffix = "studs",
+        CurrentValue = 3,
+        Flag = "BringHeight",
         Callback = function(Value)
-            if BringItems and BringItems.setAutoStore then
-                BringItems.setAutoStore(Value)
-                if Value then
-                    Rayfield:Notify({
-                        Title = "Auto Store",
-                        Content = "🎒 Auto-store enabled!",
-                        Duration = 3,
-                        Image = 4483345998
-                    })
-                else
-                    Rayfield:Notify({
-                        Title = "Auto Store",
-                        Content = "🎒 Auto-store disabled!",
-                        Duration = 3,
-                        Image = 4483345998
-                    })
-                end
+            if BringItems and BringItems.setBringHeight then
+                BringItems.setBringHeight(Value)
             end
         end,
     })
@@ -376,8 +386,8 @@ local function createRayfieldGUI()
     local StoreNearbyButton = BringTab:CreateButton({
         Name = "🎒 Store Nearby Items",
         Callback = function()
-            if BringItems and BringItems.storeAllNearbyItems then
-                local success = BringItems.storeAllNearbyItems()
+            if BringItems and BringItems.storeNearbyItems then
+                local success = BringItems.storeNearbyItems()
                 if success then
                     Rayfield:Notify({
                         Title = "Items Stored",
@@ -385,6 +395,8 @@ local function createRayfieldGUI()
                         Duration = 3,
                         Image = 4483345998
                     })
+                    wait(0.5)
+                    updateItemCount()
                 else
                     Rayfield:Notify({
                         Title = "Storage Failed",
@@ -399,12 +411,12 @@ local function createRayfieldGUI()
     
     BringTab:CreateParagraph({
         Title = "Enhanced Item System",
-        Content = "Button-based item collection with auto-storage. Bring items to you and automatically store them in your bag (Old Sack/Sack/Bag)."
+        Content = "Fixed item bringing system with better positioning and reliability. Items are brought directly to your location with proper spacing."
     })
     
     BringTab:CreateParagraph({
         Title = "How to Use",
-        Content = "1. Refresh item list to scan available items\n2. Select item type and click 'Bring Selected'\n3. Enable 'Auto Store' for automatic bag storage\n4. Use 'Store Nearby' to manually store items"
+        Content = "1. Click 'Refresh Item List' to scan available items\n2. Select item type from dropdown\n3. Click 'Bring Selected Items' to collect them\n4. Use 'Store Nearby Items' to put items in bag\n5. Adjust bring height for better positioning"
     })
     
     SettingsTab:CreateSection("General Controls")
@@ -417,6 +429,7 @@ local function createRayfieldGUI()
             MaxTreesSlider:Set(3)
             AutoCollectToggle:Set(true)
             KillSlider:Set(80)
+            BringHeightSlider:Set(3)
             
             if TreeAura then
                 if TreeAura.setDistance then TreeAura.setDistance(86) end
@@ -426,6 +439,9 @@ local function createRayfieldGUI()
             end
             if KillAura and KillAura.setDistance then
                 KillAura.setDistance(80)
+            end
+            if BringItems and BringItems.setBringHeight then
+                BringItems.setBringHeight(3)
             end
             
             Rayfield:Notify({
@@ -450,9 +466,6 @@ local function createRayfieldGUI()
             end
             if BringItems and BringItems.stop then
                 BringItems.stop()
-                if AutoStoreToggle then
-                    AutoStoreToggle:Set(false)
-                end
             end
             Rayfield:Notify({
                 Title = "Emergency Stop",
@@ -477,21 +490,22 @@ local function createRayfieldGUI()
     SettingsTab:CreateSection("Script Information")
     
     SettingsTab:CreateParagraph({
-        Title = "Aura Farm Pro v7.0",
-        Content = "Complete automation suite with enhanced tree farming, smart item collection with auto-storage, and combat features. Items are brought to you and automatically stored in your bag."
+        Title = "Aura Farm Pro v8.0",
+        Content = "Enhanced automation suite with fixed item bringing system. Auto storage removed for better reliability and manual control."
     })
     
     SettingsTab:CreateParagraph({
-        Title = "Features",
-        Content = "• Auto Tree Farming (Foliage + Landmarks)\n• Kill Aura with Tool Priority\n• Smart Item Collection System\n• Auto Bag Storage\n• Auto Log Collection\n• Chainsaw Support\n• Enhanced Performance"
+        Title = "New Features",
+        Content = "• Fixed Item Bringing System\n• Better Item Positioning\n• Real-time Item Counting\n• Adjustable Bring Height\n• Manual Storage Control\n• Enhanced Reliability\n• Improved Performance"
     })
     
     wait(1)
     refreshItemDropdown()
+    updateItemCount()
     
     Rayfield:Notify({
-        Title = "Aura Farm Pro v7.0",
-        Content = "✨ All modules loaded successfully!",
+        Title = "Aura Farm Pro v8.0",
+        Content = "✨ Enhanced item system loaded!",
         Duration = 5,
         Image = 4483345998
     })
@@ -507,17 +521,18 @@ local function createRayfieldGUI()
 end
 
 local function main()
-    print("🚀 Starting Aura Farm Pro v7.0...")
+    print("🚀 Starting Aura Farm Pro v8.0...")
     
     loadModules()
     
     local success, result = pcall(function()
         local gui = createRayfieldGUI()
         
-        print("✨ Aura Farm Pro v7.0 loaded successfully!")
+        print("✨ Aura Farm Pro v8.0 loaded successfully!")
         print("🌳 Tree Farm: " .. (TreeAura and "✅ LOADED" or "❌ FALLBACK"))
         print("⚔️ Kill Aura: " .. (KillAura and "✅ LOADED" or "❌ FALLBACK"))
-        print("📦 Bring Items + Auto Storage: " .. (BringItems and "✅ LOADED" or "❌ FALLBACK"))
+        print("📦 Bring Items: " .. (BringItems and "✅ LOADED" or "❌ FALLBACK"))
+        print("🔧 Auto Storage: ❌ REMOVED (Manual control only)")
         
         return gui
     end)
