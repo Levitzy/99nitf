@@ -152,7 +152,7 @@ local function createResponsiveGUI()
     contentFrame.Parent = mainFrame
     
     local killSection = Instance.new("Frame")
-    killSection.Size = UDim2.new(1, 0, 0, isMobile and 100 : 110)
+    killSection.Size = UDim2.new(1, 0, 0, isMobile and 100 or 110)
     killSection.Position = UDim2.new(0, 0, 0, 0)
     killSection.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
     killSection.BorderSizePixel = 0
@@ -179,7 +179,7 @@ local function createResponsiveGUI()
     killDistanceLabel.BackgroundTransparency = 1
     killDistanceLabel.Text = "Distance: " .. (KillAura and KillAura.getDistance() or 80)
     killDistanceLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    killDistanceLabel.TextSize = isMobile and 11 : 10
+    killDistanceLabel.TextSize = isMobile and 11 or 10
     killDistanceLabel.Font = Enum.Font.Gotham
     killDistanceLabel.TextScaled = isMobile
     killDistanceLabel.Parent = killSection
