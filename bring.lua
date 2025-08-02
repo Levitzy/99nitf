@@ -10,6 +10,7 @@ local selectedItem = nil
 local availableItems = {}
 local lastBringTime = 0
 local bringCooldown = 0.1
+local forcedSelection = nil
 
 local function getPlayerCharacter()
     return LocalPlayer.Character
@@ -19,14 +20,6 @@ local function getPlayerCFrame()
     local character = getPlayerCharacter()
     if character and character:FindFirstChild("HumanoidRootPart") then
         return character.HumanoidRootPart.CFrame
-    end
-    return nil
-end
-
-local function getPlayerPosition()
-    local character = getPlayerCharacter()
-    if character and character:FindFirstChild("HumanoidRootPart") then
-        return character.HumanoidRootPart.Position
     end
     return nil
 end
@@ -98,8 +91,10 @@ local function bringItemToCFrame(item, targetCFrame, offset)
 end
 
 local function bringSelectedItems()
-    if not selectedItem or selectedItem == "" then
-        print("❌ No item selected! Please select an item first.")
+    local targetItem = forcedSelection or selectedItem
+    
+    if not targetItem or targetItem == "" then
+        print("❌ No item selected! Current selection: " .. tostring(targetItem))
         return false
     end
     
@@ -123,21 +118,27 @@ local function bringSelectedItems()
     local itemsBrought = 0
     local itemsToProcess = {}
     
-    print("🔍 Looking for items with name: " .. selectedItem)
+    print("🔍 Searching for items with exact name: '" .. targetItem .. "'")
     
     for _, item in pairs(itemsFolder:GetChildren()) do
-        if item:IsA("Model") and item.Name == selectedItem and item:FindFirstChild("Main") then
+        if item:IsA("Model") and item.Name == targetItem and item:FindFirstChild("Main") then
             table.insert(itemsToProcess, item)
-            print("✅ Found item: " .. item.Name)
+            print("✅ Found matching item: " .. item.Name)
         end
     end
     
     if #itemsToProcess == 0 then
-        print("❌ No " .. selectedItem .. " items found in workspace!")
+        print("❌ No items found with name: '" .. targetItem .. "'")
+        print("📋 Available items in workspace:")
+        for _, item in pairs(itemsFolder:GetChildren()) do
+            if item:IsA("Model") and item:FindFirstChild("Main") then
+                print("  - " .. item.Name)
+            end
+        end
         return false
     end
     
-    print("🎯 Processing " .. #itemsToProcess .. " " .. selectedItem .. " items...")
+    print("🎯 Bringing " .. #itemsToProcess .. " " .. targetItem .. " items...")
     
     local radius = 3
     local height = 2
@@ -165,10 +166,10 @@ local function bringSelectedItems()
     lastBringTime = currentTime
     
     if itemsBrought > 0 then
-        print("✅ Successfully brought " .. itemsBrought .. " " .. selectedItem .. "(s) to your location!")
+        print("✅ Successfully brought " .. itemsBrought .. " " .. targetItem .. "(s) to your location!")
         return true
     else
-        print("❌ Failed to bring any " .. selectedItem .. " items!")
+        print("❌ Failed to bring any " .. targetItem .. " items!")
         return false
     end
 end
@@ -205,7 +206,7 @@ local function bringAllItems()
         return false
     end
     
-    print("🎯 Processing " .. #itemsToProcess .. " total items...")
+    print("🎯 Bringing " .. #itemsToProcess .. " total items...")
     
     local radius = 5
     local height = 2
@@ -249,7 +250,9 @@ end
 function BringItems.setSelectedItem(itemName)
     if itemName and type(itemName) == "string" and itemName ~= "" then
         selectedItem = itemName
-        print("📦 SELECTION UPDATED TO: " .. itemName)
+        forcedSelection = itemName
+        print("📦 FORCED SELECTION SET TO: " .. itemName)
+        print("📦 BOTH VARIABLES SET TO: " .. itemName)
         return true
     else
         print("❌ Invalid item name provided: " .. tostring(itemName))
@@ -257,8 +260,20 @@ function BringItems.setSelectedItem(itemName)
     end
 end
 
+function BringItems.forceSelectItem(itemName)
+    if itemName and type(itemName) == "string" and itemName ~= "" then
+        selectedItem = itemName
+        forcedSelection = itemName
+        print("🎯 FORCE SELECTED: " .. itemName)
+        return true
+    else
+        print("❌ Force selection failed: " .. tostring(itemName))
+        return false
+    end
+end
+
 function BringItems.getSelectedItem()
-    return selectedItem
+    return forcedSelection or selectedItem
 end
 
 function BringItems.getAvailableItems()
@@ -271,17 +286,11 @@ function BringItems.refreshItems()
     for i, itemName in pairs(items) do
         print("  " .. i .. ". " .. itemName)
     end
-    
-    if selectedItem and not table.find(items, selectedItem) then
-        selectedItem = nil
-        print("⚠️ Previously selected item no longer available, selection cleared")
-    end
-    
     return items
 end
 
 function BringItems.getItemCount(itemName)
-    local targetItem = itemName or selectedItem
+    local targetItem = itemName or forcedSelection or selectedItem
     if not targetItem then
         return 0
     end
@@ -302,29 +311,62 @@ end
 
 function BringItems.clearSelection()
     selectedItem = nil
-    print("🧹 Selection cleared")
+    forcedSelection = nil
+    print("🧹 Both selections cleared")
 end
 
 function BringItems.getStatus()
+    local currentSelection = forcedSelection or selectedItem
     local count = 0
-    if selectedItem then
-        count = BringItems.getItemCount(selectedItem)
+    
+    if currentSelection then
+        count = BringItems.getItemCount(currentSelection)
     end
     
     return {
-        selectedItem = selectedItem or "None",
+        selectedItem = currentSelection or "None",
+        forcedSelection = forcedSelection,
+        regularSelection = selectedItem,
         availableItemTypes = #availableItems,
         selectedItemCount = count,
-        hasSelection = selectedItem ~= nil
+        hasSelection = currentSelection ~= nil
     }
 end
 
 function BringItems.debugSelection()
-    print("🐛 DEBUG INFO:")
-    print("  Selected Item: " .. tostring(selectedItem))
+    print("🐛 DETAILED DEBUG INFO:")
+    print("  Regular Selected Item: " .. tostring(selectedItem))
+    print("  Forced Selected Item: " .. tostring(forcedSelection))
+    print("  Active Selection: " .. tostring(forcedSelection or selectedItem))
     print("  Available Items: " .. table.concat(availableItems, ", "))
-    if selectedItem then
-        print("  Count of Selected: " .. BringItems.getItemCount(selectedItem))
+    
+    local currentSelection = forcedSelection or selectedItem
+    if currentSelection then
+        print("  Count of Active Selection: " .. BringItems.getItemCount(currentSelection))
+        
+        local itemsFolder = workspace:FindFirstChild("Items")
+        if itemsFolder then
+            print("  Items in workspace with this name:")
+            for _, item in pairs(itemsFolder:GetChildren()) do
+                if item:IsA("Model") and item.Name == currentSelection and item:FindFirstChild("Main") then
+                    print("    - Found: " .. item.Name .. " at " .. tostring(item.Main.Position))
+                end
+            end
+        end
+    else
+        print("  No active selection found!")
+    end
+end
+
+function BringItems.listAllItems()
+    local itemsFolder = workspace:FindFirstChild("Items")
+    if itemsFolder then
+        print("📋 ALL ITEMS IN WORKSPACE:")
+        for i, item in pairs(itemsFolder:GetChildren()) do
+            if item:IsA("Model") and item:FindFirstChild("Main") then
+                print("  " .. i .. ". " .. item.Name)
+            end
+        end
     end
 end
 
