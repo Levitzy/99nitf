@@ -1,8 +1,6 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -15,9 +13,6 @@ if not PlayerGui then
 end
 
 local TreeAura, KillAura
-local isMinimized = false
-local mainFrame
-local gui = {}
 
 local function loadModules()
     print("Loading modules...")
@@ -64,593 +59,315 @@ local function loadModules()
     return TreeAura and KillAura
 end
 
-local function createCleanGUI()
-    print("Creating Clean Premium UI...")
+local function createRayfieldGUI()
+    print("Creating Rayfield UI...")
     
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "PremiumAuraGUI"
-    screenGui.ResetOnSpawn = false
+    local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
     
-    local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+    local Window = Rayfield:CreateWindow({
+        Name = "🎯 Aura Farm Pro v5.2",
+        LoadingTitle = "Aura Farm Pro",
+        LoadingSubtitle = "by Rayfield Interface Suite",
+        ConfigurationSaving = {
+            Enabled = true,
+            FolderName = "AuraFarmPro",
+            FileName = "config"
+        },
+        Discord = {
+            Enabled = false,
+            Invite = "noinvitelink",
+            RememberJoins = true
+        },
+        KeySystem = false
+    })
     
-    local frameWidth = isMobile and 320 or 360
-    local frameHeight = isMobile and 550 or 600
+    local KillTab = Window:CreateTab("⚔️ Kill Aura", 4483345998)
+    local TreeTab = Window:CreateTab("🌳 Tree Aura", 4483345998)
+    local SettingsTab = Window:CreateTab("⚙️ Settings", 4483345998)
     
-    mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, frameWidth, 0, frameHeight)
-    mainFrame.Position = UDim2.new(0, isMobile and 20 or 50, 0, isMobile and 60 or 30)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-    mainFrame.BorderSizePixel = 0
-    mainFrame.Active = true
-    mainFrame.Draggable = true
+    local KillSection = KillTab:CreateSection("Kill Aura Controls")
     
-    local mainCorner = Instance.new("UICorner")
-    mainCorner.CornerRadius = UDim.new(0, 16)
-    mainCorner.Parent = mainFrame
+    local killEnabled = false
     
-    local borderFrame = Instance.new("Frame")
-    borderFrame.Size = UDim2.new(1, 4, 1, 4)
-    borderFrame.Position = UDim2.new(0, -2, 0, -2)
-    borderFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
-    borderFrame.ZIndex = mainFrame.ZIndex - 1
-    borderFrame.Parent = mainFrame
+    local KillToggle = KillTab:CreateToggle({
+        Name = "Enable Kill Aura",
+        CurrentValue = false,
+        Flag = "KillAuraToggle",
+        Callback = function(Value)
+            killEnabled = Value
+            if KillAura then
+                if Value then
+                    if not KillAura.isEnabled() then
+                        KillAura.toggle()
+                    end
+                    Rayfield:Notify({
+                        Title = "Kill Aura",
+                        Content = "🟢 Kill Aura Enabled!",
+                        Duration = 3,
+                        Image = 4483345998
+                    })
+                else
+                    if KillAura.isEnabled() then
+                        KillAura.toggle()
+                    end
+                    Rayfield:Notify({
+                        Title = "Kill Aura",
+                        Content = "🔴 Kill Aura Disabled!",
+                        Duration = 3,
+                        Image = 4483345998
+                    })
+                end
+            end
+        end,
+    })
     
-    local borderCorner = Instance.new("UICorner")
-    borderCorner.CornerRadius = UDim.new(0, 18)
-    borderCorner.Parent = borderFrame
+    local KillSlider = KillTab:CreateSlider({
+        Name = "Attack Distance",
+        Range = {10, 200},
+        Increment = 1,
+        Suffix = "studs",
+        CurrentValue = KillAura and KillAura.getDistance() or 80,
+        Flag = "KillDistance",
+        Callback = function(Value)
+            if KillAura and KillAura.setDistance then
+                KillAura.setDistance(Value)
+                print("Kill Aura distance set to: " .. Value)
+            end
+        end,
+    })
     
-    local shadow = Instance.new("Frame")
-    shadow.Size = UDim2.new(1, 12, 1, 12)
-    shadow.Position = UDim2.new(0, -6, 0, -6)
-    shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    shadow.BackgroundTransparency = 0.6
-    shadow.ZIndex = mainFrame.ZIndex - 2
-    shadow.Parent = mainFrame
+    local KillLabel = KillTab:CreateLabel("Status: Ready to use")
     
-    local shadowCorner = Instance.new("UICorner")
-    shadowCorner.CornerRadius = UDim.new(0, 22)
-    shadowCorner.Parent = shadow
+    KillTab:CreateSection("Information")
     
-    local titleBar = Instance.new("Frame")
-    titleBar.Size = UDim2.new(1, 0, 0, isMobile and 65 or 60)
-    titleBar.Position = UDim2.new(0, 0, 0, 0)
-    titleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-    titleBar.BorderSizePixel = 0
-    titleBar.Parent = mainFrame
+    KillTab:CreateParagraph({
+        Title = "How Kill Aura Works",
+        Content = "Kill Aura automatically attacks nearby players/NPCs within the specified range. Adjust the distance slider to control the attack range. Higher distances may affect performance."
+    })
     
-    local titleCorner = Instance.new("UICorner")
-    titleCorner.CornerRadius = UDim.new(0, 16)
-    titleCorner.Parent = titleBar
+    local TreeSection = TreeTab:CreateSection("Tree Aura Controls")
     
-    local titleCover = Instance.new("Frame")
-    titleCover.Size = UDim2.new(1, 0, 0, 30)
-    titleCover.Position = UDim2.new(0, 0, 1, -30)
-    titleCover.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-    titleCover.BorderSizePixel = 0
-    titleCover.Parent = titleBar
+    local treeEnabled = false
     
-    local titleIcon = Instance.new("TextLabel")
-    titleIcon.Size = UDim2.new(0, 35, 0, 35)
-    titleIcon.Position = UDim2.new(0, 15, 0, isMobile and 15 or 12)
-    titleIcon.BackgroundTransparency = 1
-    titleIcon.Text = "🎯"
-    titleIcon.TextColor3 = Color3.fromRGB(255, 255, 255)
-    titleIcon.TextSize = isMobile and 22 or 20
-    titleIcon.Font = Enum.Font.GothamBold
-    titleIcon.Parent = titleBar
+    local TreeToggle = TreeTab:CreateToggle({
+        Name = "Enable Tree Aura",
+        CurrentValue = false,
+        Flag = "TreeAuraToggle",
+        Callback = function(Value)
+            treeEnabled = Value
+            if TreeAura then
+                if Value then
+                    if not TreeAura.isEnabled() then
+                        TreeAura.toggle()
+                    end
+                    Rayfield:Notify({
+                        Title = "Tree Aura",
+                        Content = "🟢 Tree Aura Enabled!",
+                        Duration = 3,
+                        Image = 4483345998
+                    })
+                else
+                    if TreeAura.isEnabled() then
+                        TreeAura.toggle()
+                    end
+                    Rayfield:Notify({
+                        Title = "Tree Aura",
+                        Content = "🔴 Tree Aura Disabled!",
+                        Duration = 3,
+                        Image = 4483345998
+                    })
+                end
+            end
+        end,
+    })
     
-    local titleText = Instance.new("TextLabel")
-    titleText.Size = UDim2.new(1, -140, 1, 0)
-    titleText.Position = UDim2.new(0, 55, 0, 0)
-    titleText.BackgroundTransparency = 1
-    titleText.Text = "Aura Farm Pro"
-    titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
-    titleText.TextSize = isMobile and 20 or 18
-    titleText.Font = Enum.Font.GothamBold
-    titleText.TextXAlignment = Enum.TextXAlignment.Left
-    titleText.Parent = titleBar
+    local TreeDistanceSlider = TreeTab:CreateSlider({
+        Name = "Tree Distance",
+        Range = {10, 200},
+        Increment = 1,
+        Suffix = "studs",
+        CurrentValue = TreeAura and TreeAura.getDistance() or 86,
+        Flag = "TreeDistance",
+        Callback = function(Value)
+            if TreeAura and TreeAura.setDistance then
+                TreeAura.setDistance(Value)
+                print("Tree Aura distance set to: " .. Value)
+            end
+        end,
+    })
     
-    local versionLabel = Instance.new("TextLabel")
-    versionLabel.Size = UDim2.new(0, 50, 0, 18)
-    versionLabel.Position = UDim2.new(0, 55, 0, isMobile and 35 or 32)
-    versionLabel.BackgroundTransparency = 1
-    versionLabel.Text = "v5.2 FIXED"
-    versionLabel.TextColor3 = Color3.fromRGB(40, 167, 69)
-    versionLabel.TextSize = isMobile and 14 or 12
-    versionLabel.Font = Enum.Font.GothamBold
-    versionLabel.TextXAlignment = Enum.TextXAlignment.Left
-    versionLabel.Parent = titleBar
+    local TreeDelaySlider = TreeTab:CreateSlider({
+        Name = "Chopping Delay",
+        Range = {0.1, 10},
+        Increment = 0.1,
+        Suffix = "seconds",
+        CurrentValue = TreeAura and TreeAura.getDelay() or 0.1,
+        Flag = "TreeDelay",
+        Callback = function(Value)
+            if TreeAura and TreeAura.setDelay then
+                TreeAura.setDelay(Value)
+                print("Tree Aura delay set to: " .. Value .. "s")
+            end
+        end,
+    })
     
-    local minimizeButton = Instance.new("TextButton")
-    minimizeButton.Size = UDim2.new(0, isMobile and 45 or 40, 0, isMobile and 45 or 35)
-    minimizeButton.Position = UDim2.new(1, isMobile and -55 or -50, 0, isMobile and 10 or 12)
-    minimizeButton.BackgroundColor3 = Color3.fromRGB(255, 193, 7)
-    minimizeButton.Text = "−"
-    minimizeButton.TextColor3 = Color3.fromRGB(0, 0, 0)
-    minimizeButton.TextSize = isMobile and 24 or 20
-    minimizeButton.Font = Enum.Font.GothamBold
-    minimizeButton.BorderSizePixel = 0
-    minimizeButton.Parent = titleBar
+    local TreeLabel = TreeTab:CreateLabel("Status: Ready to farm")
     
-    local minimizeCorner = Instance.new("UICorner")
-    minimizeCorner.CornerRadius = UDim.new(0, 10)
-    minimizeCorner.Parent = minimizeButton
+    TreeTab:CreateSection("Tree Farming Guide")
     
-    local contentFrame = Instance.new("ScrollingFrame")
-    contentFrame.Size = UDim2.new(1, -30, 1, isMobile and -95 or -90)
-    contentFrame.Position = UDim2.new(0, 15, 0, isMobile and 80 or 75)
-    contentFrame.BackgroundTransparency = 1
-    contentFrame.BorderSizePixel = 0
-    contentFrame.ScrollBarThickness = 8
-    contentFrame.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 85)
-    contentFrame.CanvasSize = UDim2.new(0, 0, 0, isMobile and 520 or 540)
-    contentFrame.ScrollingDirection = Enum.ScrollingDirection.Y
-    contentFrame.Parent = mainFrame
+    TreeTab:CreateParagraph({
+        Title = "Tree Farming Tips",
+        Content = "Tree Aura automatically chops trees within range. Lower delay = faster chopping but may cause lag. Higher delay = more stable performance and less detection risk."
+    })
     
-    local killSection = Instance.new("Frame")
-    killSection.Size = UDim2.new(1, 0, 0, isMobile and 140 or 150)
-    killSection.Position = UDim2.new(0, 0, 0, 0)
-    killSection.BackgroundColor3 = Color3.fromRGB(28, 28, 35)
-    killSection.BorderSizePixel = 0
-    killSection.Parent = contentFrame
+    TreeTab:CreateParagraph({
+        Title = "Optimal Settings",
+        Content = "Distance: 50-100 studs for best coverage. Delay: 0.1-0.5 seconds for optimal balance between speed and stability."
+    })
     
-    local killCorner = Instance.new("UICorner")
-    killCorner.CornerRadius = UDim.new(0, 12)
-    killCorner.Parent = killSection
+    local GeneralSection = SettingsTab:CreateSection("General Controls")
     
-    local killAccent = Instance.new("Frame")
-    killAccent.Size = UDim2.new(0, 4, 1, 0)
-    killAccent.Position = UDim2.new(0, 0, 0, 0)
-    killAccent.BackgroundColor3 = Color3.fromRGB(220, 53, 69)
-    killAccent.BorderSizePixel = 0
-    killAccent.Parent = killSection
+    local ResetButton = SettingsTab:CreateButton({
+        Name = "🔄 Reset All Settings",
+        Callback = function()
+            if TreeAura then
+                TreeAura.setDistance(86)
+                TreeAura.setDelay(0.1)
+                TreeDistanceSlider:Set(86)
+                TreeDelaySlider:Set(0.1)
+            end
+            if KillAura then
+                KillAura.setDistance(80)
+                KillSlider:Set(80)
+            end
+            Rayfield:Notify({
+                Title = "Settings Reset",
+                Content = "🔄 All settings reset to defaults!",
+                Duration = 3,
+                Image = 4483345998
+            })
+        end,
+    })
     
-    local killAccentCorner = Instance.new("UICorner")
-    killAccentCorner.CornerRadius = UDim.new(0, 2)
-    killAccentCorner.Parent = killAccent
+    local StopAllButton = SettingsTab:CreateButton({
+        Name = "🛑 Stop All Auras",
+        Callback = function()
+            if TreeAura and TreeAura.stop then
+                TreeAura.stop()
+                TreeToggle:Set(false)
+                treeEnabled = false
+            end
+            if KillAura and KillAura.stop then
+                KillAura.stop()
+                KillToggle:Set(false)
+                killEnabled = false
+            end
+            Rayfield:Notify({
+                Title = "Emergency Stop",
+                Content = "🛑 All auras stopped successfully!",
+                Duration = 3,
+                Image = 4483345998
+            })
+        end,
+    })
     
-    local killTitle = Instance.new("TextLabel")
-    killTitle.Size = UDim2.new(1, -20, 0, 35)
-    killTitle.Position = UDim2.new(0, 15, 0, 5)
-    killTitle.BackgroundTransparency = 1
-    killTitle.Text = "⚔️ KILL AURA"
-    killTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    killTitle.TextSize = isMobile and 18 or 16
-    killTitle.Font = Enum.Font.GothamBold
-    killTitle.TextXAlignment = Enum.TextXAlignment.Left
-    killTitle.Parent = killSection
+    local DestroyButton = SettingsTab:CreateButton({
+        Name = "🗑️ Destroy GUI",
+        Callback = function()
+            if TreeAura and TreeAura.stop then TreeAura.stop() end
+            if KillAura and KillAura.stop then KillAura.stop() end
+            Rayfield:Destroy()
+            print("🗑️ Rayfield GUI destroyed!")
+        end,
+    })
     
-    local killDistanceLabel = Instance.new("TextLabel")
-    killDistanceLabel.Size = UDim2.new(1, -20, 0, 20)
-    killDistanceLabel.Position = UDim2.new(0, 15, 0, 40)
-    killDistanceLabel.BackgroundTransparency = 1
-    killDistanceLabel.Text = "Distance: " .. (KillAura and KillAura.getDistance() or 80)
-    killDistanceLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-    killDistanceLabel.TextSize = isMobile and 14 or 12
-    killDistanceLabel.Font = Enum.Font.Gotham
-    killDistanceLabel.TextXAlignment = Enum.TextXAlignment.Left
-    killDistanceLabel.Parent = killSection
+    SettingsTab:CreateSection("Script Information")
     
-    local killSliderFrame = Instance.new("TextButton")
-    killSliderFrame.Size = UDim2.new(1, -30, 0, isMobile and 25 or 20)
-    killSliderFrame.Position = UDim2.new(0, 15, 0, 65)
-    killSliderFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-    killSliderFrame.BorderSizePixel = 0
-    killSliderFrame.Text = ""
-    killSliderFrame.AutoButtonColor = false
-    killSliderFrame.Parent = killSection
+    SettingsTab:CreateParagraph({
+        Title = "Aura Farm Pro v5.2",
+        Content = "Professional farming automation script with advanced aura systems. Built with Rayfield UI for the best user experience."
+    })
     
-    local killSliderCorner = Instance.new("UICorner")
-    killSliderCorner.CornerRadius = UDim.new(0, isMobile and 12 or 10)
-    killSliderCorner.Parent = killSliderFrame
+    SettingsTab:CreateParagraph({
+        Title = "Features",
+        Content = "• Automatic Tree Farming with customizable delay\n• Kill Aura with adjustable range\n• Mobile & PC Compatible\n• Config Auto-Save\n• Professional UI Design"
+    })
     
-    local killSliderButton = Instance.new("TextButton")
-    killSliderButton.Size = UDim2.new(0, isMobile and 25 or 20, 0, isMobile and 25 or 20)
-    killSliderButton.Position = UDim2.new(((KillAura and KillAura.getDistance() or 80) - 10) / 190, isMobile and -12 or -10, 0, 0)
-    killSliderButton.BackgroundColor3 = Color3.fromRGB(220, 53, 69)
-    killSliderButton.Text = ""
-    killSliderButton.BorderSizePixel = 0
-    killSliderButton.AutoButtonColor = false
-    killSliderButton.Parent = killSliderFrame
+    SettingsTab:CreateSection("Credits & Support")
     
-    local killSliderButtonCorner = Instance.new("UICorner")
-    killSliderButtonCorner.CornerRadius = UDim.new(0, isMobile and 12 or 10)
-    killSliderButtonCorner.Parent = killSliderButton
+    SettingsTab:CreateLabel("Made with ❤️ for enhanced farming")
+    SettingsTab:CreateLabel("UI Library: Rayfield Interface Suite")
+    SettingsTab:CreateLabel("Created by: Aura Farm Pro Team")
     
-    local killToggleButton = Instance.new("TextButton")
-    killToggleButton.Size = UDim2.new(1, -30, 0, isMobile and 40 or 35)
-    killToggleButton.Position = UDim2.new(0, 15, 0, isMobile and 95 or 95)
-    killToggleButton.BackgroundColor3 = Color3.fromRGB(220, 53, 69)
-    killToggleButton.Text = "KILL OFF"
-    killToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    killToggleButton.TextSize = isMobile and 16 or 14
-    killToggleButton.Font = Enum.Font.GothamBold
-    killToggleButton.BorderSizePixel = 0
-    killToggleButton.Parent = killSection
+    local statusUpdateLoop
+    statusUpdateLoop = RunService.Heartbeat:Connect(function()
+        wait(2)
+        
+        if KillAura and killEnabled then
+            if KillAura.isEnabled() then
+                KillLabel:Set("Status: 🟢 Active - Scanning for targets")
+            else
+                KillLabel:Set("Status: 🔴 Inactive")
+            end
+        else
+            KillLabel:Set("Status: Ready to use")
+        end
+        
+        if TreeAura and treeEnabled then
+            if TreeAura.isEnabled() then
+                local status = TreeAura.getStatus and TreeAura.getStatus()
+                if status and status.treesFound then
+                    TreeLabel:Set("Status: 🟢 Active - Trees found: " .. status.treesFound)
+                else
+                    TreeLabel:Set("Status: 🟢 Active - Scanning for trees")
+                end
+            else
+                TreeLabel:Set("Status: 🔴 Inactive")
+            end
+        else
+            TreeLabel:Set("Status: Ready to farm")
+        end
+    end)
     
-    local killToggleCorner = Instance.new("UICorner")
-    killToggleCorner.CornerRadius = UDim.new(0, 10)
-    killToggleCorner.Parent = killToggleButton
+    Rayfield:Notify({
+        Title = "Aura Farm Pro",
+        Content = "✨ Successfully loaded with Rayfield UI!",
+        Duration = 5,
+        Image = 4483345998
+    })
     
-    local treeSection = Instance.new("Frame")
-    treeSection.Size = UDim2.new(1, 0, 0, isMobile and 200 or 210)
-    treeSection.Position = UDim2.new(0, 0, 0, isMobile and 155 or 165)
-    treeSection.BackgroundColor3 = Color3.fromRGB(28, 28, 35)
-    treeSection.BorderSizePixel = 0
-    treeSection.Parent = contentFrame
-    
-    local treeCorner = Instance.new("UICorner")
-    treeCorner.CornerRadius = UDim.new(0, 12)
-    treeCorner.Parent = treeSection
-    
-    local treeAccent = Instance.new("Frame")
-    treeAccent.Size = UDim2.new(0, 4, 1, 0)
-    treeAccent.Position = UDim2.new(0, 0, 0, 0)
-    treeAccent.BackgroundColor3 = Color3.fromRGB(40, 167, 69)
-    treeAccent.BorderSizePixel = 0
-    treeAccent.Parent = treeSection
-    
-    local treeAccentCorner = Instance.new("UICorner")
-    treeAccentCorner.CornerRadius = UDim.new(0, 2)
-    treeAccentCorner.Parent = treeAccent
-    
-    local treeTitle = Instance.new("TextLabel")
-    treeTitle.Size = UDim2.new(1, -20, 0, 35)
-    treeTitle.Position = UDim2.new(0, 15, 0, 5)
-    treeTitle.BackgroundTransparency = 1
-    treeTitle.Text = "🌳 TREE AURA"
-    treeTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    treeTitle.TextSize = isMobile and 18 or 16
-    treeTitle.Font = Enum.Font.GothamBold
-    treeTitle.TextXAlignment = Enum.TextXAlignment.Left
-    treeTitle.Parent = treeSection
-    
-    local treeDistanceLabel = Instance.new("TextLabel")
-    treeDistanceLabel.Size = UDim2.new(0.5, -10, 0, 20)
-    treeDistanceLabel.Position = UDim2.new(0, 15, 0, 40)
-    treeDistanceLabel.BackgroundTransparency = 1
-    treeDistanceLabel.Text = "Distance: " .. (TreeAura and TreeAura.getDistance() or 86)
-    treeDistanceLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-    treeDistanceLabel.TextSize = isMobile and 14 or 12
-    treeDistanceLabel.Font = Enum.Font.Gotham
-    treeDistanceLabel.TextXAlignment = Enum.TextXAlignment.Left
-    treeDistanceLabel.Parent = treeSection
-    
-    local treeDelayLabel = Instance.new("TextLabel")
-    treeDelayLabel.Size = UDim2.new(0.5, -10, 0, 20)
-    treeDelayLabel.Position = UDim2.new(0.5, 5, 0, 40)
-    treeDelayLabel.BackgroundTransparency = 1
-    treeDelayLabel.Text = "Delay: " .. (TreeAura and TreeAura.getDelay() or 0.1) .. "s"
-    treeDelayLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-    treeDelayLabel.TextSize = isMobile and 14 or 12
-    treeDelayLabel.Font = Enum.Font.Gotham
-    treeDelayLabel.TextXAlignment = Enum.TextXAlignment.Left
-    treeDelayLabel.Parent = treeSection
-    
-    local treeSliderFrame = Instance.new("TextButton")
-    treeSliderFrame.Size = UDim2.new(0.5, -20, 0, isMobile and 25 or 20)
-    treeSliderFrame.Position = UDim2.new(0, 15, 0, 65)
-    treeSliderFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-    treeSliderFrame.BorderSizePixel = 0
-    treeSliderFrame.Text = ""
-    treeSliderFrame.AutoButtonColor = false
-    treeSliderFrame.Parent = treeSection
-    
-    local treeSliderCorner = Instance.new("UICorner")
-    treeSliderCorner.CornerRadius = UDim.new(0, isMobile and 12 or 10)
-    treeSliderCorner.Parent = treeSliderFrame
-    
-    local treeSliderButton = Instance.new("TextButton")
-    treeSliderButton.Size = UDim2.new(0, isMobile and 25 or 20, 0, isMobile and 25 or 20)
-    treeSliderButton.Position = UDim2.new(((TreeAura and TreeAura.getDistance() or 86) - 10) / 190, isMobile and -12 or -10, 0, 0)
-    treeSliderButton.BackgroundColor3 = Color3.fromRGB(40, 167, 69)
-    treeSliderButton.Text = ""
-    treeSliderButton.BorderSizePixel = 0
-    treeSliderButton.AutoButtonColor = false
-    treeSliderButton.Parent = treeSliderFrame
-    
-    local treeSliderButtonCorner = Instance.new("UICorner")
-    treeSliderButtonCorner.CornerRadius = UDim.new(0, isMobile and 12 or 10)
-    treeSliderButtonCorner.Parent = treeSliderButton
-    
-    local treeDelaySliderFrame = Instance.new("TextButton")
-    treeDelaySliderFrame.Size = UDim2.new(0.5, -20, 0, isMobile and 25 or 20)
-    treeDelaySliderFrame.Position = UDim2.new(0.5, 5, 0, 65)
-    treeDelaySliderFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-    treeDelaySliderFrame.BorderSizePixel = 0
-    treeDelaySliderFrame.Text = ""
-    treeDelaySliderFrame.AutoButtonColor = false
-    treeDelaySliderFrame.Parent = treeSection
-    
-    local treeDelaySliderCorner = Instance.new("UICorner")
-    treeDelaySliderCorner.CornerRadius = UDim.new(0, isMobile and 12 or 10)
-    treeDelaySliderCorner.Parent = treeDelaySliderFrame
-    
-    local treeDelaySliderButton = Instance.new("TextButton")
-    treeDelaySliderButton.Size = UDim2.new(0, isMobile and 25 or 20, 0, isMobile and 25 or 20)
-    treeDelaySliderButton.Position = UDim2.new(((TreeAura and TreeAura.getDelay() or 0.1) - 0.1) / 9.9, isMobile and -12 or -10, 0, 0)
-    treeDelaySliderButton.BackgroundColor3 = Color3.fromRGB(40, 167, 69)
-    treeDelaySliderButton.Text = ""
-    treeDelaySliderButton.BorderSizePixel = 0
-    treeDelaySliderButton.AutoButtonColor = false
-    treeDelaySliderButton.Parent = treeDelaySliderFrame
-    
-    local treeDelaySliderButtonCorner = Instance.new("UICorner")
-    treeDelaySliderButtonCorner.CornerRadius = UDim.new(0, isMobile and 12 or 10)
-    treeDelaySliderButtonCorner.Parent = treeDelaySliderButton
-    
-    local treeToggleButton = Instance.new("TextButton")
-    treeToggleButton.Size = UDim2.new(1, -30, 0, isMobile and 45 or 40)
-    treeToggleButton.Position = UDim2.new(0, 15, 0, isMobile and 100 or 100)
-    treeToggleButton.BackgroundColor3 = Color3.fromRGB(220, 53, 69)
-    treeToggleButton.Text = "TREE OFF"
-    treeToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    treeToggleButton.TextSize = isMobile and 18 or 16
-    treeToggleButton.Font = Enum.Font.GothamBold
-    treeToggleButton.BorderSizePixel = 0
-    treeToggleButton.Parent = treeSection
-    
-    local treeToggleCorner = Instance.new("UICorner")
-    treeToggleCorner.CornerRadius = UDim.new(0, 12)
-    treeToggleCorner.Parent = treeToggleButton
-    
-    local treeStatusLabel = Instance.new("TextLabel")
-    treeStatusLabel.Size = UDim2.new(1, -30, 0, 25)
-    treeStatusLabel.Position = UDim2.new(0, 15, 0, isMobile and 155 or 155)
-    treeStatusLabel.BackgroundTransparency = 1
-    treeStatusLabel.Text = "🔴 Status: Disabled"
-    treeStatusLabel.TextColor3 = Color3.fromRGB(220, 53, 69)
-    treeStatusLabel.TextSize = isMobile and 14 or 12
-    treeStatusLabel.Font = Enum.Font.GothamSemibold
-    treeStatusLabel.TextXAlignment = Enum.TextXAlignment.Center
-    treeStatusLabel.Parent = treeSection
-    
-    local destroyButton = Instance.new("TextButton")
-    destroyButton.Size = UDim2.new(1, 0, 0, isMobile and 45 or 40)
-    destroyButton.Position = UDim2.new(0, 0, 0, isMobile and 370 or 390)
-    destroyButton.BackgroundColor3 = Color3.fromRGB(108, 117, 125)
-    destroyButton.Text = "🗑️ Destroy GUI"
-    destroyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    destroyButton.TextSize = isMobile and 16 or 14
-    destroyButton.Font = Enum.Font.GothamSemibold
-    destroyButton.BorderSizePixel = 0
-    destroyButton.Parent = contentFrame
-    
-    local destroyCorner = Instance.new("UICorner")
-    destroyCorner.CornerRadius = UDim.new(0, 10)
-    destroyCorner.Parent = destroyButton
-    
-    mainFrame.Parent = screenGui
-    screenGui.Parent = PlayerGui
+    print("✨ Rayfield UI created successfully!")
     
     return {
-        screenGui = screenGui,
-        mainFrame = mainFrame,
-        contentFrame = contentFrame,
-        minimizeButton = minimizeButton,
-        killToggleButton = killToggleButton,
-        treeToggleButton = treeToggleButton,
-        destroyButton = destroyButton,
-        killSliderButton = killSliderButton,
-        killSliderFrame = killSliderFrame,
-        killDistanceLabel = killDistanceLabel,
-        treeSliderButton = treeSliderButton,
-        treeSliderFrame = treeSliderFrame,
-        treeDistanceLabel = treeDistanceLabel,
-        treeDelaySliderButton = treeDelaySliderButton,
-        treeDelaySliderFrame = treeDelaySliderFrame,
-        treeDelayLabel = treeDelayLabel,
-        treeStatusLabel = treeStatusLabel,
-        isMobile = isMobile
+        Rayfield = Rayfield,
+        Window = Window,
+        KillToggle = KillToggle,
+        TreeToggle = TreeToggle,
+        statusUpdateLoop = statusUpdateLoop
     }
 end
 
-local function toggleMinimize()
-    isMinimized = not isMinimized
-    
-    local targetHeight = isMinimized and (gui.isMobile and 65 or 60) or (gui.isMobile and 550 or 600)
-    local targetText = isMinimized and "+" or "−"
-    
-    if isMinimized then
-        gui.contentFrame.Visible = false
-        wait(0.1)
-        local tween = TweenService:Create(
-            gui.mainFrame,
-            TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
-            {Size = UDim2.new(0, gui.mainFrame.Size.X.Offset, 0, targetHeight)}
-        )
-        tween:Play()
-    else
-        local tween = TweenService:Create(
-            gui.mainFrame,
-            TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
-            {Size = UDim2.new(0, gui.mainFrame.Size.X.Offset, 0, targetHeight)}
-        )
-        tween:Play()
-        tween.Completed:Connect(function()
-            wait(0.1)
-            gui.contentFrame.Visible = true
-        end)
-    end
-    
-    gui.minimizeButton.Text = targetText
-    print(isMinimized and "🔽 GUI Minimized" or "🔼 GUI Restored")
-end
-
-local function setupSlider(sliderButton, sliderFrame, distanceLabel, auraModule, isDelaySlider)
-    local isDragging = false
-    
-    local function updateSlider(inputX)
-        local sliderFrameAbsPos = sliderFrame.AbsolutePosition.X
-        local sliderFrameAbsSize = sliderFrame.AbsoluteSize.X
-        
-        local relativeX = math.clamp((inputX - sliderFrameAbsPos) / sliderFrameAbsSize, 0, 1)
-        
-        if isDelaySlider then
-            local newDelay = math.floor((0.1 + (relativeX * 9.9)) * 10) / 10
-            if auraModule and auraModule.setDelay then
-                auraModule.setDelay(newDelay)
-            end
-            distanceLabel.Text = "Delay: " .. newDelay .. "s"
-            sliderButton.Position = UDim2.new(relativeX, gui.isMobile and -12 or -10, 0, 0)
-        else
-            local newDistance = math.floor(10 + (relativeX * 190))
-            if auraModule and auraModule.setDistance then
-                auraModule.setDistance(newDistance)
-            end
-            distanceLabel.Text = "Distance: " .. newDistance
-            sliderButton.Position = UDim2.new(relativeX, gui.isMobile and -12 or -10, 0, 0)
-        end
-    end
-    
-    sliderFrame.MouseButton1Down:Connect(function(x, y)
-        updateSlider(x)
-    end)
-    
-    sliderButton.MouseButton1Down:Connect(function()
-        isDragging = true
-    end)
-    
-    if gui.isMobile then
-        sliderFrame.TouchTap:Connect(function(touch, gameProcessed)
-            if not gameProcessed then
-                updateSlider(touch.Position.X)
-            end
-        end)
-        
-        sliderButton.TouchTap:Connect(function()
-            isDragging = true
-        end)
-    end
-    
-    UserInputService.InputChanged:Connect(function(input)
-        if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            updateSlider(input.Position.X)
-        end
-    end)
-    
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            isDragging = false
-        end
-    end)
-end
-
-local function animateButton(button)
-    local originalSize = button.Size
-    local originalColor = button.BackgroundColor3
-    
-    local tween1 = TweenService:Create(
-        button,
-        TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut),
-        {
-            Size = UDim2.new(originalSize.X.Scale * 0.95, 0, originalSize.Y.Scale * 0.95, 0),
-            BackgroundColor3 = Color3.new(originalColor.R * 0.8, originalColor.G * 0.8, originalColor.B * 0.8)
-        }
-    )
-    tween1:Play()
-    
-    tween1.Completed:Connect(function()
-        local tween2 = TweenService:Create(
-            button,
-            TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut),
-            {
-                Size = originalSize,
-                BackgroundColor3 = originalColor
-            }
-        )
-        tween2:Play()
-    end)
-end
-
 local function main()
-    print("🚀 Starting Premium Aura Controller v5.2 FIXED...")
-    
-    local existingGUI = PlayerGui:FindFirstChild("PremiumAuraGUI")
-    if existingGUI then
-        existingGUI:Destroy()
-        wait(0.5)
-    end
+    print("🚀 Starting Premium Aura Controller v5.2 with Rayfield...")
     
     if not loadModules() then
         warn("Modules failed to load, using fallback functions")
     end
     
     local success, result = pcall(function()
-        gui = createCleanGUI()
+        local gui = createRayfieldGUI()
         
-        print("📱 Device: " .. (gui.isMobile and "Mobile" or "PC"))
+        print("✨ Premium Aura Controller v5.2 with Rayfield loaded successfully!")
+        print("🌳 Tree Aura: Distance & delay controls with real-time status")
+        print("⚔️ Kill Aura: Adjustable attack distance with target scanning")
+        print("📱 Rayfield Professional Interface with auto-save configs")
         
-        setupSlider(gui.killSliderButton, gui.killSliderFrame, gui.killDistanceLabel, KillAura, false)
-        setupSlider(gui.treeSliderButton, gui.treeSliderFrame, gui.treeDistanceLabel, TreeAura, false)
-        setupSlider(gui.treeDelaySliderButton, gui.treeDelaySliderFrame, gui.treeDelayLabel, TreeAura, true)
-        
-        gui.minimizeButton.MouseButton1Click:Connect(function()
-            print("🔄 Minimize button clicked!")
-            toggleMinimize()
-        end)
-        
-        if gui.isMobile then
-            gui.minimizeButton.TouchTap:Connect(function()
-                print("🔄 Minimize button touched!")
-                toggleMinimize()
-            end)
-        end
-        
-        gui.killToggleButton.MouseButton1Click:Connect(function()
-            print("⚔️ Kill button clicked!")
-            animateButton(gui.killToggleButton)
-            
-            local isEnabled = false
-            if KillAura and KillAura.toggle then
-                isEnabled = KillAura.toggle()
-            end
-            
-            if isEnabled then
-                gui.killToggleButton.Text = "⚔️ KILL ON"
-                gui.killToggleButton.BackgroundColor3 = Color3.fromRGB(40, 167, 69)
-            else
-                gui.killToggleButton.Text = "⚔️ KILL OFF"
-                gui.killToggleButton.BackgroundColor3 = Color3.fromRGB(220, 53, 69)
-            end
-        end)
-        
-        gui.treeToggleButton.MouseButton1Click:Connect(function()
-            print("🌳 Tree button clicked!")
-            animateButton(gui.treeToggleButton)
-            
-            local isEnabled = false
-            if TreeAura and TreeAura.toggle then
-                isEnabled = TreeAura.toggle()
-            end
-            
-            if isEnabled then
-                gui.treeToggleButton.Text = "🌳 TREE ON"
-                gui.treeToggleButton.BackgroundColor3 = Color3.fromRGB(40, 167, 69)
-                gui.treeStatusLabel.Text = "🟢 Status: Active"
-                gui.treeStatusLabel.TextColor3 = Color3.fromRGB(40, 167, 69)
-            else
-                gui.treeToggleButton.Text = "🌳 TREE OFF"
-                gui.treeToggleButton.BackgroundColor3 = Color3.fromRGB(220, 53, 69)
-                gui.treeStatusLabel.Text = "🔴 Status: Disabled"
-                gui.treeStatusLabel.TextColor3 = Color3.fromRGB(220, 53, 69)
-            end
-        end)
-        
-        gui.destroyButton.MouseButton1Click:Connect(function()
-            print("🗑️ Destroying GUI...")
-            if KillAura and KillAura.stop then KillAura.stop() end
-            if TreeAura and TreeAura.stop then TreeAura.stop() end
-            gui.screenGui:Destroy()
-        end)
-        
-        print("✨ Premium Aura Controller v5.2 FIXED loaded successfully!")
-        print("💡 Click the − button to minimize/restore the GUI")
-        print("🌳 Tree section now has distance AND delay sliders!")
+        return gui
     end)
     
     if not success then
-        warn("Failed to create premium GUI: " .. tostring(result))
+        warn("Failed to create Rayfield GUI: " .. tostring(result))
+        print("Error details: " .. tostring(result))
     end
 end
 
