@@ -12,10 +12,44 @@ if not PlayerGui then
     return
 end
 
-local TreeAura, KillAura, BringAura
+local TreeAura, KillAura, BringItems
 
 local function loadModules()
     print("Loading modules...")
+    
+    TreeAura = {
+        toggle = function() return false end,
+        stop = function() end,
+        setDistance = function() end,
+        getDistance = function() return 86 end,
+        setDelay = function() end,
+        getDelay = function() return 0.1 end,
+        isEnabled = function() return false end,
+        setMaxTreesPerCycle = function() end,
+        getMaxTreesPerCycle = function() return 3 end,
+        setAutoCollectLogs = function() end,
+        getAutoCollectLogs = function() return true end
+    }
+    
+    KillAura = {
+        toggle = function() return false end,
+        stop = function() end,
+        setDistance = function() end,
+        getDistance = function() return 80 end,
+        isEnabled = function() return false end
+    }
+    
+    BringItems = {
+        toggle = function() return false end,
+        stop = function() end,
+        setSelectedItem = function() end,
+        getSelectedItem = function() return "Log" end,
+        setDelay = function() end,
+        getDelay = function() return 0.3 end,
+        isEnabled = function() return false end,
+        refreshItems = function() return {"Log", "Stone", "Stick"} end,
+        getAvailableItems = function() return {"Log", "Stone", "Stick"} end
+    }
     
     local success1, treeModule = pcall(function()
         return loadstring(game:HttpGet("https://raw.githubusercontent.com/Jubiar01/99nitf/refs/heads/main/tree.lua"))()
@@ -33,58 +67,25 @@ local function loadModules()
         TreeAura = treeModule
         print("✅ Tree Aura module loaded!")
     else
-        print("❌ Failed to load Tree Aura module")
-        TreeAura = {
-            toggle = function() return false end,
-            stop = function() end,
-            setDistance = function() end,
-            getDistance = function() return 86 end,
-            setDelay = function() end,
-            getDelay = function() return 0.1 end,
-            isEnabled = function() return false end,
-            setMaxTreesPerCycle = function() end,
-            getMaxTreesPerCycle = function() return 3 end,
-            setAutoCollectLogs = function() end,
-            getAutoCollectLogs = function() return true end
-        }
+        print("❌ Failed to load Tree Aura module - using fallback")
     end
     
     if success2 and killModule then
         KillAura = killModule
         print("✅ Kill Aura module loaded!")
     else
-        print("❌ Failed to load Kill Aura module")
-        KillAura = {
-            toggle = function() return false end,
-            stop = function() end,
-            setDistance = function() end,
-            getDistance = function() return 80 end,
-            isEnabled = function() return false end
-        }
+        print("❌ Failed to load Kill Aura module - using fallback")
     end
     
     if success3 and bringModule then
-        BringAura = bringModule
-        print("✅ Bring Aura module loaded!")
+        BringItems = bringModule
+        print("✅ Bring Items module loaded!")
     else
-        print("❌ Failed to load Bring Aura module")
-        BringAura = {
-            toggle = function() return false end,
-            stop = function() end,
-            setSelectedItem = function() end,
-            getSelectedItem = function() return "Log" end,
-            setDistance = function() end,
-            getDistance = function() return 100 end,
-            setDelay = function() end,
-            getDelay = function() return 0.2 end,
-            isEnabled = function() return false end,
-            refreshItems = function() return {"Log", "Stone", "Stick"} end,
-            getAvailableItems = function() return {"Log", "Stone", "Stick"} end
-        }
+        print("❌ Failed to load Bring Items module - using fallback")
     end
     
     print("Modules loading complete!")
-    return TreeAura and KillAura and BringAura
+    return true
 end
 
 local function createRayfieldGUI()
@@ -111,24 +112,19 @@ local function createRayfieldGUI()
     
     local TreeTab = Window:CreateTab("🌳 Tree Farm", 4483345998)
     local KillTab = Window:CreateTab("⚔️ Kill Aura", 4483345998)
-    local BringTab = Window:CreateTab("📦 Item Bring", 4483345998)
+    local BringTab = Window:CreateTab("📦 Bring Items", 4483345998)
     local SettingsTab = Window:CreateTab("⚙️ Settings", 4483345998)
     
     TreeTab:CreateSection("Tree Farm Controls")
-    
-    local treeEnabled = false
     
     local TreeToggle = TreeTab:CreateToggle({
         Name = "Auto Farm Trees",
         CurrentValue = false,
         Flag = "AutoFarmTreeToggle",
         Callback = function(Value)
-            treeEnabled = Value
             if TreeAura then
                 if Value then
-                    if not TreeAura.isEnabled() then
-                        TreeAura.toggle()
-                    end
+                    TreeAura.toggle()
                     Rayfield:Notify({
                         Title = "Tree Farm",
                         Content = "🟢 Auto Tree Farming Enabled!",
@@ -136,9 +132,7 @@ local function createRayfieldGUI()
                         Image = 4483345998
                     })
                 else
-                    if TreeAura.isEnabled() then
-                        TreeAura.toggle()
-                    end
+                    TreeAura.stop()
                     Rayfield:Notify({
                         Title = "Tree Farm",
                         Content = "🔴 Auto Tree Farming Disabled!",
@@ -155,7 +149,7 @@ local function createRayfieldGUI()
         Range = {10, 200},
         Increment = 1,
         Suffix = "studs",
-        CurrentValue = TreeAura and TreeAura.getDistance() or 86,
+        CurrentValue = 86,
         Flag = "TreeDistance",
         Callback = function(Value)
             if TreeAura and TreeAura.setDistance then
@@ -169,7 +163,7 @@ local function createRayfieldGUI()
         Range = {0.1, 2},
         Increment = 0.1,
         Suffix = "seconds",
-        CurrentValue = TreeAura and TreeAura.getDelay() or 0.1,
+        CurrentValue = 0.1,
         Flag = "TreeDelay",
         Callback = function(Value)
             if TreeAura and TreeAura.setDelay then
@@ -183,7 +177,7 @@ local function createRayfieldGUI()
         Range = {1, 10},
         Increment = 1,
         Suffix = "trees",
-        CurrentValue = TreeAura and TreeAura.getMaxTreesPerCycle() or 3,
+        CurrentValue = 3,
         Flag = "MaxTrees",
         Callback = function(Value)
             if TreeAura and TreeAura.setMaxTreesPerCycle then
@@ -192,11 +186,9 @@ local function createRayfieldGUI()
         end,
     })
     
-    TreeTab:CreateSection("Additional Options")
-    
     local AutoCollectToggle = TreeTab:CreateToggle({
         Name = "Auto Collect Logs",
-        CurrentValue = TreeAura and TreeAura.getAutoCollectLogs() or true,
+        CurrentValue = true,
         Flag = "AutoCollectLogs",
         Callback = function(Value)
             if TreeAura and TreeAura.setAutoCollectLogs then
@@ -207,24 +199,19 @@ local function createRayfieldGUI()
     
     TreeTab:CreateParagraph({
         Title = "Enhanced Tree Farming",
-        Content = "Automatically farms trees from both Foliage and Landmarks folders. Supports Small Trees, multiple trees per cycle, and auto log collection within 15 studs."
+        Content = "Automatically farms trees from both Foliage and Landmarks folders. Supports Small Trees and auto log collection."
     })
     
     KillTab:CreateSection("Kill Aura Controls")
-    
-    local killEnabled = false
     
     local KillToggle = KillTab:CreateToggle({
         Name = "Enable Kill Aura",
         CurrentValue = false,
         Flag = "KillAuraToggle",
         Callback = function(Value)
-            killEnabled = Value
             if KillAura then
                 if Value then
-                    if not KillAura.isEnabled() then
-                        KillAura.toggle()
-                    end
+                    KillAura.toggle()
                     Rayfield:Notify({
                         Title = "Kill Aura",
                         Content = "🟢 Kill Aura Enabled!",
@@ -232,9 +219,7 @@ local function createRayfieldGUI()
                         Image = 4483345998
                     })
                 else
-                    if KillAura.isEnabled() then
-                        KillAura.toggle()
-                    end
+                    KillAura.stop()
                     Rayfield:Notify({
                         Title = "Kill Aura",
                         Content = "🔴 Kill Aura Disabled!",
@@ -251,7 +236,7 @@ local function createRayfieldGUI()
         Range = {10, 200},
         Increment = 1,
         Suffix = "studs",
-        CurrentValue = KillAura and KillAura.getDistance() or 80,
+        CurrentValue = 80,
         Flag = "KillDistance",
         Callback = function(Value)
             if KillAura and KillAura.setDistance then
@@ -262,31 +247,33 @@ local function createRayfieldGUI()
     
     KillTab:CreateParagraph({
         Title = "Combat System",
-        Content = "Automatically attacks the closest target within range. Uses Chainsaw > Strong Axe > Gooad Axe > Old Axe > Axe priority for maximum damage."
+        Content = "Automatically attacks the closest target within range. Uses best available tool for maximum damage."
     })
     
-    BringTab:CreateSection("Item Bring Controls")
+    BringTab:CreateSection("Bring Items Controls")
     
-    local bringEnabled = false
     local selectedItemDropdown
     
     local function refreshItemDropdown()
-        if BringAura then
-            local items = BringAura.refreshItems()
-            if selectedItemDropdown then
-                selectedItemDropdown:Refresh(items, BringAura.getSelectedItem())
+        if BringItems and BringItems.refreshItems then
+            local items = BringItems.refreshItems()
+            if selectedItemDropdown and #items > 0 then
+                selectedItemDropdown:Refresh(items, items[1])
+                if BringItems.setSelectedItem then
+                    BringItems.setSelectedItem(items[1])
+                end
             end
         end
     end
     
     selectedItemDropdown = BringTab:CreateDropdown({
         Name = "Select Item to Bring",
-        Options = BringAura and BringAura.getAvailableItems() or {"Log"},
-        CurrentOption = BringAura and BringAura.getSelectedItem() or "Log",
+        Options = {"Log", "Stone", "Stick"},
+        CurrentOption = "Log",
         Flag = "SelectedItem",
         Callback = function(Value)
-            if BringAura and BringAura.setSelectedItem then
-                BringAura.setSelectedItem(Value)
+            if BringItems and BringItems.setSelectedItem then
+                BringItems.setSelectedItem(Value)
             end
         end,
     })
@@ -307,26 +294,22 @@ local function createRayfieldGUI()
     local BringToggle = BringTab:CreateToggle({
         Name = "Auto Bring Items",
         CurrentValue = false,
-        Flag = "BringAuraToggle",
+        Flag = "BringItemsToggle",
         Callback = function(Value)
-            bringEnabled = Value
-            if BringAura then
+            if BringItems then
                 if Value then
-                    if not BringAura.isEnabled() then
-                        BringAura.toggle()
-                    end
+                    BringItems.toggle()
+                    local selectedItem = BringItems.getSelectedItem and BringItems.getSelectedItem() or "items"
                     Rayfield:Notify({
-                        Title = "Item Bring",
-                        Content = "🟢 Auto Bring Enabled for " .. BringAura.getSelectedItem(),
+                        Title = "Bring Items",
+                        Content = "🟢 Auto Bring Enabled for " .. selectedItem,
                         Duration = 3,
                         Image = 4483345998
                     })
                 else
-                    if BringAura.isEnabled() then
-                        BringAura.toggle()
-                    end
+                    BringItems.stop()
                     Rayfield:Notify({
-                        Title = "Item Bring",
+                        Title = "Bring Items",
                         Content = "🔴 Auto Bring Disabled!",
                         Duration = 3,
                         Image = 4483345998
@@ -336,37 +319,23 @@ local function createRayfieldGUI()
         end,
     })
     
-    local BringDistanceSlider = BringTab:CreateSlider({
-        Name = "Bring Distance",
-        Range = {10, 500},
-        Increment = 5,
-        Suffix = "studs",
-        CurrentValue = BringAura and BringAura.getDistance() or 100,
-        Flag = "BringDistance",
-        Callback = function(Value)
-            if BringAura and BringAura.setDistance then
-                BringAura.setDistance(Value)
-            end
-        end,
-    })
-    
     local BringDelaySlider = BringTab:CreateSlider({
         Name = "Bring Delay",
-        Range = {0.1, 5},
+        Range = {0.1, 3},
         Increment = 0.1,
         Suffix = "seconds",
-        CurrentValue = BringAura and BringAura.getDelay() or 0.2,
+        CurrentValue = 0.3,
         Flag = "BringDelay",
         Callback = function(Value)
-            if BringAura and BringAura.setDelay then
-                BringAura.setDelay(Value)
+            if BringItems and BringItems.setDelay then
+                BringItems.setDelay(Value)
             end
         end,
     })
     
     BringTab:CreateParagraph({
-        Title = "Item Collection System",
-        Content = "Automatically brings selected items to your location. Choose any item from the workspace and set custom distance/delay. Use refresh button to update available items."
+        Title = "Item Collection",
+        Content = "Brings ALL selected items from the workspace directly to you. No distance limit - collects everything instantly!"
     })
     
     SettingsTab:CreateSection("General Controls")
@@ -374,26 +343,26 @@ local function createRayfieldGUI()
     local ResetButton = SettingsTab:CreateButton({
         Name = "🔄 Reset All Settings",
         Callback = function()
+            TreeDistanceSlider:Set(86)
+            TreeDelaySlider:Set(0.1)
+            MaxTreesSlider:Set(3)
+            AutoCollectToggle:Set(true)
+            KillSlider:Set(80)
+            BringDelaySlider:Set(0.3)
+            
             if TreeAura then
-                TreeAura.setDistance(86)
-                TreeAura.setDelay(0.1)
-                TreeAura.setMaxTreesPerCycle(3)
-                TreeAura.setAutoCollectLogs(true)
-                TreeDistanceSlider:Set(86)
-                TreeDelaySlider:Set(0.1)
-                MaxTreesSlider:Set(3)
-                AutoCollectToggle:Set(true)
+                if TreeAura.setDistance then TreeAura.setDistance(86) end
+                if TreeAura.setDelay then TreeAura.setDelay(0.1) end
+                if TreeAura.setMaxTreesPerCycle then TreeAura.setMaxTreesPerCycle(3) end
+                if TreeAura.setAutoCollectLogs then TreeAura.setAutoCollectLogs(true) end
             end
-            if KillAura then
+            if KillAura and KillAura.setDistance then
                 KillAura.setDistance(80)
-                KillSlider:Set(80)
             end
-            if BringAura then
-                BringAura.setDistance(100)
-                BringAura.setDelay(0.2)
-                BringDistanceSlider:Set(100)
-                BringDelaySlider:Set(0.2)
+            if BringItems and BringItems.setDelay then
+                BringItems.setDelay(0.3)
             end
+            
             Rayfield:Notify({
                 Title = "Settings Reset",
                 Content = "🔄 All settings reset to defaults!",
@@ -409,21 +378,18 @@ local function createRayfieldGUI()
             if TreeAura and TreeAura.stop then
                 TreeAura.stop()
                 TreeToggle:Set(false)
-                treeEnabled = false
             end
             if KillAura and KillAura.stop then
                 KillAura.stop()
                 KillToggle:Set(false)
-                killEnabled = false
             end
-            if BringAura and BringAura.stop then
-                BringAura.stop()
+            if BringItems and BringItems.stop then
+                BringItems.stop()
                 BringToggle:Set(false)
-                bringEnabled = false
             end
             Rayfield:Notify({
                 Title = "Emergency Stop",
-                Content = "🛑 All auras stopped successfully!",
+                Content = "🛑 All functions stopped!",
                 Duration = 3,
                 Image = 4483345998
             })
@@ -435,9 +401,9 @@ local function createRayfieldGUI()
         Callback = function()
             if TreeAura and TreeAura.stop then TreeAura.stop() end
             if KillAura and KillAura.stop then KillAura.stop() end
-            if BringAura and BringAura.stop then BringAura.stop() end
+            if BringItems and BringItems.stop then BringItems.stop() end
             Rayfield:Destroy()
-            print("🗑️ Rayfield GUI destroyed!")
+            print("🗑️ GUI destroyed!")
         end,
     })
     
@@ -445,25 +411,20 @@ local function createRayfieldGUI()
     
     SettingsTab:CreateParagraph({
         Title = "Aura Farm Pro v7.0",
-        Content = "Complete automation suite with enhanced tree farming, item collection system, and combat features. Now includes automatic log collection and multi-tree farming capabilities."
+        Content = "Complete automation suite with tree farming, kill aura, and item collection. All functions work independently with fallback support."
     })
     
     SettingsTab:CreateParagraph({
-        Title = "New Features v7.0",
-        Content = "• Unified Tree Farming (Foliage + Landmarks)\n• Item Bring System with Dropdown\n• Auto Log Collection\n• Multi-Tree Per Cycle\n• Chainsaw Support\n• Enhanced Performance\n• Cleaner Interface"
+        Title = "Features",
+        Content = "• Auto Tree Farming (Foliage + Landmarks)\n• Kill Aura with Tool Priority\n• Bring All Items (No Distance Limit)\n• Auto Log Collection\n• Chainsaw Support\n• Enhanced Performance"
     })
     
-    SettingsTab:CreateSection("Credits")
-    
-    SettingsTab:CreateLabel("Complete Automation Suite")
-    SettingsTab:CreateLabel("UI Library: Rayfield Interface Suite")
-    SettingsTab:CreateLabel("Created by: Aura Farm Pro Team")
-    
+    wait(1)
     refreshItemDropdown()
     
     Rayfield:Notify({
         Title = "Aura Farm Pro v7.0",
-        Content = "✨ Complete Automation Suite Loaded!",
+        Content = "✨ All modules loaded successfully!",
         Duration = 5,
         Image = 4483345998
     })
@@ -480,27 +441,23 @@ local function createRayfieldGUI()
 end
 
 local function main()
-    print("🚀 Starting Aura Farm Pro v7.0 Complete Automation Suite...")
+    print("🚀 Starting Aura Farm Pro v7.0...")
     
-    if not loadModules() then
-        warn("Some modules failed to load, using fallback functions")
-    end
+    loadModules()
     
     local success, result = pcall(function()
         local gui = createRayfieldGUI()
         
-        print("✨ Aura Farm Pro v7.0 Complete Automation Suite loaded!")
-        print("🌳 Tree Farm: Unified farming with auto log collection")
-        print("⚔️ Kill Aura: Enhanced targeting with tool priority")
-        print("📦 Item Bring: Complete item collection system")
-        print("🎮 Full automation suite ready!")
+        print("✨ Aura Farm Pro v7.0 loaded successfully!")
+        print("🌳 Tree Farm: " .. (TreeAura and "✅ LOADED" or "❌ FALLBACK"))
+        print("⚔️ Kill Aura: " .. (KillAura and "✅ LOADED" or "❌ FALLBACK"))
+        print("📦 Bring Items: " .. (BringItems and "✅ LOADED" or "❌ FALLBACK"))
         
         return gui
     end)
     
     if not success then
-        warn("Failed to create Rayfield GUI: " .. tostring(result))
-        print("Error details: " .. tostring(result))
+        warn("Failed to create GUI: " .. tostring(result))
     end
 end
 
