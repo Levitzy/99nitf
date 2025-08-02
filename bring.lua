@@ -9,7 +9,7 @@ local BringItems = {}
 local selectedItem = "Log"
 local availableItems = {}
 local lastBringTime = 0
-local bringCooldown = 0.05
+local bringCooldown = 0.1
 
 local function getPlayerCharacter()
     return LocalPlayer.Character
@@ -47,41 +47,22 @@ local function scanAvailableItems()
     return items
 end
 
-local function teleportItem(item, targetPosition)
+local function dragItemToPlayer(item)
     if not item or not item:FindFirstChild("Main") then
         return false
     end
     
     local success = pcall(function()
-        local main = item.Main
-        
-        main.Anchored = true
-        main.CanCollide = false
-        
-        if main:FindFirstChild("BodyVelocity") then
-            main.BodyVelocity:Destroy()
+        local remoteEvent = ReplicatedStorage:FindFirstChild("RemoteEvents")
+        if remoteEvent then
+            local requestDrag = remoteEvent:FindFirstChild("RequestStartDraggingItem")
+            if requestDrag then
+                local args = {item}
+                requestDrag:FireServer(unpack(args))
+                return true
+            end
         end
-        if main:FindFirstChild("BodyAngularVelocity") then
-            main.BodyAngularVelocity:Destroy()
-        end
-        if main:FindFirstChild("BodyPosition") then
-            main.BodyPosition:Destroy()
-        end
-        
-        main.CFrame = CFrame.new(targetPosition)
-        main.Velocity = Vector3.new(0, 0, 0)
-        main.AngularVelocity = Vector3.new(0, 0, 0)
-        
-        if main.AssemblyLinearVelocity then
-            main.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-        end
-        if main.AssemblyAngularVelocity then
-            main.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-        end
-        
-        wait(0.1)
-        main.Anchored = false
-        main.CanCollide = true
+        return false
     end)
     
     return success
@@ -100,57 +81,49 @@ local function bringSelectedItems()
         return false
     end
     
-    local playerPosition = playerCharacter.HumanoidRootPart.Position
     local itemsFolder = workspace:FindFirstChild("Items")
-    
     if not itemsFolder then
         print("❌ Items folder not found!")
         return false
     end
     
     local itemsBrought = 0
-    local radius = 4
-    local angleStep = (2 * math.pi) / 8
+    local itemsToProcess = {}
     
     for _, item in pairs(itemsFolder:GetChildren()) do
         if item:IsA("Model") and item.Name == selectedItem and item:FindFirstChild("Main") then
-            local angle = angleStep * itemsBrought
-            local offsetX = math.cos(angle) * radius
-            local offsetZ = math.sin(angle) * radius
-            local newPosition = playerPosition + Vector3.new(offsetX, 2, offsetZ)
-            
-            local success = teleportItem(item, newPosition)
-            
-            if success then
-                itemsBrought = itemsBrought + 1
-            end
-            
-            if itemsBrought >= 8 then
-                radius = radius + 3
-                itemsBrought = 0
-            end
-            
-            wait(0.05)
+            table.insert(itemsToProcess, item)
         end
+    end
+    
+    if #itemsToProcess == 0 then
+        print("❌ No " .. selectedItem .. " items found!")
+        return false
+    end
+    
+    print("🔍 Found " .. #itemsToProcess .. " " .. selectedItem .. " items to bring...")
+    
+    for i, item in pairs(itemsToProcess) do
+        local success = dragItemToPlayer(item)
+        
+        if success then
+            itemsBrought = itemsBrought + 1
+            print("✅ Dragging " .. item.Name .. " to player...")
+        else
+            print("❌ Failed to drag " .. item.Name)
+        end
+        
+        wait(0.1)
     end
     
     lastBringTime = currentTime
     
-    if itemsBrought > 0 or itemsBrought == 0 then
-        local totalItems = 0
-        for _, item in pairs(itemsFolder:GetChildren()) do
-            if item:IsA("Model") and item.Name == selectedItem and item:FindFirstChild("Main") then
-                totalItems = totalItems + 1
-            end
-        end
-        
-        if totalItems > 0 then
-            print("✅ Brought " .. totalItems .. " " .. selectedItem .. "(s) to you!")
-            return true
-        else
-            print("❌ No " .. selectedItem .. " items found!")
-            return false
-        end
+    if itemsBrought > 0 then
+        print("✅ Successfully started dragging " .. itemsBrought .. " " .. selectedItem .. "(s)!")
+        return true
+    else
+        print("❌ Failed to drag any " .. selectedItem .. " items!")
+        return false
     end
 end
 
@@ -167,54 +140,48 @@ local function bringAllItems()
         return false
     end
     
-    local playerPosition = playerCharacter.HumanoidRootPart.Position
     local itemsFolder = workspace:FindFirstChild("Items")
-    
     if not itemsFolder then
         print("❌ Items folder not found!")
         return false
     end
     
     local itemsBrought = 0
-    local radius = 5
-    local angleStep = (2 * math.pi) / 10
+    local itemsToProcess = {}
     
     for _, item in pairs(itemsFolder:GetChildren()) do
         if item:IsA("Model") and item:FindFirstChild("Main") and item.Name ~= "Camera" then
-            local angle = angleStep * itemsBrought
-            local offsetX = math.cos(angle) * radius
-            local offsetZ = math.sin(angle) * radius
-            local newPosition = playerPosition + Vector3.new(offsetX, 2, offsetZ)
-            
-            local success = teleportItem(item, newPosition)
-            
-            if success then
-                itemsBrought = itemsBrought + 1
-            end
-            
-            if itemsBrought >= 10 then
-                radius = radius + 4
-                itemsBrought = 0
-            end
-            
-            wait(0.03)
+            table.insert(itemsToProcess, item)
         end
+    end
+    
+    if #itemsToProcess == 0 then
+        print("❌ No items found!")
+        return false
+    end
+    
+    print("🔍 Found " .. #itemsToProcess .. " items to bring...")
+    
+    for i, item in pairs(itemsToProcess) do
+        local success = dragItemToPlayer(item)
+        
+        if success then
+            itemsBrought = itemsBrought + 1
+            print("✅ Dragging " .. item.Name .. " to player...")
+        else
+            print("❌ Failed to drag " .. item.Name)
+        end
+        
+        wait(0.1)
     end
     
     lastBringTime = currentTime
     
-    local totalItems = 0
-    for _, item in pairs(itemsFolder:GetChildren()) do
-        if item:IsA("Model") and item:FindFirstChild("Main") and item.Name ~= "Camera" then
-            totalItems = totalItems + 1
-        end
-    end
-    
-    if totalItems > 0 then
-        print("✅ Brought " .. totalItems .. " items to you!")
+    if itemsBrought > 0 then
+        print("✅ Successfully started dragging " .. itemsBrought .. " items!")
         return true
     else
-        print("❌ No items found!")
+        print("❌ Failed to drag any items!")
         return false
     end
 end
@@ -228,9 +195,11 @@ function BringItems.bringAll()
 end
 
 function BringItems.setSelectedItem(itemName)
-    if itemName and type(itemName) == "string" then
+    if itemName and type(itemName) == "string" and itemName ~= "" then
         selectedItem = itemName
-        print("📦 Selected item: " .. itemName)
+        print("📦 Selected item changed to: " .. itemName)
+    else
+        print("❌ Invalid item name: " .. tostring(itemName))
     end
 end
 
@@ -267,12 +236,48 @@ function BringItems.getItemCount(itemName)
     return count
 end
 
+function BringItems.getAllItemCounts()
+    local counts = {}
+    local itemsFolder = workspace:FindFirstChild("Items")
+    
+    if itemsFolder then
+        for _, item in pairs(itemsFolder:GetChildren()) do
+            if item:IsA("Model") and item:FindFirstChild("Main") and item.Name ~= "Camera" then
+                local itemName = item.Name
+                if not counts[itemName] then
+                    counts[itemName] = 0
+                end
+                counts[itemName] = counts[itemName] + 1
+            end
+        end
+    end
+    
+    return counts
+end
+
+function BringItems.testDragSystem()
+    local itemsFolder = workspace:FindFirstChild("Items")
+    if itemsFolder then
+        local testItem = itemsFolder:FindFirstChild(selectedItem)
+        if testItem then
+            print("🧪 Testing drag system with: " .. testItem.Name)
+            return dragItemToPlayer(testItem)
+        else
+            print("❌ No " .. selectedItem .. " found for testing")
+            return false
+        end
+    end
+    return false
+end
+
 function BringItems.getStatus()
+    local counts = BringItems.getAllItemCounts()
     return {
         selectedItem = selectedItem,
         availableItemTypes = #availableItems,
         selectedItemCount = BringItems.getItemCount(),
-        totalItems = BringItems.getItemCount("all")
+        allItemCounts = counts,
+        totalItems = 0
     }
 end
 
