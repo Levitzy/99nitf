@@ -9,8 +9,7 @@ local BringItems = {}
 local selectedItem = nil
 local availableItems = {}
 local lastBringTime = 0
-local bringCooldown = 0.1
-local forcedSelection = nil
+local bringCooldown = 0.05
 
 local function getPlayerCharacter()
     return LocalPlayer.Character
@@ -20,6 +19,14 @@ local function getPlayerCFrame()
     local character = getPlayerCharacter()
     if character and character:FindFirstChild("HumanoidRootPart") then
         return character.HumanoidRootPart.CFrame
+    end
+    return nil
+end
+
+local function getHumanoidPosition()
+    local character = getPlayerCharacter()
+    if character and character:FindFirstChild("Humanoid") and character:FindFirstChild("HumanoidRootPart") then
+        return character.HumanoidRootPart.Position
     end
     return nil
 end
@@ -48,16 +55,21 @@ local function scanAvailableItems()
     return items
 end
 
-local function bringItemToCFrame(item, targetCFrame, offset)
-    if not item or not item:FindFirstChild("Main") or not targetCFrame then
+local function dropItemAtPlayer(item)
+    if not item or not item:FindFirstChild("Main") then
+        return false
+    end
+    
+    local playerPos = getHumanoidPosition()
+    if not playerPos then
         return false
     end
     
     local success = pcall(function()
         local main = item.Main
         
-        main.Anchored = true
-        main.CanCollide = false
+        main.Anchored = false
+        main.CanCollide = true
         
         if main:FindFirstChild("BodyVelocity") then
             main.BodyVelocity:Destroy()
@@ -69,8 +81,11 @@ local function bringItemToCFrame(item, targetCFrame, offset)
             main.BodyPosition:Destroy()
         end
         
-        local newCFrame = targetCFrame * CFrame.new(offset)
-        item:SetPrimaryPartCFrame(newCFrame)
+        local randomX = math.random(-2, 2)
+        local randomZ = math.random(-2, 2)
+        local dropPosition = playerPos + Vector3.new(randomX, 1, randomZ)
+        
+        item:SetPrimaryPartCFrame(CFrame.new(dropPosition))
         
         main.Velocity = Vector3.new(0, 0, 0)
         main.AngularVelocity = Vector3.new(0, 0, 0)
@@ -81,20 +96,14 @@ local function bringItemToCFrame(item, targetCFrame, offset)
         if main.AssemblyAngularVelocity then
             main.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
         end
-        
-        wait(0.05)
-        main.Anchored = false
-        main.CanCollide = true
     end)
     
     return success
 end
 
 local function bringSelectedItems()
-    local targetItem = forcedSelection or selectedItem
-    
-    if not targetItem or targetItem == "" then
-        print("❌ No item selected! Current selection: " .. tostring(targetItem))
+    if not selectedItem or selectedItem == "" or selectedItem == "None" then
+        print("❌ No item selected! Current selection: " .. tostring(selectedItem))
         return false
     end
     
@@ -118,17 +127,17 @@ local function bringSelectedItems()
     local itemsBrought = 0
     local itemsToProcess = {}
     
-    print("🔍 Searching for items with exact name: '" .. targetItem .. "'")
+    print("🔍 Searching for items with exact name: '" .. selectedItem .. "'")
     
     for _, item in pairs(itemsFolder:GetChildren()) do
-        if item:IsA("Model") and item.Name == targetItem and item:FindFirstChild("Main") then
+        if item:IsA("Model") and item.Name == selectedItem and item:FindFirstChild("Main") then
             table.insert(itemsToProcess, item)
             print("✅ Found matching item: " .. item.Name)
         end
     end
     
     if #itemsToProcess == 0 then
-        print("❌ No items found with name: '" .. targetItem .. "'")
+        print("❌ No items found with name: '" .. selectedItem .. "'")
         print("📋 Available items in workspace:")
         for _, item in pairs(itemsFolder:GetChildren()) do
             if item:IsA("Model") and item:FindFirstChild("Main") then
@@ -138,22 +147,54 @@ local function bringSelectedItems()
         return false
     end
     
-    print("🎯 Bringing " .. #itemsToProcess .. " " .. targetItem .. " items...")
-    
-    local radius = 3
-    local height = 2
+    print("🎯 Bringing " .. #itemsToProcess .. " " .. selectedItem .. " items...")
     
     for i, item in pairs(itemsToProcess) do
-        local angle = (i - 1) * (math.pi * 2 / math.max(8, #itemsToProcess))
+        local radius = 3 + math.floor(i / 8) * 2
+        local angle = (i - 1) * (math.pi * 2 / 8)
         local offsetX = math.cos(angle) * radius
         local offsetZ = math.sin(angle) * radius
-        local offset = Vector3.new(offsetX, height, offsetZ)
+        local height = 3
         
-        local success = bringItemToCFrame(item, playerCFrame, offset)
+        local offset = Vector3.new(offsetX, height, offsetZ)
+        local bringCFrame = playerCFrame * CFrame.new(offset)
+        
+        local success = pcall(function()
+            local main = item.Main
+            
+            main.Anchored = true
+            main.CanCollide = false
+            
+            if main:FindFirstChild("BodyVelocity") then
+                main.BodyVelocity:Destroy()
+            end
+            if main:FindFirstChild("BodyAngularVelocity") then
+                main.BodyAngularVelocity:Destroy()
+            end
+            if main:FindFirstChild("BodyPosition") then
+                main.BodyPosition:Destroy()
+            end
+            
+            item:SetPrimaryPartCFrame(bringCFrame)
+            
+            main.Velocity = Vector3.new(0, 0, 0)
+            main.AngularVelocity = Vector3.new(0, 0, 0)
+            
+            if main.AssemblyLinearVelocity then
+                main.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            end
+            if main.AssemblyAngularVelocity then
+                main.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+            end
+            
+            wait(0.2)
+            
+            dropItemAtPlayer(item)
+        end)
         
         if success then
             itemsBrought = itemsBrought + 1
-            print("✅ Brought " .. item.Name .. " to player")
+            print("✅ Brought and dropped " .. item.Name)
         else
             print("❌ Failed to bring " .. item.Name)
         end
@@ -166,10 +207,10 @@ local function bringSelectedItems()
     lastBringTime = currentTime
     
     if itemsBrought > 0 then
-        print("✅ Successfully brought " .. itemsBrought .. " " .. targetItem .. "(s) to your location!")
+        print("✅ Successfully brought " .. itemsBrought .. " " .. selectedItem .. "(s) and dropped them at your position!")
         return true
     else
-        print("❌ Failed to bring any " .. targetItem .. " items!")
+        print("❌ Failed to bring any " .. selectedItem .. " items!")
         return false
     end
 end
@@ -208,16 +249,48 @@ local function bringAllItems()
     
     print("🎯 Bringing " .. #itemsToProcess .. " total items...")
     
-    local radius = 5
-    local height = 2
-    
     for i, item in pairs(itemsToProcess) do
-        local angle = (i - 1) * (math.pi * 2 / math.max(12, #itemsToProcess))
+        local radius = 4 + math.floor(i / 12) * 2
+        local angle = (i - 1) * (math.pi * 2 / 12)
         local offsetX = math.cos(angle) * radius
         local offsetZ = math.sin(angle) * radius
-        local offset = Vector3.new(offsetX, height, offsetZ)
+        local height = 3
         
-        local success = bringItemToCFrame(item, playerCFrame, offset)
+        local offset = Vector3.new(offsetX, height, offsetZ)
+        local bringCFrame = playerCFrame * CFrame.new(offset)
+        
+        local success = pcall(function()
+            local main = item.Main
+            
+            main.Anchored = true
+            main.CanCollide = false
+            
+            if main:FindFirstChild("BodyVelocity") then
+                main.BodyVelocity:Destroy()
+            end
+            if main:FindFirstChild("BodyAngularVelocity") then
+                main.BodyAngularVelocity:Destroy()
+            end
+            if main:FindFirstChild("BodyPosition") then
+                main.BodyPosition:Destroy()
+            end
+            
+            item:SetPrimaryPartCFrame(bringCFrame)
+            
+            main.Velocity = Vector3.new(0, 0, 0)
+            main.AngularVelocity = Vector3.new(0, 0, 0)
+            
+            if main.AssemblyLinearVelocity then
+                main.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            end
+            if main.AssemblyAngularVelocity then
+                main.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+            end
+            
+            wait(0.15)
+            
+            dropItemAtPlayer(item)
+        end)
         
         if success then
             itemsBrought = itemsBrought + 1
@@ -231,7 +304,7 @@ local function bringAllItems()
     lastBringTime = currentTime
     
     if itemsBrought > 0 then
-        print("✅ Successfully brought " .. itemsBrought .. " items to your location!")
+        print("✅ Successfully brought " .. itemsBrought .. " items and dropped them at your position!")
         return true
     else
         print("❌ Failed to bring any items!")
@@ -248,32 +321,19 @@ function BringItems.bringAll()
 end
 
 function BringItems.setSelectedItem(itemName)
-    if itemName and type(itemName) == "string" and itemName ~= "" then
+    if itemName and type(itemName) == "string" and itemName ~= "" and itemName ~= "None" then
         selectedItem = itemName
-        forcedSelection = itemName
-        print("📦 FORCED SELECTION SET TO: " .. itemName)
-        print("📦 BOTH VARIABLES SET TO: " .. itemName)
+        print("📦 DROPDOWN SELECTION SET TO: " .. itemName)
         return true
     else
-        print("❌ Invalid item name provided: " .. tostring(itemName))
-        return false
-    end
-end
-
-function BringItems.forceSelectItem(itemName)
-    if itemName and type(itemName) == "string" and itemName ~= "" then
-        selectedItem = itemName
-        forcedSelection = itemName
-        print("🎯 FORCE SELECTED: " .. itemName)
-        return true
-    else
-        print("❌ Force selection failed: " .. tostring(itemName))
+        selectedItem = nil
+        print("🧹 Selection cleared or invalid: " .. tostring(itemName))
         return false
     end
 end
 
 function BringItems.getSelectedItem()
-    return forcedSelection or selectedItem
+    return selectedItem
 end
 
 function BringItems.getAvailableItems()
@@ -290,7 +350,7 @@ function BringItems.refreshItems()
 end
 
 function BringItems.getItemCount(itemName)
-    local targetItem = itemName or forcedSelection or selectedItem
+    local targetItem = itemName or selectedItem
     if not targetItem then
         return 0
     end
@@ -311,62 +371,29 @@ end
 
 function BringItems.clearSelection()
     selectedItem = nil
-    forcedSelection = nil
-    print("🧹 Both selections cleared")
+    print("🧹 Selection cleared")
 end
 
 function BringItems.getStatus()
-    local currentSelection = forcedSelection or selectedItem
     local count = 0
-    
-    if currentSelection then
-        count = BringItems.getItemCount(currentSelection)
+    if selectedItem then
+        count = BringItems.getItemCount(selectedItem)
     end
     
     return {
-        selectedItem = currentSelection or "None",
-        forcedSelection = forcedSelection,
-        regularSelection = selectedItem,
+        selectedItem = selectedItem or "None",
         availableItemTypes = #availableItems,
         selectedItemCount = count,
-        hasSelection = currentSelection ~= nil
+        hasSelection = selectedItem ~= nil
     }
 end
 
 function BringItems.debugSelection()
-    print("🐛 DETAILED DEBUG INFO:")
-    print("  Regular Selected Item: " .. tostring(selectedItem))
-    print("  Forced Selected Item: " .. tostring(forcedSelection))
-    print("  Active Selection: " .. tostring(forcedSelection or selectedItem))
+    print("🐛 DEBUG INFO:")
+    print("  Selected Item: " .. tostring(selectedItem))
     print("  Available Items: " .. table.concat(availableItems, ", "))
-    
-    local currentSelection = forcedSelection or selectedItem
-    if currentSelection then
-        print("  Count of Active Selection: " .. BringItems.getItemCount(currentSelection))
-        
-        local itemsFolder = workspace:FindFirstChild("Items")
-        if itemsFolder then
-            print("  Items in workspace with this name:")
-            for _, item in pairs(itemsFolder:GetChildren()) do
-                if item:IsA("Model") and item.Name == currentSelection and item:FindFirstChild("Main") then
-                    print("    - Found: " .. item.Name .. " at " .. tostring(item.Main.Position))
-                end
-            end
-        end
-    else
-        print("  No active selection found!")
-    end
-end
-
-function BringItems.listAllItems()
-    local itemsFolder = workspace:FindFirstChild("Items")
-    if itemsFolder then
-        print("📋 ALL ITEMS IN WORKSPACE:")
-        for i, item in pairs(itemsFolder:GetChildren()) do
-            if item:IsA("Model") and item:FindFirstChild("Main") then
-                print("  " .. i .. ". " .. item.Name)
-            end
-        end
+    if selectedItem then
+        print("  Count of Selected: " .. BringItems.getItemCount(selectedItem))
     end
 end
 
