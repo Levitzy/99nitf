@@ -46,11 +46,15 @@ local function findCharactersInRange()
     
     local charactersFolder = workspace:FindFirstChild("Characters")
     if not charactersFolder then
+        cachedTargets = {}
+        lastScanTime = currentTime
         return {}
     end
     
     local playerPos = getPlayerPosition()
     if not playerPos then
+        cachedTargets = {}
+        lastScanTime = currentTime
         return {}
     end
     
@@ -124,6 +128,9 @@ function KillAura.toggle()
     
     if enabled then
         print("Kill Aura: ON (Distance: " .. attackDistance .. ")")
+        if connection then
+            connection:Disconnect()
+        end
         connection = RunService.Heartbeat:Connect(function()
             wait(0.1)
             killAuraLoop()
