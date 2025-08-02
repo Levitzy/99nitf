@@ -13,6 +13,10 @@ local connection
 local farmLandmarks = true
 local farmFoliage = true
 local prioritizeClosest = true
+local scanCooldown = 0
+local lastScanTime = 0
+local cachedTrees = {}
+local cacheTimeout = 2
 
 local function getPlayerCharacter()
     return LocalPlayer.Character
@@ -29,33 +33,32 @@ end
 local function getPlayerInventoryTool()
     local inventory = LocalPlayer:FindFirstChild("Inventory")
     if inventory then
-        return inventory:FindFirstChild("Old Axe") or 
-               inventory:FindFirstChild("Axe") or
+        return inventory:FindFirstChild("Strong Axe") or
+               inventory:FindFirstChild("Gooad Axe") or
                inventory:FindFirstChild("Iron Axe") or
                inventory:FindFirstChild("Steel Axe") or
+               inventory:FindFirstChild("Old Axe") or 
+               inventory:FindFirstChild("Axe") or
                inventory:FindFirstChild("Stone Axe")
     end
     return nil
 end
 
 local function isValidTree(tree)
-    if not tree or not tree:IsA("Model") then
+    if not tree or not tree:IsA("Model") or not tree.Parent then
         return false
     end
     
-    local name = tree.Name:lower()
-    if name:find("tree") or name:find("oak") or name:find("pine") or name:find("birch") then
-        return tree:FindFirstChild("Trunk") or tree:FindFirstChild("PrimaryPart") or tree:FindFirstChild("Wood")
+    local name = tree.Name
+    if name:find("Tree") then
+        return tree:FindFirstChild("Trunk")
     end
     
     return false
 end
 
 local function getTreeTrunk(tree)
-    return tree:FindFirstChild("Trunk") or 
-           tree:FindFirstChild("PrimaryPart") or 
-           tree:FindFirstChild("Wood") or
-           tree:FindFirstChild("Base")
+    return tree:FindFirstChild("Trunk")
 end
 
 local function findTreesInFoliage()
@@ -65,24 +68,21 @@ local function findTreesInFoliage()
     end
     
     local treesInRange = {}
+    local foliageFolder = workspace.Map and workspace.Map:FindFirstChild("Foliage")
     
-    local foliageFolder = workspace:FindFirstChild("Map")
     if foliageFolder then
-        foliageFolder = foliageFolder:FindFirstChild("Foliage")
-        if foliageFolder then
-            for _, tree in pairs(foliageFolder:GetChildren()) do
-                if isValidTree(tree) then
-                    local trunk = getTreeTrunk(tree)
-                    if trunk then
-                        local distance = (trunk.Position - playerPos).Magnitude
-                        if distance <= treeDistance then
-                            table.insert(treesInRange, {
-                                tree = tree,
-                                trunk = trunk,
-                                distance = distance,
-                                source = "Foliage"
-                            })
-                        end
+        for _, tree in pairs(foliageFolder:GetChildren()) do
+            if isValidTree(tree) then
+                local trunk = getTreeTrunk(tree)
+                if trunk then
+                    local distance = (trunk.Position - playerPos).Magnitude
+                    if distance <= treeDistance then
+                        treesInRange[#treesInRange + 1] = {
+                            tree = tree,
+                            trunk = trunk,
+                            distance = distance,
+                            source = "Foliage"
+                        }
                     end
                 end
             end
@@ -99,26 +99,23 @@ local function findTreesInLandmarks()
     end
     
     local treesInRange = {}
+    local landmarksFolder = workspace.Map and workspace.Map:FindFirstChild("Landmarks")
     
-    local landmarksFolder = workspace:FindFirstChild("Map")
     if landmarksFolder then
-        landmarksFolder = landmarksFolder:FindFirstChild("Landmarks")
-        if landmarksFolder then
-            for _, landmark in pairs(landmarksFolder:GetChildren()) do
-                if landmark:IsA("Model") or landmark:IsA("Folder") then
-                    for _, tree in pairs(landmark:GetChildren()) do
-                        if isValidTree(tree) then
-                            local trunk = getTreeTrunk(tree)
-                            if trunk then
-                                local distance = (trunk.Position - playerPos).Magnitude
-                                if distance <= treeDistance then
-                                    table.insert(treesInRange, {
-                                        tree = tree,
-                                        trunk = trunk,
-                                        distance = distance,
-                                        source = "Landmarks"
-                                    })
-                                end
+        for _, landmark in pairs(landmarksFolder:GetChildren()) do
+            if landmark:IsA("Model") then
+                for _, tree in pairs(landmark:GetChildren()) do
+                    if isValidTree(tree) then
+                        local trunk = getTreeTrunk(tree)
+                        if trunk then
+                            local distance = (trunk.Position - playerPos).Magnitude
+                            if distance <= treeDistance then
+                                treesInRange[#treesInRange + 1] = {
+                                    tree = tree,
+                                    trunk = trunk,
+                                    distance = distance,
+                                    source = "Landmarks"
+                                }
                             end
                         end
                     end
@@ -131,27 +128,36 @@ local function findTreesInLandmarks()
 end
 
 local function findAllTreesInRange()
+    local currentTime = tick()
+    
+    if currentTime - lastScanTime < cacheTimeout and #cachedTrees > 0 then
+        return cachedTrees
+    end
+    
     local allTrees = {}
     
     if farmFoliage then
         local foliageTrees = findTreesInFoliage()
-        for _, treeData in pairs(foliageTrees) do
-            table.insert(allTrees, treeData)
+        for i = 1, #foliageTrees do
+            allTrees[#allTrees + 1] = foliageTrees[i]
         end
     end
     
     if farmLandmarks then
         local landmarkTrees = findTreesInLandmarks()
-        for _, treeData in pairs(landmarkTrees) do
-            table.insert(allTrees, treeData)
+        for i = 1, #landmarkTrees do
+            allTrees[#allTrees + 1] = landmarkTrees[i]
         end
     end
     
-    if prioritizeClosest then
+    if prioritizeClosest and #allTrees > 1 then
         table.sort(allTrees, function(a, b)
             return a.distance < b.distance
         end)
     end
+    
+    cachedTrees = allTrees
+    lastScanTime = currentTime
     
     return allTrees
 end
@@ -167,29 +173,15 @@ local function attackTree(treeData)
         return false
     end
     
-    local remoteEvent = ReplicatedStorage:FindFirstChild("RemoteEvents")
+    local remoteEvent = ReplicatedStorage.RemoteEvents and ReplicatedStorage.RemoteEvents:FindFirstChild("ToolDamageObject")
     if remoteEvent then
-        remoteEvent = remoteEvent:FindFirstChild("ToolDamageObject")
-        if remoteEvent then
-            local playerCharacter = getPlayerCharacter()
-            if playerCharacter and playerCharacter:FindFirstChild("HumanoidRootPart") then
-                local args = {
-                    tree,
-                    tool,
-                    "1_8592674679",
-                    playerCharacter.HumanoidRootPart.CFrame
-                }
-                
-                local success, result = pcall(function()
-                    remoteEvent:InvokeServer(unpack(args))
-                end)
-                
-                if success then
-                    print("Chopped tree from " .. treeData.source .. " (Distance: " .. math.floor(treeData.distance) .. ")")
-                end
-                
-                return success
-            end
+        local playerCharacter = getPlayerCharacter()
+        if playerCharacter and playerCharacter:FindFirstChild("HumanoidRootPart") then
+            local success = pcall(function()
+                remoteEvent:InvokeServer(tree, tool, "1_8592674679", playerCharacter.HumanoidRootPart.CFrame)
+            end)
+            
+            return success
         end
     end
     
@@ -203,13 +195,9 @@ local function treeAuraLoop()
     
     local treesInRange = findAllTreesInRange()
     
-    for _, treeData in pairs(treesInRange) do
-        if enabled then
-            attackTree(treeData)
-            wait(choppingDelay)
-        else
-            break
-        end
+    if #treesInRange > 0 then
+        local tree = treesInRange[1]
+        attackTree(tree)
     end
 end
 
@@ -217,16 +205,11 @@ function TreeAura.toggle()
     enabled = not enabled
     
     if enabled then
-        local foliageStatus = farmFoliage and "ON" or "OFF"
-        local landmarkStatus = farmLandmarks and "ON" or "OFF"
-        print("Tree Aura: ON")
-        print("  Distance: " .. treeDistance)
-        print("  Delay: " .. choppingDelay .. "s")
-        print("  Foliage farming: " .. foliageStatus)
-        print("  Landmarks farming: " .. landmarkStatus)
-        print("  Prioritize closest: " .. (prioritizeClosest and "ON" or "OFF"))
+        print("Tree Aura: ON (Distance: " .. treeDistance .. ", Delay: " .. choppingDelay .. "s)")
+        print("Foliage: " .. (farmFoliage and "ON" or "OFF") .. " | Landmarks: " .. (farmLandmarks and "ON" or "OFF"))
         
         connection = RunService.Heartbeat:Connect(function()
+            wait(choppingDelay)
             treeAuraLoop()
         end)
     else
@@ -235,6 +218,7 @@ function TreeAura.toggle()
             connection:Disconnect()
             connection = nil
         end
+        cachedTrees = {}
     end
     
     return enabled
@@ -246,6 +230,7 @@ function TreeAura.stop()
         connection:Disconnect()
         connection = nil
     end
+    cachedTrees = {}
     print("Tree Aura: STOPPED")
 end
 
