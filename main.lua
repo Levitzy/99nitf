@@ -43,11 +43,12 @@ local function loadModules()
         bringSelected = function() return false end,
         bringAll = function() return false end,
         setSelectedItem = function() end,
-        getSelectedItem = function() return "Log" end,
-        refreshItems = function() return {"Log", "Stone", "Stick"} end,
-        getAvailableItems = function() return {"Log", "Stone", "Stick"} end,
+        getSelectedItem = function() return nil end,
+        refreshItems = function() return {} end,
+        getAvailableItems = function() return {} end,
         getItemCount = function() return 0 end,
-        testDragSystem = function() return false end,
+        clearSelection = function() end,
+        debugSelection = function() end,
         isEnabled = function() return false end,
         toggle = function() return false end,
         stop = function() end
@@ -96,9 +97,9 @@ local function createRayfieldGUI()
     local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
     
     local Window = Rayfield:CreateWindow({
-        Name = "🎯 Aura Farm Pro v10.0",
+        Name = "🎯 Aura Farm Pro v11.0",
         LoadingTitle = "Aura Farm Pro",
-        LoadingSubtitle = "Fixed Selection + Drag System",
+        LoadingSubtitle = "Fixed Selection & CFrame System",
         ConfigurationSaving = {
             Enabled = true,
             FolderName = "AuraFarmPro",
@@ -266,86 +267,109 @@ local function createRayfieldGUI()
         Content = "Automatically attacks the closest target within range. Uses best available tool for maximum damage."
     })
     
-    BringTab:CreateSection("Item Selection & Status")
+    BringTab:CreateSection("Item Selection")
     
     local selectedItemDropdown
-    local itemStatusLabel
-    local currentSelection = "Log"
+    local selectionStatusLabel
+    local currentlySelected = nil
     
-    local function updateItemStatus()
+    local function updateSelectionStatus()
         pcall(function()
-            if BringItems and BringItems.getItemCount then
-                local count = BringItems.getItemCount(currentSelection)
-                local statusText = "Selected: " .. currentSelection .. " | Available: " .. count .. " items"
-                if itemStatusLabel then
-                    itemStatusLabel:Set({
-                        Title = "Current Status",
+            if BringItems then
+                local selected = BringItems.getSelectedItem()
+                local count = 0
+                
+                if selected then
+                    count = BringItems.getItemCount(selected)
+                    currentlySelected = selected
+                end
+                
+                local statusText = selected and ("Selected: " .. selected .. " | Found: " .. count .. " items") or "No item selected"
+                
+                if selectionStatusLabel then
+                    selectionStatusLabel:Set({
+                        Title = "Selection Status",
                         Content = statusText
                     })
                 end
+                
                 print("📊 " .. statusText)
             end
         end)
     end
     
-    local function safeRefreshItems()
+    local function refreshAndUpdate()
         pcall(function()
             if BringItems and BringItems.refreshItems then
                 local items = BringItems.refreshItems()
+                
                 if items and #items > 0 then
                     print("🔄 Available items: " .. table.concat(items, ", "))
                     
                     if selectedItemDropdown then
-                        local currentItem = BringItems.getSelectedItem() or "Log"
-                        selectedItemDropdown:Refresh(items, currentItem)
-                        currentSelection = currentItem
-                        updateItemStatus()
+                        selectedItemDropdown:Refresh(items, currentlySelected)
                     end
                     
+                    updateSelectionStatus()
                     return items
                 end
             end
         end)
     end
     
+    selectionStatusLabel = BringTab:CreateParagraph({
+        Title = "Selection Status",
+        Content = "No item selected"
+    })
+    
     selectedItemDropdown = BringTab:CreateDropdown({
         Name = "Select Item Type",
-        Options = {"Log", "Stone", "Stick"},
-        CurrentOption = "Log",
-        Flag = "SelectedItem",
+        Options = {"None"},
+        CurrentOption = "None",
+        Flag = "SelectedItemType",
         Callback = function(Option)
             pcall(function()
-                if Option and type(Option) == "string" and Option ~= "" then
-                    print("🔄 Dropdown selection: " .. Option)
-                    currentSelection = Option
+                if Option and type(Option) == "string" and Option ~= "" and Option ~= "None" then
+                    print("🎯 USER SELECTED: " .. Option)
                     
                     if BringItems and BringItems.setSelectedItem then
-                        BringItems.setSelectedItem(Option)
-                        print("✅ Item selection updated to: " .. Option)
+                        local success = BringItems.setSelectedItem(Option)
+                        if success then
+                            currentlySelected = Option
+                            print("✅ SELECTION CONFIRMED: " .. Option)
+                            
+                            wait(0.3)
+                            updateSelectionStatus()
+                            
+                            if BringItems.debugSelection then
+                                BringItems.debugSelection()
+                            end
+                        else
+                            print("❌ SELECTION FAILED")
+                        end
                     end
-                    
-                    wait(0.2)
-                    updateItemStatus()
                 else
-                    print("❌ Invalid selection: " .. tostring(Option))
+                    print("❌ Invalid or empty selection: " .. tostring(Option))
                 end
             end)
         end,
     })
     
-    itemStatusLabel = BringTab:CreateParagraph({
-        Title = "Current Status",
-        Content = "Selected: Log | Available: 0 items"
-    })
-    
     local RefreshButton = BringTab:CreateButton({
-        Name = "🔄 Refresh & Scan Items",
+        Name = "🔄 Scan Available Items",
         Callback = function()
-            local items = safeRefreshItems()
-            if items then
+            local items = refreshAndUpdate()
+            if items and #items > 0 then
                 Rayfield:Notify({
                     Title = "Items Scanned",
                     Content = "🔄 Found " .. #items .. " item types!",
+                    Duration = 2,
+                    Image = 4483345998
+                })
+            else
+                Rayfield:Notify({
+                    Title = "No Items",
+                    Content = "❌ No items found in world!",
                     Duration = 2,
                     Image = 4483345998
                 })
@@ -353,77 +377,83 @@ local function createRayfieldGUI()
         end,
     })
     
-    BringTab:CreateSection("Drag System Actions")
-    
-    local TestDragButton = BringTab:CreateButton({
-        Name = "🧪 Test Drag System",
+    local ClearSelectionButton = BringTab:CreateButton({
+        Name = "🧹 Clear Selection",
         Callback = function()
             pcall(function()
-                if BringItems and BringItems.testDragSystem then
-                    local success = BringItems.testDragSystem()
-                    if success then
-                        Rayfield:Notify({
-                            Title = "Drag Test",
-                            Content = "✅ Drag system working!",
-                            Duration = 2,
-                            Image = 4483345998
-                        })
-                    else
-                        Rayfield:Notify({
-                            Title = "Drag Test",
-                            Content = "❌ Drag system failed!",
-                            Duration = 2,
-                            Image = 4483345998
-                        })
-                    end
+                if BringItems and BringItems.clearSelection then
+                    BringItems.clearSelection()
+                    currentlySelected = nil
+                    updateSelectionStatus()
+                    
+                    Rayfield:Notify({
+                        Title = "Selection Cleared",
+                        Content = "🧹 No item selected",
+                        Duration = 2,
+                        Image = 4483345998
+                    })
                 end
             end)
         end,
     })
     
+    BringTab:CreateSection("Bring Actions")
+    
     local BringSelectedButton = BringTab:CreateButton({
-        Name = "📦 Drag Selected Items",
+        Name = "📦 Bring Selected Items",
         Callback = function()
             pcall(function()
-                if BringItems and BringItems.bringSelected then
-                    local selectedItem = currentSelection or "items"
-                    print("🎯 Bringing selected items: " .. selectedItem)
+                if BringItems then
+                    local selected = BringItems.getSelectedItem()
                     
+                    if not selected then
+                        Rayfield:Notify({
+                            Title = "No Selection",
+                            Content = "❌ Please select an item first!",
+                            Duration = 3,
+                            Image = 4483345998
+                        })
+                        return
+                    end
+                    
+                    print("🚀 BRINGING ITEMS: " .. selected)
                     local success = BringItems.bringSelected()
                     
                     if success then
                         Rayfield:Notify({
-                            Title = "Items Dragged",
-                            Content = "✅ Dragging " .. selectedItem .. " to you!",
+                            Title = "Items Brought",
+                            Content = "✅ Brought " .. selected .. " to your CFrame!",
                             Duration = 3,
                             Image = 4483345998
                         })
                     else
                         Rayfield:Notify({
                             Title = "No Items Found",
-                            Content = "❌ No " .. selectedItem .. " items found!",
+                            Content = "❌ No " .. selected .. " items found!",
                             Duration = 3,
                             Image = 4483345998
                         })
                     end
                     
                     wait(1)
-                    updateItemStatus()
+                    updateSelectionStatus()
                 end
             end)
         end,
     })
     
     local BringAllButton = BringTab:CreateButton({
-        Name = "🌟 Drag ALL Items",
+        Name = "🌟 Bring ALL Items",
         Callback = function()
             pcall(function()
                 if BringItems and BringItems.bringAll then
+                    print("🚀 BRINGING ALL ITEMS")
                     local success = BringItems.bringAll()
+                    
                     if success then
                         Rayfield:Notify({
-                            Title = "All Items Dragged",
-                            Content = "✅ Dragging ALL items to you!",
+                            Title = "All Items Brought",
+                            Content = "✅ Brought ALL items to your CFrame!",
                             Duration = 3,
                             Image = 4483345998
                         })
@@ -437,20 +467,39 @@ local function createRayfieldGUI()
                     end
                     
                     wait(1)
-                    updateItemStatus()
+                    updateSelectionStatus()
+                end
+            end)
+        end,
+    })
+    
+    local DebugButton = BringTab:CreateButton({
+        Name = "🐛 Debug Selection",
+        Callback = function()
+            pcall(function()
+                if BringItems and BringItems.debugSelection then
+                    BringItems.debugSelection()
+                    updateSelectionStatus()
+                    
+                    Rayfield:Notify({
+                        Title = "Debug Info",
+                        Content = "🐛 Check console for debug output",
+                        Duration = 2,
+                        Image = 4483345998
+                    })
                 end
             end)
         end,
     })
     
     BringTab:CreateParagraph({
-        Title = "Fixed Drag System",
-        Content = "Now uses RequestStartDraggingItem remote event as requested. Items will be dragged to your character instead of teleported."
+        Title = "Fixed CFrame Bring System",
+        Content = "Items now teleport to your character's CFrame position with proper circular arrangement. No more drag system - direct teleportation!"
     })
     
     BringTab:CreateParagraph({
         Title = "How to Use",
-        Content = "1. Click 'Refresh & Scan Items' to find available items\n2. Select item type from dropdown (selection is now fixed!)\n3. Use 'Test Drag System' to verify it works\n4. Click 'Drag Selected Items' to bring them to you"
+        Content = "1. Click 'Scan Available Items' to find items\n2. Select item type from dropdown\n3. Check selection status is correct\n4. Click 'Bring Selected Items' to collect them\n5. Use debug button if having issues"
     })
     
     SettingsTab:CreateSection("General Controls")
@@ -473,6 +522,12 @@ local function createRayfieldGUI()
                 end
                 if KillAura and KillAura.setDistance then
                     KillAura.setDistance(80)
+                end
+                
+                if BringItems and BringItems.clearSelection then
+                    BringItems.clearSelection()
+                    currentlySelected = nil
+                    updateSelectionStatus()
                 end
                 
                 Rayfield:Notify({
@@ -527,27 +582,26 @@ local function createRayfieldGUI()
     SettingsTab:CreateSection("Script Information")
     
     SettingsTab:CreateParagraph({
-        Title = "Aura Farm Pro v10.0 - Fixed Selection + Drag",
-        Content = "Fixed item selection bug! Now uses proper drag system with RequestStartDraggingItem remote event as requested."
+        Title = "Aura Farm Pro v11.0 - Selection & CFrame Fixed",
+        Content = "Removed default Log selection, fixed dropdown selection bug, and implemented proper CFrame-based item bringing!"
     })
     
     SettingsTab:CreateParagraph({
-        Title = "Major Fixes & Features",
-        Content = "• Fixed item selection dropdown bug\n• Implemented RequestStartDraggingItem system\n• Added real-time item status display\n• Added drag system test button\n• Better selection tracking\n• Enhanced error handling\n• Improved user feedback"
+        Title = "Major Fixes & Improvements",
+        Content = "• Removed default 'Log' selection\n• Fixed selection not updating properly\n• CFrame-based teleportation system\n• Real-time selection status display\n• Debug tools for troubleshooting\n• Clear selection option\n• Better error handling and feedback"
     })
     
     wait(1)
-    safeRefreshItems()
-    updateItemStatus()
+    refreshAndUpdate()
     
     Rayfield:Notify({
-        Title = "Aura Farm Pro v10.0",
-        Content = "✨ Selection fixed + Drag system ready!",
+        Title = "Aura Farm Pro v11.0",
+        Content = "✨ Selection fixed + CFrame system ready!",
         Duration = 5,
         Image = 4483345998
     })
     
-    print("✨ Fixed selection and drag system loaded!")
+    print("✨ Fixed selection and CFrame system loaded!")
     
     return {
         Rayfield = Rayfield,
@@ -558,19 +612,21 @@ local function createRayfieldGUI()
 end
 
 local function main()
-    print("🚀 Starting Aura Farm Pro v10.0 - Fixed Selection + Drag System...")
+    print("🚀 Starting Aura Farm Pro v11.0 - Fixed Selection + CFrame System...")
     
     loadModules()
     
     local success, result = pcall(function()
         local gui = createRayfieldGUI()
         
-        print("✨ Aura Farm Pro v10.0 loaded successfully!")
+        print("✨ Aura Farm Pro v11.0 loaded successfully!")
         print("🌳 Tree Farm: " .. (TreeAura and "✅ LOADED" or "❌ FALLBACK"))
         print("⚔️ Kill Aura: " .. (KillAura and "✅ LOADED" or "❌ FALLBACK"))
         print("📦 Bring Items: " .. (BringItems and "✅ LOADED" or "❌ FALLBACK"))
-        print("🔧 Selection Bug: ✅ FIXED")
-        print("🎯 Drag System: ✅ IMPLEMENTED")
+        print("🔧 Default Log Selection: ❌ REMOVED")
+        print("🎯 Selection Bug: ✅ FIXED")
+        print("📍 CFrame System: ✅ IMPLEMENTED")
+        print("🚫 Drag System: ❌ REMOVED")
         
         return gui
     end)
