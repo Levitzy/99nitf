@@ -40,15 +40,17 @@ local function loadModules()
     }
     
     BringItems = {
-        toggle = function() return false end,
-        stop = function() end,
+        bringSelected = function() return false end,
+        bringAll = function() return false end,
         setSelectedItem = function() end,
         getSelectedItem = function() return "Log" end,
-        setDelay = function() end,
-        getDelay = function() return 0.3 end,
-        isEnabled = function() return false end,
         refreshItems = function() return {"Log", "Stone", "Stick"} end,
-        getAvailableItems = function() return {"Log", "Stone", "Stick"} end
+        getAvailableItems = function() return {"Log", "Stone", "Stick"} end,
+        getItemCount = function() return 0 end,
+        getAllItemCounts = function() return {} end,
+        isEnabled = function() return false end,
+        toggle = function() return false end,
+        stop = function() end
     }
     
     local success1, treeModule = pcall(function()
@@ -258,16 +260,13 @@ local function createRayfieldGUI()
         if BringItems and BringItems.refreshItems then
             local items = BringItems.refreshItems()
             if selectedItemDropdown and #items > 0 then
-                selectedItemDropdown:Refresh(items, items[1])
-                if BringItems.setSelectedItem then
-                    BringItems.setSelectedItem(items[1])
-                end
+                selectedItemDropdown:Refresh(items, BringItems.getSelectedItem())
             end
         end
     end
     
     selectedItemDropdown = BringTab:CreateDropdown({
-        Name = "Select Item to Bring",
+        Name = "Select Item Type",
         Options = {"Log", "Stone", "Stick"},
         CurrentOption = "Log",
         Flag = "SelectedItem",
@@ -291,26 +290,36 @@ local function createRayfieldGUI()
         end,
     })
     
-    local BringToggle = BringTab:CreateToggle({
-        Name = "Auto Bring Items",
-        CurrentValue = false,
-        Flag = "BringItemsToggle",
-        Callback = function(Value)
-            if BringItems then
-                if Value then
-                    BringItems.toggle()
-                    local selectedItem = BringItems.getSelectedItem and BringItems.getSelectedItem() or "items"
-                    Rayfield:Notify({
-                        Title = "Bring Items",
-                        Content = "🟢 Auto Bring Enabled for " .. selectedItem,
-                        Duration = 3,
-                        Image = 4483345998
-                    })
+    BringTab:CreateSection("Bring Actions")
+    
+    local BringSelectedButton = BringTab:CreateButton({
+        Name = "📦 Bring Selected Items",
+        Callback = function()
+            if BringItems and BringItems.bringSelected then
+                local selectedItem = BringItems.getSelectedItem and BringItems.getSelectedItem() or "items"
+                local count = BringItems.getItemCount and BringItems.getItemCount() or 0
+                
+                if count > 0 then
+                    local success = BringItems.bringSelected()
+                    if success then
+                        Rayfield:Notify({
+                            Title = "Items Brought",
+                            Content = "✅ Brought all " .. selectedItem .. " items to you!",
+                            Duration = 3,
+                            Image = 4483345998
+                        })
+                    else
+                        Rayfield:Notify({
+                            Title = "Bring Failed",
+                            Content = "❌ Failed to bring " .. selectedItem .. " items!",
+                            Duration = 3,
+                            Image = 4483345998
+                        })
+                    end
                 else
-                    BringItems.stop()
                     Rayfield:Notify({
-                        Title = "Bring Items",
-                        Content = "🔴 Auto Bring Disabled!",
+                        Title = "No Items Found",
+                        Content = "❌ No " .. selectedItem .. " items found in world!",
                         Duration = 3,
                         Image = 4483345998
                     })
@@ -319,23 +328,65 @@ local function createRayfieldGUI()
         end,
     })
     
-    local BringDelaySlider = BringTab:CreateSlider({
-        Name = "Bring Delay",
-        Range = {0.1, 3},
-        Increment = 0.1,
-        Suffix = "seconds",
-        CurrentValue = 0.3,
-        Flag = "BringDelay",
-        Callback = function(Value)
-            if BringItems and BringItems.setDelay then
-                BringItems.setDelay(Value)
+    local BringAllButton = BringTab:CreateButton({
+        Name = "🌟 Bring ALL Items",
+        Callback = function()
+            if BringItems and BringItems.bringAll then
+                local success = BringItems.bringAll()
+                if success then
+                    Rayfield:Notify({
+                        Title = "All Items Brought",
+                        Content = "✅ Brought ALL items from world to you!",
+                        Duration = 3,
+                        Image = 4483345998
+                    })
+                else
+                    Rayfield:Notify({
+                        Title = "Bring Failed",
+                        Content = "❌ Failed to bring items!",
+                        Duration = 3,
+                        Image = 4483345998
+                    })
+                end
+            end
+        end,
+    })
+    
+    local ItemCountLabel = BringTab:CreateLabel("Selected Item Count: 0")
+    
+    local UpdateCountButton = BringTab:CreateButton({
+        Name = "📊 Update Item Counts",
+        Callback = function()
+            if BringItems then
+                local selectedItem = BringItems.getSelectedItem and BringItems.getSelectedItem() or "Unknown"
+                local count = BringItems.getItemCount and BringItems.getItemCount() or 0
+                local allCounts = BringItems.getAllItemCounts and BringItems.getAllItemCounts() or {}
+                
+                ItemCountLabel:Set("Selected Item Count: " .. count .. " " .. selectedItem .. "(s)")
+                
+                local totalItems = 0
+                for _, itemCount in pairs(allCounts) do
+                    totalItems = totalItems + itemCount
+                end
+                
+                Rayfield:Notify({
+                    Title = "Item Counts Updated",
+                    Content = "📊 " .. selectedItem .. ": " .. count .. " | Total: " .. totalItems,
+                    Duration = 3,
+                    Image = 4483345998
+                })
             end
         end,
     })
     
     BringTab:CreateParagraph({
-        Title = "Item Collection",
-        Content = "Brings ALL selected items from the workspace directly to you. No distance limit - collects everything instantly!"
+        Title = "Enhanced Item Collection",
+        Content = "Button-based system for bringing items. Select item type and click 'Bring Selected' for specific items, or 'Bring ALL' for everything in the world. Items appear around you with proper spacing."
+    })
+    
+    BringTab:CreateParagraph({
+        Title = "How to Use",
+        Content = "1. Click 'Refresh Item List' to scan available items\n2. Select item type from dropdown\n3. Click 'Bring Selected Items' to get all of that type\n4. Or click 'Bring ALL Items' to get everything!"
     })
     
     SettingsTab:CreateSection("General Controls")
@@ -348,7 +399,6 @@ local function createRayfieldGUI()
             MaxTreesSlider:Set(3)
             AutoCollectToggle:Set(true)
             KillSlider:Set(80)
-            BringDelaySlider:Set(0.3)
             
             if TreeAura then
                 if TreeAura.setDistance then TreeAura.setDistance(86) end
@@ -358,9 +408,6 @@ local function createRayfieldGUI()
             end
             if KillAura and KillAura.setDistance then
                 KillAura.setDistance(80)
-            end
-            if BringItems and BringItems.setDelay then
-                BringItems.setDelay(0.3)
             end
             
             Rayfield:Notify({
@@ -383,13 +430,9 @@ local function createRayfieldGUI()
                 KillAura.stop()
                 KillToggle:Set(false)
             end
-            if BringItems and BringItems.stop then
-                BringItems.stop()
-                BringToggle:Set(false)
-            end
             Rayfield:Notify({
                 Title = "Emergency Stop",
-                Content = "🛑 All functions stopped!",
+                Content = "🛑 All auras stopped!",
                 Duration = 3,
                 Image = 4483345998
             })
@@ -401,7 +444,6 @@ local function createRayfieldGUI()
         Callback = function()
             if TreeAura and TreeAura.stop then TreeAura.stop() end
             if KillAura and KillAura.stop then KillAura.stop() end
-            if BringItems and BringItems.stop then BringItems.stop() end
             Rayfield:Destroy()
             print("🗑️ GUI destroyed!")
         end,
@@ -416,7 +458,7 @@ local function createRayfieldGUI()
     
     SettingsTab:CreateParagraph({
         Title = "Features",
-        Content = "• Auto Tree Farming (Foliage + Landmarks)\n• Kill Aura with Tool Priority\n• Bring All Items (No Distance Limit)\n• Auto Log Collection\n• Chainsaw Support\n• Enhanced Performance"
+        Content = "• Auto Tree Farming (Foliage + Landmarks)\n• Kill Aura with Tool Priority\n• Button-Based Item Collection\n• Auto Log Collection\n• Chainsaw Support\n• Enhanced Performance\n• Real-time Item Counting"
     })
     
     wait(1)
@@ -435,8 +477,7 @@ local function createRayfieldGUI()
         Rayfield = Rayfield,
         Window = Window,
         TreeToggle = TreeToggle,
-        KillToggle = KillToggle,
-        BringToggle = BringToggle
+        KillToggle = KillToggle
     }
 end
 
