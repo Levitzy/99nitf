@@ -43,14 +43,12 @@ local function loadModules()
         bringSelected = function() return false end,
         bringAll = function() return false end,
         setSelectedItem = function() end,
-        forceSelectItem = function() end,
         getSelectedItem = function() return nil end,
         refreshItems = function() return {} end,
         getAvailableItems = function() return {} end,
         getItemCount = function() return 0 end,
         clearSelection = function() end,
         debugSelection = function() end,
-        listAllItems = function() end,
         isEnabled = function() return false end,
         toggle = function() return false end,
         stop = function() end
@@ -99,9 +97,9 @@ local function createRayfieldGUI()
     local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
     
     local Window = Rayfield:CreateWindow({
-        Name = "🎯 Aura Farm Pro v12.0",
+        Name = "🎯 Aura Farm Pro v13.0",
         LoadingTitle = "Aura Farm Pro",
-        LoadingSubtitle = "Force Selection Fix Method",
+        LoadingSubtitle = "Dropdown Only + Drop at Player",
         ConfigurationSaving = {
             Enabled = true,
             FolderName = "AuraFarmPro",
@@ -269,11 +267,11 @@ local function createRayfieldGUI()
         Content = "Automatically attacks the closest target within range. Uses best available tool for maximum damage."
     })
     
-    BringTab:CreateSection("Force Selection System")
+    BringTab:CreateSection("Item Selection")
     
     local selectedItemDropdown
     local selectionStatusLabel
-    local manualSelectionInput
+    local currentSelection = nil
     
     local function updateSelectionDisplay()
         pcall(function()
@@ -283,6 +281,7 @@ local function createRayfieldGUI()
                 
                 if selected then
                     count = BringItems.getItemCount(selected)
+                    currentSelection = selected
                 end
                 
                 local statusText = selected and ("✅ Selected: " .. selected .. " | Available: " .. count .. " items") or "❌ No item selected"
@@ -308,7 +307,7 @@ local function createRayfieldGUI()
                     print("🔄 Available items: " .. table.concat(items, ", "))
                     
                     if selectedItemDropdown then
-                        selectedItemDropdown:Refresh(items, "Select Item")
+                        selectedItemDropdown:Refresh(items)
                     end
                     
                     updateSelectionDisplay()
@@ -324,20 +323,24 @@ local function createRayfieldGUI()
     })
     
     selectedItemDropdown = BringTab:CreateDropdown({
-        Name = "Auto Select Item",
+        Name = "Select Item Type",
         Options = {"None"},
         CurrentOption = "None",
-        Flag = "AutoSelectedItem",
+        Flag = "MainItemDropdown",
         Callback = function(Option)
             pcall(function()
-                if Option and type(Option) == "string" and Option ~= "" and Option ~= "None" and Option ~= "Select Item" then
-                    print("🎯 DROPDOWN SELECTED: " .. Option)
+                print("🎯 DROPDOWN CALLBACK TRIGGERED: " .. tostring(Option))
+                
+                if Option and type(Option) == "string" and Option ~= "" and Option ~= "None" then
+                    print("🎯 VALID OPTION SELECTED: " .. Option)
                     
-                    if BringItems and BringItems.forceSelectItem then
-                        local success = BringItems.forceSelectItem(Option)
+                    if BringItems and BringItems.setSelectedItem then
+                        local success = BringItems.setSelectedItem(Option)
                         if success then
-                            print("✅ FORCE SELECTION SUCCESS: " .. Option)
-                            wait(0.5)
+                            currentSelection = Option
+                            print("✅ SELECTION SUCCESS: " .. Option)
+                            
+                            wait(0.3)
                             updateSelectionDisplay()
                             
                             Rayfield:Notify({
@@ -347,40 +350,15 @@ local function createRayfieldGUI()
                                 Image = 4483345998
                             })
                         else
-                            print("❌ FORCE SELECTION FAILED")
+                            print("❌ SELECTION FAILED for: " .. Option)
                         end
                     end
-                end
-            end)
-        end,
-    })
-    
-    manualSelectionInput = BringTab:CreateInput({
-        Name = "Manual Item Selection",
-        PlaceholderText = "Type exact item name here...",
-        RemoveTextAfterFocusLost = false,
-        Flag = "ManualItemInput",
-        Callback = function(Text)
-            pcall(function()
-                if Text and type(Text) == "string" and Text ~= "" then
-                    print("🖊️ MANUAL INPUT: " .. Text)
-                    
-                    if BringItems and BringItems.forceSelectItem then
-                        local success = BringItems.forceSelectItem(Text)
-                        if success then
-                            print("✅ MANUAL SELECTION SUCCESS: " .. Text)
-                            wait(0.5)
-                            updateSelectionDisplay()
-                            
-                            Rayfield:Notify({
-                                Title = "Manual Selection",
-                                Content = "✅ Force selected: " .. Text,
-                                Duration = 2,
-                                Image = 4483345998
-                            })
-                        else
-                            print("❌ MANUAL SELECTION FAILED")
-                        end
+                else
+                    print("❌ Invalid dropdown option: " .. tostring(Option))
+                    if BringItems and BringItems.clearSelection then
+                        BringItems.clearSelection()
+                        currentSelection = nil
+                        updateSelectionDisplay()
                     end
                 end
             end)
@@ -409,16 +387,18 @@ local function createRayfieldGUI()
         end,
     })
     
-    local ListAllButton = BringTab:CreateButton({
-        Name = "📋 List All Items",
+    local ClearSelectionButton = BringTab:CreateButton({
+        Name = "🧹 Clear Selection",
         Callback = function()
             pcall(function()
-                if BringItems and BringItems.listAllItems then
-                    BringItems.listAllItems()
+                if BringItems and BringItems.clearSelection then
+                    BringItems.clearSelection()
+                    currentSelection = nil
+                    updateSelectionDisplay()
                     
                     Rayfield:Notify({
-                        Title = "Items Listed",
-                        Content = "📋 Check console for all items",
+                        Title = "Selection Cleared",
+                        Content = "🧹 No item selected",
                         Duration = 2,
                         Image = 4483345998
                     })
@@ -451,8 +431,8 @@ local function createRayfieldGUI()
                     
                     if success then
                         Rayfield:Notify({
-                            Title = "Items Brought",
-                            Content = "✅ Brought " .. selected .. " to you!",
+                            Title = "Items Brought & Dropped",
+                            Content = "✅ Brought " .. selected .. " and dropped at your position!",
                             Duration = 3,
                             Image = 4483345998
                         })
@@ -482,8 +462,8 @@ local function createRayfieldGUI()
                     
                     if success then
                         Rayfield:Notify({
-                            Title = "All Items Brought",
-                            Content = "✅ Brought ALL items to you!",
+                            Title = "All Items Brought & Dropped",
+                            Content = "✅ Brought ALL items and dropped at your position!",
                             Duration = 3,
                             Image = 4483345998
                         })
@@ -503,8 +483,6 @@ local function createRayfieldGUI()
         end,
     })
     
-    BringTab:CreateSection("Debug Tools")
-    
     local DebugButton = BringTab:CreateButton({
         Name = "🐛 Debug Selection",
         Callback = function()
@@ -515,26 +493,7 @@ local function createRayfieldGUI()
                     
                     Rayfield:Notify({
                         Title = "Debug Info",
-                        Content = "🐛 Check console for detailed debug output",
-                        Duration = 2,
-                        Image = 4483345998
-                    })
-                end
-            end)
-        end,
-    })
-    
-    local ClearSelectionButton = BringTab:CreateButton({
-        Name = "🧹 Clear Selection",
-        Callback = function()
-            pcall(function()
-                if BringItems and BringItems.clearSelection then
-                    BringItems.clearSelection()
-                    updateSelectionDisplay()
-                    
-                    Rayfield:Notify({
-                        Title = "Selection Cleared",
-                        Content = "🧹 All selections cleared",
+                        Content = "🐛 Check console for debug output",
                         Duration = 2,
                         Image = 4483345998
                     })
@@ -544,13 +503,13 @@ local function createRayfieldGUI()
     })
     
     BringTab:CreateParagraph({
-        Title = "Force Selection Fix Method",
-        Content = "This version uses FORCE selection with dual variables and manual input as backup. If dropdown doesn't work, use manual text input!"
+        Title = "Dropdown Only + Drop System",
+        Content = "Simplified to use only dropdown selection. Items are brought to your CFrame, then dropped at your Humanoid position for easy collection!"
     })
     
     BringTab:CreateParagraph({
-        Title = "How to Use",
-        Content = "1. Click 'Scan Available Items' to refresh\n2. Use dropdown to auto-select OR type exact name in manual input\n3. Check status shows your selection\n4. Click 'Bring Selected Items' when ready\n5. Use debug tools if having issues"
+        Title = "How It Works",
+        Content = "1. Scan available items to refresh dropdown\n2. Select item type from dropdown\n3. Items teleport above you then drop to your position\n4. Items arrange in circles around your character\n5. Multiple item support with proper spacing"
     })
     
     SettingsTab:CreateSection("General Controls")
@@ -577,6 +536,7 @@ local function createRayfieldGUI()
                 
                 if BringItems and BringItems.clearSelection then
                     BringItems.clearSelection()
+                    currentSelection = nil
                     updateSelectionDisplay()
                 end
                 
@@ -632,13 +592,13 @@ local function createRayfieldGUI()
     SettingsTab:CreateSection("Script Information")
     
     SettingsTab:CreateParagraph({
-        Title = "Aura Farm Pro v12.0 - Force Selection Fix",
-        Content = "Implemented force selection method with dual variables and manual input backup to fix the dropdown selection bug completely!"
+        Title = "Aura Farm Pro v13.0 - Dropdown Only + Drop",
+        Content = "Simplified to use only dropdown selection with enhanced drop system. Items bring to your CFrame then drop at your Humanoid position!"
     })
     
     SettingsTab:CreateParagraph({
-        Title = "New Force Selection Features",
-        Content = "• Dual selection variables (forced + regular)\n• Manual text input as backup method\n• Force selection override function\n• Enhanced debug tools with detailed output\n• List all items function\n• Real-time selection status display\n• Multiple selection methods for reliability"
+        Title = "New Drop System Features",
+        Content = "• Dropdown only selection (no manual input)\n• Items teleport to your CFrame first\n• Then drop at your Humanoid position\n• Circular arrangement around player\n• Multiple item support with spacing\n• Enhanced positioning and physics\n• Better item collision handling"
     })
     
     wait(1)
@@ -646,13 +606,13 @@ local function createRayfieldGUI()
     updateSelectionDisplay()
     
     Rayfield:Notify({
-        Title = "Aura Farm Pro v12.0",
-        Content = "✨ Force selection method loaded!",
+        Title = "Aura Farm Pro v13.0",
+        Content = "✨ Dropdown only + drop system ready!",
         Duration = 5,
         Image = 4483345998
     })
     
-    print("✨ Force selection system loaded!")
+    print("✨ Dropdown selection and drop system loaded!")
     
     return {
         Rayfield = Rayfield,
@@ -663,20 +623,20 @@ local function createRayfieldGUI()
 end
 
 local function main()
-    print("🚀 Starting Aura Farm Pro v12.0 - Force Selection Fix Method...")
+    print("🚀 Starting Aura Farm Pro v13.0 - Dropdown Only + Drop System...")
     
     loadModules()
     
     local success, result = pcall(function()
         local gui = createRayfieldGUI()
         
-        print("✨ Aura Farm Pro v12.0 loaded successfully!")
+        print("✨ Aura Farm Pro v13.0 loaded successfully!")
         print("🌳 Tree Farm: " .. (TreeAura and "✅ LOADED" or "❌ FALLBACK"))
         print("⚔️ Kill Aura: " .. (KillAura and "✅ LOADED" or "❌ FALLBACK"))
         print("📦 Bring Items: " .. (BringItems and "✅ LOADED" or "❌ FALLBACK"))
-        print("🎯 Force Selection: ✅ IMPLEMENTED")
-        print("🖊️ Manual Input: ✅ BACKUP METHOD")
-        print("🐛 Enhanced Debug: ✅ DETAILED TOOLS")
+        print("📋 Selection Method: ✅ DROPDOWN ONLY")
+        print("📍 Drop System: ✅ CFrame → HUMANOID POSITION")
+        print("🎯 Multiple Item Support: ✅ CIRCULAR ARRANGEMENT")
         
         return gui
     end)
