@@ -9,7 +9,9 @@ local BringItems = {}
 local selectedItem = "Log"
 local availableItems = {}
 local lastBringTime = 0
-local bringCooldown = 0.5
+local bringCooldown = 0.3
+local autoStore = false
+local autoStoreConnection
 
 local function getPlayerCharacter()
     return LocalPlayer.Character
@@ -19,6 +21,17 @@ local function getPlayerPosition()
     local character = getPlayerCharacter()
     if character and character:FindFirstChild("HumanoidRootPart") then
         return character.HumanoidRootPart.Position
+    end
+    return nil
+end
+
+local function getPlayerBag()
+    local inventory = LocalPlayer:FindFirstChild("Inventory")
+    if inventory then
+        return inventory:FindFirstChild("Old Sack") or 
+               inventory:FindFirstChild("Sack") or
+               inventory:FindFirstChild("Bag") or
+               inventory:FindFirstChild("Storage")
     end
     return nil
 end
@@ -47,11 +60,50 @@ local function scanAvailableItems()
     return items
 end
 
+local function autoStoreItems()
+    if not autoStore then
+        return
+    end
+    
+    local bag = getPlayerBag()
+    if not bag then
+        return
+    end
+    
+    local itemsFolder = workspace:FindFirstChild("Items")
+    if not itemsFolder then
+        return
+    end
+    
+    local playerPos = getPlayerPosition()
+    if not playerPos then
+        return
+    end
+    
+    for _, item in pairs(itemsFolder:GetChildren()) do
+        if item:IsA("Model") and item:FindFirstChild("Main") then
+            local distance = (item.Main.Position - playerPos).Magnitude
+            if distance <= 10 then
+                local remoteEvent = ReplicatedStorage:FindFirstChild("RemoteEvents")
+                if remoteEvent then
+                    remoteEvent = remoteEvent:FindFirstChild("RequestBagStoreItem")
+                    if remoteEvent then
+                        pcall(function()
+                            local args = {bag, item}
+                            remoteEvent:InvokeServer(unpack(args))
+                        end)
+                        wait(0.1)
+                    end
+                end
+            end
+        end
+    end
+end
+
 local function bringSelectedItems()
     local currentTime = tick()
     
     if currentTime - lastBringTime < bringCooldown then
-        print("Please wait " .. math.ceil(bringCooldown - (currentTime - lastBringTime)) .. " seconds before bringing items again")
         return false
     end
     
@@ -70,31 +122,15 @@ local function bringSelectedItems()
     end
     
     local itemsBrought = 0
-    local totalItems = 0
-    
-    for _, item in pairs(itemsFolder:GetChildren()) do
-        if item:IsA("Model") and item.Name == selectedItem then
-            totalItems = totalItems + 1
-        end
-    end
-    
-    if totalItems == 0 then
-        print("❌ No " .. selectedItem .. " items found in workspace!")
-        return false
-    end
-    
-    print("🔍 Found " .. totalItems .. " " .. selectedItem .. "(s), bringing them to you...")
     
     for _, item in pairs(itemsFolder:GetChildren()) do
         if item:IsA("Model") and item.Name == selectedItem and item:FindFirstChild("Main") then
             local success = pcall(function()
-                local offsetX = math.random(-5, 5)
-                local offsetZ = math.random(-5, 5)
-                local newPosition = playerPosition + Vector3.new(offsetX, 3, offsetZ)
+                local offsetX = math.random(-4, 4)
+                local offsetZ = math.random(-4, 4)
+                local newPosition = playerPosition + Vector3.new(offsetX, 1, offsetZ)
                 
-                item.Main.CFrame = CFrame.new(newPosition)
-                item.Main.Velocity = Vector3.new(0, 0, 0)
-                item.Main.AngularVelocity = Vector3.new(0, 0, 0)
+                item:SetPrimaryPartCFrame(CFrame.new(newPosition))
                 
                 if item.Main:FindFirstChild("BodyVelocity") then
                     item.Main.BodyVelocity:Destroy()
@@ -102,23 +138,31 @@ local function bringSelectedItems()
                 if item.Main:FindFirstChild("BodyAngularVelocity") then
                     item.Main.BodyAngularVelocity:Destroy()
                 end
+                if item.Main:FindFirstChild("BodyPosition") then
+                    item.Main.BodyPosition:Destroy()
+                end
+                
+                item.Main.Velocity = Vector3.new(0, 0, 0)
+                item.Main.AngularVelocity = Vector3.new(0, 0, 0)
+                item.Main.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                item.Main.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
             end)
             
             if success then
                 itemsBrought = itemsBrought + 1
             end
             
-            wait(0.05)
+            wait(0.02)
         end
     end
     
     lastBringTime = currentTime
     
     if itemsBrought > 0 then
-        print("✅ Successfully brought " .. itemsBrought .. "/" .. totalItems .. " " .. selectedItem .. "(s) to your location!")
+        print("✅ Brought " .. itemsBrought .. " " .. selectedItem .. "(s)")
         return true
     else
-        print("❌ Failed to bring any items!")
+        print("❌ No " .. selectedItem .. " items found!")
         return false
     end
 end
@@ -127,7 +171,6 @@ local function bringAllDifferentItems()
     local currentTime = tick()
     
     if currentTime - lastBringTime < bringCooldown then
-        print("Please wait " .. math.ceil(bringCooldown - (currentTime - lastBringTime)) .. " seconds before bringing items again")
         return false
     end
     
@@ -145,37 +188,16 @@ local function bringAllDifferentItems()
         return false
     end
     
-    local itemTypes = {}
     local itemsBrought = 0
-    local totalItems = 0
-    
-    for _, item in pairs(itemsFolder:GetChildren()) do
-        if item:IsA("Model") and item:FindFirstChild("Main") and item.Name ~= "Camera" then
-            if not itemTypes[item.Name] then
-                itemTypes[item.Name] = 0
-            end
-            itemTypes[item.Name] = itemTypes[item.Name] + 1
-            totalItems = totalItems + 1
-        end
-    end
-    
-    if totalItems == 0 then
-        print("❌ No items found in workspace!")
-        return false
-    end
-    
-    print("🔍 Found " .. totalItems .. " items of different types, bringing them all...")
     
     for _, item in pairs(itemsFolder:GetChildren()) do
         if item:IsA("Model") and item:FindFirstChild("Main") and item.Name ~= "Camera" then
             local success = pcall(function()
-                local offsetX = math.random(-8, 8)
-                local offsetZ = math.random(-8, 8)
-                local newPosition = playerPosition + Vector3.new(offsetX, 3, offsetZ)
+                local offsetX = math.random(-6, 6)
+                local offsetZ = math.random(-6, 6)
+                local newPosition = playerPosition + Vector3.new(offsetX, 1, offsetZ)
                 
-                item.Main.CFrame = CFrame.new(newPosition)
-                item.Main.Velocity = Vector3.new(0, 0, 0)
-                item.Main.AngularVelocity = Vector3.new(0, 0, 0)
+                item:SetPrimaryPartCFrame(CFrame.new(newPosition))
                 
                 if item.Main:FindFirstChild("BodyVelocity") then
                     item.Main.BodyVelocity:Destroy()
@@ -183,23 +205,31 @@ local function bringAllDifferentItems()
                 if item.Main:FindFirstChild("BodyAngularVelocity") then
                     item.Main.BodyAngularVelocity:Destroy()
                 end
+                if item.Main:FindFirstChild("BodyPosition") then
+                    item.Main.BodyPosition:Destroy()
+                end
+                
+                item.Main.Velocity = Vector3.new(0, 0, 0)
+                item.Main.AngularVelocity = Vector3.new(0, 0, 0)
+                item.Main.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                item.Main.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
             end)
             
             if success then
                 itemsBrought = itemsBrought + 1
             end
             
-            wait(0.03)
+            wait(0.01)
         end
     end
     
     lastBringTime = currentTime
     
     if itemsBrought > 0 then
-        print("✅ Successfully brought " .. itemsBrought .. "/" .. totalItems .. " items to your location!")
+        print("✅ Brought " .. itemsBrought .. " items")
         return true
     else
-        print("❌ Failed to bring any items!")
+        print("❌ No items found!")
         return false
     end
 end
@@ -214,7 +244,7 @@ end
 
 function BringItems.setSelectedItem(itemName)
     selectedItem = itemName
-    print("📦 Selected item set to: " .. itemName)
+    print("📦 Selected: " .. itemName)
 end
 
 function BringItems.getSelectedItem()
@@ -227,62 +257,89 @@ end
 
 function BringItems.refreshItems()
     local items = scanAvailableItems()
-    print("🔄 Items refreshed! Found " .. #items .. " different item types:")
-    for i, item in pairs(items) do
-        print("  " .. i .. ". " .. item)
-    end
+    print("🔄 Found " .. #items .. " item types")
     return items
 end
 
-function BringItems.getItemCount(itemName)
-    local itemName = itemName or selectedItem
-    local count = 0
-    local itemsFolder = workspace:FindFirstChild("Items")
+function BringItems.setAutoStore(enabled)
+    autoStore = enabled
     
-    if itemsFolder then
-        for _, item in pairs(itemsFolder:GetChildren()) do
-            if item:IsA("Model") and item.Name == itemName and item:FindFirstChild("Main") then
-                count = count + 1
-            end
+    if enabled then
+        print("🎒 Auto-store: ON")
+        autoStoreConnection = RunService.Heartbeat:Connect(function()
+            wait(0.5)
+            autoStoreItems()
+        end)
+    else
+        print("🎒 Auto-store: OFF")
+        if autoStoreConnection then
+            autoStoreConnection:Disconnect()
+            autoStoreConnection = nil
         end
     end
-    
-    return count
 end
 
-function BringItems.getAllItemCounts()
-    local counts = {}
-    local itemsFolder = workspace:FindFirstChild("Items")
+function BringItems.getAutoStore()
+    return autoStore
+end
+
+function BringItems.storeAllNearbyItems()
+    local bag = getPlayerBag()
+    if not bag then
+        print("❌ No bag found in inventory!")
+        return false
+    end
     
-    if itemsFolder then
-        for _, item in pairs(itemsFolder:GetChildren()) do
-            if item:IsA("Model") and item:FindFirstChild("Main") and item.Name ~= "Camera" then
-                if not counts[item.Name] then
-                    counts[item.Name] = 0
+    local itemsFolder = workspace:FindFirstChild("Items")
+    if not itemsFolder then
+        return false
+    end
+    
+    local playerPos = getPlayerPosition()
+    if not playerPos then
+        return false
+    end
+    
+    local itemsStored = 0
+    
+    for _, item in pairs(itemsFolder:GetChildren()) do
+        if item:IsA("Model") and item:FindFirstChild("Main") then
+            local distance = (item.Main.Position - playerPos).Magnitude
+            if distance <= 15 then
+                local remoteEvent = ReplicatedStorage:FindFirstChild("RemoteEvents")
+                if remoteEvent then
+                    remoteEvent = remoteEvent:FindFirstChild("RequestBagStoreItem")
+                    if remoteEvent then
+                        local success = pcall(function()
+                            local args = {bag, item}
+                            remoteEvent:InvokeServer(unpack(args))
+                        end)
+                        
+                        if success then
+                            itemsStored = itemsStored + 1
+                        end
+                        wait(0.1)
+                    end
                 end
-                counts[item.Name] = counts[item.Name] + 1
             end
         end
     end
     
-    return counts
+    if itemsStored > 0 then
+        print("🎒 Stored " .. itemsStored .. " items in bag")
+        return true
+    else
+        print("❌ No items to store nearby")
+        return false
+    end
 end
 
 function BringItems.getStatus()
-    local selectedCount = BringItems.getItemCount()
-    local allCounts = BringItems.getAllItemCounts()
-    local totalItems = 0
-    
-    for _, count in pairs(allCounts) do
-        totalItems = totalItems + count
-    end
-    
     return {
         selectedItem = selectedItem,
-        selectedItemCount = selectedCount,
-        totalItemsInWorld = totalItems,
         availableItemTypes = #availableItems,
-        itemCounts = allCounts
+        autoStore = autoStore,
+        hasBag = getPlayerBag() ~= nil
     }
 end
 
@@ -295,7 +352,12 @@ function BringItems.toggle()
 end
 
 function BringItems.stop()
-    print("Bring Items: No active processes to stop")
+    if autoStoreConnection then
+        autoStoreConnection:Disconnect()
+        autoStoreConnection = nil
+    end
+    autoStore = false
+    print("Bring Items: Stopped")
 end
 
 BringItems.refreshItems()
