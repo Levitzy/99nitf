@@ -46,8 +46,9 @@ local function loadModules()
         getSelectedItem = function() return "Log" end,
         refreshItems = function() return {"Log", "Stone", "Stick"} end,
         getAvailableItems = function() return {"Log", "Stone", "Stick"} end,
-        getItemCount = function() return 0 end,
-        getAllItemCounts = function() return {} end,
+        setAutoStore = function() end,
+        getAutoStore = function() return false end,
+        storeAllNearbyItems = function() return false end,
         isEnabled = function() return false end,
         toggle = function() return false end,
         stop = function() end
@@ -116,6 +117,8 @@ local function createRayfieldGUI()
     local KillTab = Window:CreateTab("⚔️ Kill Aura", 4483345998)
     local BringTab = Window:CreateTab("📦 Bring Items", 4483345998)
     local SettingsTab = Window:CreateTab("⚙️ Settings", 4483345998)
+    
+    local AutoStoreToggle
     
     TreeTab:CreateSection("Tree Farm Controls")
     
@@ -297,29 +300,19 @@ local function createRayfieldGUI()
         Callback = function()
             if BringItems and BringItems.bringSelected then
                 local selectedItem = BringItems.getSelectedItem and BringItems.getSelectedItem() or "items"
-                local count = BringItems.getItemCount and BringItems.getItemCount() or 0
+                local success = BringItems.bringSelected()
                 
-                if count > 0 then
-                    local success = BringItems.bringSelected()
-                    if success then
-                        Rayfield:Notify({
-                            Title = "Items Brought",
-                            Content = "✅ Brought all " .. selectedItem .. " items to you!",
-                            Duration = 3,
-                            Image = 4483345998
-                        })
-                    else
-                        Rayfield:Notify({
-                            Title = "Bring Failed",
-                            Content = "❌ Failed to bring " .. selectedItem .. " items!",
-                            Duration = 3,
-                            Image = 4483345998
-                        })
-                    end
+                if success then
+                    Rayfield:Notify({
+                        Title = "Items Brought",
+                        Content = "✅ Brought all " .. selectedItem .. " items!",
+                        Duration = 3,
+                        Image = 4483345998
+                    })
                 else
                     Rayfield:Notify({
                         Title = "No Items Found",
-                        Content = "❌ No " .. selectedItem .. " items found in world!",
+                        Content = "❌ No " .. selectedItem .. " items found!",
                         Duration = 3,
                         Image = 4483345998
                     })
@@ -336,14 +329,14 @@ local function createRayfieldGUI()
                 if success then
                     Rayfield:Notify({
                         Title = "All Items Brought",
-                        Content = "✅ Brought ALL items from world to you!",
+                        Content = "✅ Brought ALL items to you!",
                         Duration = 3,
                         Image = 4483345998
                     })
                 else
                     Rayfield:Notify({
-                        Title = "Bring Failed",
-                        Content = "❌ Failed to bring items!",
+                        Title = "No Items Found",
+                        Content = "❌ No items found in world!",
                         Duration = 3,
                         Image = 4483345998
                     })
@@ -352,41 +345,66 @@ local function createRayfieldGUI()
         end,
     })
     
-    local ItemCountLabel = BringTab:CreateLabel("Selected Item Count: 0")
+    BringTab:CreateSection("Auto Storage")
     
-    local UpdateCountButton = BringTab:CreateButton({
-        Name = "📊 Update Item Counts",
-        Callback = function()
-            if BringItems then
-                local selectedItem = BringItems.getSelectedItem and BringItems.getSelectedItem() or "Unknown"
-                local count = BringItems.getItemCount and BringItems.getItemCount() or 0
-                local allCounts = BringItems.getAllItemCounts and BringItems.getAllItemCounts() or {}
-                
-                ItemCountLabel:Set("Selected Item Count: " .. count .. " " .. selectedItem .. "(s)")
-                
-                local totalItems = 0
-                for _, itemCount in pairs(allCounts) do
-                    totalItems = totalItems + itemCount
+    AutoStoreToggle = BringTab:CreateToggle({
+        Name = "Auto Store in Bag",
+        CurrentValue = false,
+        Flag = "AutoStore",
+        Callback = function(Value)
+            if BringItems and BringItems.setAutoStore then
+                BringItems.setAutoStore(Value)
+                if Value then
+                    Rayfield:Notify({
+                        Title = "Auto Store",
+                        Content = "🎒 Auto-store enabled!",
+                        Duration = 3,
+                        Image = 4483345998
+                    })
+                else
+                    Rayfield:Notify({
+                        Title = "Auto Store",
+                        Content = "🎒 Auto-store disabled!",
+                        Duration = 3,
+                        Image = 4483345998
+                    })
                 end
-                
-                Rayfield:Notify({
-                    Title = "Item Counts Updated",
-                    Content = "📊 " .. selectedItem .. ": " .. count .. " | Total: " .. totalItems,
-                    Duration = 3,
-                    Image = 4483345998
-                })
+            end
+        end,
+    })
+    
+    local StoreNearbyButton = BringTab:CreateButton({
+        Name = "🎒 Store Nearby Items",
+        Callback = function()
+            if BringItems and BringItems.storeAllNearbyItems then
+                local success = BringItems.storeAllNearbyItems()
+                if success then
+                    Rayfield:Notify({
+                        Title = "Items Stored",
+                        Content = "🎒 Stored nearby items in bag!",
+                        Duration = 3,
+                        Image = 4483345998
+                    })
+                else
+                    Rayfield:Notify({
+                        Title = "Storage Failed",
+                        Content = "❌ No items to store or no bag found!",
+                        Duration = 3,
+                        Image = 4483345998
+                    })
+                end
             end
         end,
     })
     
     BringTab:CreateParagraph({
-        Title = "Enhanced Item Collection",
-        Content = "Button-based system for bringing items. Select item type and click 'Bring Selected' for specific items, or 'Bring ALL' for everything in the world. Items appear around you with proper spacing."
+        Title = "Enhanced Item System",
+        Content = "Button-based item collection with auto-storage. Bring items to you and automatically store them in your bag (Old Sack/Sack/Bag)."
     })
     
     BringTab:CreateParagraph({
         Title = "How to Use",
-        Content = "1. Click 'Refresh Item List' to scan available items\n2. Select item type from dropdown\n3. Click 'Bring Selected Items' to get all of that type\n4. Or click 'Bring ALL Items' to get everything!"
+        Content = "1. Refresh item list to scan available items\n2. Select item type and click 'Bring Selected'\n3. Enable 'Auto Store' for automatic bag storage\n4. Use 'Store Nearby' to manually store items"
     })
     
     SettingsTab:CreateSection("General Controls")
@@ -430,9 +448,15 @@ local function createRayfieldGUI()
                 KillAura.stop()
                 KillToggle:Set(false)
             end
+            if BringItems and BringItems.stop then
+                BringItems.stop()
+                if AutoStoreToggle then
+                    AutoStoreToggle:Set(false)
+                end
+            end
             Rayfield:Notify({
                 Title = "Emergency Stop",
-                Content = "🛑 All auras stopped!",
+                Content = "🛑 All systems stopped!",
                 Duration = 3,
                 Image = 4483345998
             })
@@ -444,6 +468,7 @@ local function createRayfieldGUI()
         Callback = function()
             if TreeAura and TreeAura.stop then TreeAura.stop() end
             if KillAura and KillAura.stop then KillAura.stop() end
+            if BringItems and BringItems.stop then BringItems.stop() end
             Rayfield:Destroy()
             print("🗑️ GUI destroyed!")
         end,
@@ -453,12 +478,12 @@ local function createRayfieldGUI()
     
     SettingsTab:CreateParagraph({
         Title = "Aura Farm Pro v7.0",
-        Content = "Complete automation suite with tree farming, kill aura, and item collection. All functions work independently with fallback support."
+        Content = "Complete automation suite with enhanced tree farming, smart item collection with auto-storage, and combat features. Items are brought to you and automatically stored in your bag."
     })
     
     SettingsTab:CreateParagraph({
         Title = "Features",
-        Content = "• Auto Tree Farming (Foliage + Landmarks)\n• Kill Aura with Tool Priority\n• Button-Based Item Collection\n• Auto Log Collection\n• Chainsaw Support\n• Enhanced Performance\n• Real-time Item Counting"
+        Content = "• Auto Tree Farming (Foliage + Landmarks)\n• Kill Aura with Tool Priority\n• Smart Item Collection System\n• Auto Bag Storage\n• Auto Log Collection\n• Chainsaw Support\n• Enhanced Performance"
     })
     
     wait(1)
@@ -492,7 +517,7 @@ local function main()
         print("✨ Aura Farm Pro v7.0 loaded successfully!")
         print("🌳 Tree Farm: " .. (TreeAura and "✅ LOADED" or "❌ FALLBACK"))
         print("⚔️ Kill Aura: " .. (KillAura and "✅ LOADED" or "❌ FALLBACK"))
-        print("📦 Bring Items: " .. (BringItems and "✅ LOADED" or "❌ FALLBACK"))
+        print("📦 Bring Items + Auto Storage: " .. (BringItems and "✅ LOADED" or "❌ FALLBACK"))
         
         return gui
     end)
