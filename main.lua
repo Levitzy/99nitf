@@ -37,7 +37,11 @@ local function loadModules()
             getDistance = function() return 86 end,
             setDelay = function() end,
             getDelay = function() return 0.1 end,
-            isEnabled = function() return false end
+            isEnabled = function() return false end,
+            setFarmLandmarks = function() end,
+            setFarmFoliage = function() end,
+            getFarmLandmarks = function() return true end,
+            getFarmFoliage = function() return true end
         }
     end
     
@@ -65,9 +69,9 @@ local function createRayfieldGUI()
     local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
     
     local Window = Rayfield:CreateWindow({
-        Name = "🎯 Aura Farm Pro v5.2",
+        Name = "🎯 Aura Farm Pro v6.0",
         LoadingTitle = "Aura Farm Pro",
-        LoadingSubtitle = "by Rayfield Interface Suite",
+        LoadingSubtitle = "Enhanced Performance Edition",
         ConfigurationSaving = {
             Enabled = true,
             FolderName = "AuraFarmPro",
@@ -85,7 +89,7 @@ local function createRayfieldGUI()
     local TreeTab = Window:CreateTab("🌳 Tree Aura", 4483345998)
     local SettingsTab = Window:CreateTab("⚙️ Settings", 4483345998)
     
-    local KillSection = KillTab:CreateSection("Kill Aura Controls")
+    KillTab:CreateSection("Kill Aura Controls")
     
     local killEnabled = false
     
@@ -136,16 +140,14 @@ local function createRayfieldGUI()
         end,
     })
     
-    local KillLabel = KillTab:CreateLabel("Status: Ready to use")
-    
     KillTab:CreateSection("Information")
     
     KillTab:CreateParagraph({
         Title = "How Kill Aura Works",
-        Content = "Kill Aura automatically attacks nearby players/NPCs within the specified range. Adjust the distance slider to control the attack range. Higher distances may affect performance."
+        Content = "Kill Aura automatically attacks the closest player/NPC within range. Uses Chainsaw > Strong Axe > Gooad Axe > Old Axe > Axe priority."
     })
     
-    local TreeSection = TreeTab:CreateSection("Tree Aura Controls")
+    TreeTab:CreateSection("Tree Aura Controls")
     
     local treeEnabled = false
     
@@ -198,7 +200,7 @@ local function createRayfieldGUI()
     
     local TreeDelaySlider = TreeTab:CreateSlider({
         Name = "Chopping Delay",
-        Range = {0.1, 10},
+        Range = {0.1, 5},
         Increment = 0.1,
         Suffix = "seconds",
         CurrentValue = TreeAura and TreeAura.getDelay() or 0.1,
@@ -211,21 +213,43 @@ local function createRayfieldGUI()
         end,
     })
     
-    local TreeLabel = TreeTab:CreateLabel("Status: Ready to farm")
+    TreeTab:CreateSection("Farming Options")
+    
+    local FoliageToggle = TreeTab:CreateToggle({
+        Name = "Farm Foliage Trees",
+        CurrentValue = TreeAura and TreeAura.getFarmFoliage() or true,
+        Flag = "FoliageToggle",
+        Callback = function(Value)
+            if TreeAura and TreeAura.setFarmFoliage then
+                TreeAura.setFarmFoliage(Value)
+            end
+        end,
+    })
+    
+    local LandmarksToggle = TreeTab:CreateToggle({
+        Name = "Farm Landmarks Trees",
+        CurrentValue = TreeAura and TreeAura.getFarmLandmarks() or true,
+        Flag = "LandmarksToggle",
+        Callback = function(Value)
+            if TreeAura and TreeAura.setFarmLandmarks then
+                TreeAura.setFarmLandmarks(Value)
+            end
+        end,
+    })
     
     TreeTab:CreateSection("Tree Farming Guide")
     
     TreeTab:CreateParagraph({
-        Title = "Tree Farming Tips",
-        Content = "Tree Aura automatically chops trees within range. Lower delay = faster chopping but may cause lag. Higher delay = more stable performance and less detection risk."
+        Title = "Enhanced Tree Detection",
+        Content = "Now supports Small Trees in both Foliage and Landmarks folders. Automatically targets closest trees for maximum efficiency. Tool priority: Chainsaw > Strong Axe > Gooad Axe > Old Axe > Axe."
     })
     
     TreeTab:CreateParagraph({
         Title = "Optimal Settings",
-        Content = "Distance: 50-100 studs for best coverage. Delay: 0.1-0.5 seconds for optimal balance between speed and stability."
+        Content = "Distance: 50-100 studs. Delay: 0.1-0.3 seconds. Enable both Foliage and Landmarks for maximum tree coverage."
     })
     
-    local GeneralSection = SettingsTab:CreateSection("General Controls")
+    SettingsTab:CreateSection("General Controls")
     
     local ResetButton = SettingsTab:CreateButton({
         Name = "🔄 Reset All Settings",
@@ -233,8 +257,12 @@ local function createRayfieldGUI()
             if TreeAura then
                 TreeAura.setDistance(86)
                 TreeAura.setDelay(0.1)
+                TreeAura.setFarmFoliage(true)
+                TreeAura.setFarmLandmarks(true)
                 TreeDistanceSlider:Set(86)
                 TreeDelaySlider:Set(0.1)
+                FoliageToggle:Set(true)
+                LandmarksToggle:Set(true)
             end
             if KillAura then
                 KillAura.setDistance(80)
@@ -284,54 +312,24 @@ local function createRayfieldGUI()
     SettingsTab:CreateSection("Script Information")
     
     SettingsTab:CreateParagraph({
-        Title = "Aura Farm Pro v5.2",
-        Content = "Professional farming automation script with advanced aura systems. Built with Rayfield UI for the best user experience."
+        Title = "Aura Farm Pro v6.0",
+        Content = "Enhanced performance edition with Chainsaw support, improved Small Tree detection, and optimized closest-distance targeting for both Foliage and Landmarks folders."
     })
     
     SettingsTab:CreateParagraph({
-        Title = "Features",
-        Content = "• Automatic Tree Farming with customizable delay\n• Kill Aura with adjustable range\n• Mobile & PC Compatible\n• Config Auto-Save\n• Professional UI Design"
+        Title = "New Features",
+        Content = "• Chainsaw Tool Support\n• Small Tree Detection\n• Performance Optimizations\n• Closest Distance Priority\n• Enhanced Caching System\n• Cleaner Interface"
     })
     
-    SettingsTab:CreateSection("Credits & Support")
+    SettingsTab:CreateSection("Credits")
     
-    SettingsTab:CreateLabel("Made with ❤️ for enhanced farming")
+    SettingsTab:CreateLabel("Enhanced Performance Edition")
     SettingsTab:CreateLabel("UI Library: Rayfield Interface Suite")
     SettingsTab:CreateLabel("Created by: Aura Farm Pro Team")
     
-    local statusUpdateLoop
-    statusUpdateLoop = RunService.Heartbeat:Connect(function()
-        wait(2)
-        
-        if KillAura and killEnabled then
-            if KillAura.isEnabled() then
-                KillLabel:Set("Status: 🟢 Active - Scanning for targets")
-            else
-                KillLabel:Set("Status: 🔴 Inactive")
-            end
-        else
-            KillLabel:Set("Status: Ready to use")
-        end
-        
-        if TreeAura and treeEnabled then
-            if TreeAura.isEnabled() then
-                local status = TreeAura.getStatus and TreeAura.getStatus()
-                if status and status.treesFound then
-                    TreeLabel:Set("Status: 🟢 Active - Trees found: " .. status.treesFound)
-                else
-                    TreeLabel:Set("Status: 🟢 Active - Scanning for trees")
-                end
-            else
-                TreeLabel:Set("Status: 🔴 Inactive")
-            end
-        else
-            TreeLabel:Set("Status: Ready to farm")
-        end
-    end)
-    
     Rayfield:Notify({
-        Title = "Aura Farm Pro",
-        Content = "✨ Successfully loaded with Rayfield UI!",
+        Title = "Aura Farm Pro v6.0",
+        Content = "✨ Enhanced Performance Edition Loaded!",
         Duration = 5,
         Image = 4483345998
     })
@@ -342,13 +340,12 @@ local function createRayfieldGUI()
         Rayfield = Rayfield,
         Window = Window,
         KillToggle = KillToggle,
-        TreeToggle = TreeToggle,
-        statusUpdateLoop = statusUpdateLoop
+        TreeToggle = TreeToggle
     }
 end
 
 local function main()
-    print("🚀 Starting Premium Aura Controller v5.2 with Rayfield...")
+    print("🚀 Starting Aura Farm Pro v6.0 Enhanced Performance Edition...")
     
     if not loadModules() then
         warn("Modules failed to load, using fallback functions")
@@ -357,10 +354,10 @@ local function main()
     local success, result = pcall(function()
         local gui = createRayfieldGUI()
         
-        print("✨ Premium Aura Controller v5.2 with Rayfield loaded successfully!")
-        print("🌳 Tree Aura: Distance & delay controls with real-time status")
-        print("⚔️ Kill Aura: Adjustable attack distance with target scanning")
-        print("📱 Rayfield Professional Interface with auto-save configs")
+        print("✨ Aura Farm Pro v6.0 Enhanced Performance Edition loaded!")
+        print("🌳 Tree Aura: Chainsaw support + Small Tree detection")
+        print("⚔️ Kill Aura: Closest target priority with caching")
+        print("📱 Cleaner Rayfield Interface with optimizations")
         
         return gui
     end)
