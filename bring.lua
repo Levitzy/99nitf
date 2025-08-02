@@ -33,22 +33,56 @@ end
 
 local function scanAvailableItems()
     local items = {}
+    local itemCounts = {}
+    
+    print("🔍 Starting item scan...")
+    print("🔍 Checking workspace for Items folder...")
+    
     local itemsFolder = workspace:FindFirstChild("Items")
     
-    if itemsFolder then
-        local itemNames = {}
-        
-        for _, item in pairs(itemsFolder:GetChildren()) do
-            if item:IsA("Model") and item.Name ~= "Camera" and item:FindFirstChild("Main") then
+    if not itemsFolder then
+        print("❌ No Items folder found in workspace!")
+        print("🔍 Workspace children:")
+        for _, child in pairs(workspace:GetChildren()) do
+            print("  - " .. child.Name .. " (" .. child.ClassName .. ")")
+        end
+        availableItems = {}
+        return {}
+    end
+    
+    print("✅ Items folder found! Scanning items...")
+    print("🔍 Items folder has " .. #itemsFolder:GetChildren() .. " children")
+    
+    local itemNames = {}
+    local totalItems = 0
+    
+    for _, item in pairs(itemsFolder:GetChildren()) do
+        if item:IsA("Model") then
+            totalItems = totalItems + 1
+            print("🔍 Found model: " .. item.Name .. " (Has Main: " .. tostring(item:FindFirstChild("Main") ~= nil) .. ")")
+            
+            if item.Name ~= "Camera" and item:FindFirstChild("Main") then
                 local itemName = item.Name
                 if not itemNames[itemName] then
                     itemNames[itemName] = true
                     table.insert(items, itemName)
+                    itemCounts[itemName] = 1
+                    print("✅ Added new item type: " .. itemName)
+                else
+                    itemCounts[itemName] = itemCounts[itemName] + 1
                 end
             end
         end
-        
-        table.sort(items)
+    end
+    
+    table.sort(items)
+    
+    print("📊 Scan complete!")
+    print("📊 Total models in Items folder: " .. totalItems)
+    print("📊 Valid item types found: " .. #items)
+    print("📊 Item counts:")
+    for itemName, count in pairs(itemCounts) do
+        print("  - " .. itemName .. ": " .. count)
     end
     
     availableItems = items
@@ -323,7 +357,7 @@ end
 function BringItems.setSelectedItem(itemName)
     if itemName and type(itemName) == "string" and itemName ~= "" and itemName ~= "None" then
         selectedItem = itemName
-        print("📦 DROPDOWN SELECTION SET TO: " .. itemName)
+        print("📦 SELECTION UPDATED TO: " .. itemName)
         return true
     else
         selectedItem = nil
@@ -341,11 +375,9 @@ function BringItems.getAvailableItems()
 end
 
 function BringItems.refreshItems()
+    print("🔄 REFRESHING ITEMS LIST...")
     local items = scanAvailableItems()
-    print("🔄 Found " .. #items .. " different item types:")
-    for i, itemName in pairs(items) do
-        print("  " .. i .. ". " .. itemName)
-    end
+    print("🔄 Refresh complete - found " .. #items .. " item types")
     return items
 end
 
@@ -366,6 +398,7 @@ function BringItems.getItemCount(itemName)
         end
     end
     
+    print("📊 Count for '" .. targetItem .. "': " .. count)
     return count
 end
 
@@ -380,6 +413,8 @@ function BringItems.getStatus()
         count = BringItems.getItemCount(selectedItem)
     end
     
+    print("📊 Status check - Selected: " .. tostring(selectedItem) .. ", Count: " .. count)
+    
     return {
         selectedItem = selectedItem or "None",
         availableItemTypes = #availableItems,
@@ -389,12 +424,36 @@ function BringItems.getStatus()
 end
 
 function BringItems.debugSelection()
-    print("🐛 DEBUG INFO:")
+    print("🐛 DETAILED DEBUG INFO:")
     print("  Selected Item: " .. tostring(selectedItem))
     print("  Available Items: " .. table.concat(availableItems, ", "))
-    if selectedItem then
-        print("  Count of Selected: " .. BringItems.getItemCount(selectedItem))
+    print("  Available Items Count: " .. #availableItems)
+    
+    local itemsFolder = workspace:FindFirstChild("Items")
+    if itemsFolder then
+        print("  Items folder children count: " .. #itemsFolder:GetChildren())
+        print("  Items folder contents:")
+        for i, item in pairs(itemsFolder:GetChildren()) do
+            if item:IsA("Model") then
+                print("    " .. i .. ". " .. item.Name .. " (Has Main: " .. tostring(item:FindFirstChild("Main") ~= nil) .. ")")
+            end
+        end
+    else
+        print("  ❌ Items folder not found!")
     end
+    
+    if selectedItem then
+        print("  Count of Selected Item: " .. BringItems.getItemCount(selectedItem))
+    end
+end
+
+function BringItems.forceRefresh()
+    print("🔄 FORCE REFRESH TRIGGERED!")
+    availableItems = {}
+    selectedItem = nil
+    local items = scanAvailableItems()
+    print("🔄 Force refresh complete - found " .. #items .. " items")
+    return items
 end
 
 function BringItems.isEnabled()
@@ -409,6 +468,8 @@ function BringItems.stop()
     print("Bring Items: Stopped")
 end
 
+-- Initial scan on load
+print("🚀 BringItems module loading - performing initial scan...")
 BringItems.refreshItems()
 
 return BringItems
