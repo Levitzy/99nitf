@@ -9,6 +9,9 @@ local KillAura = {}
 local enabled = false
 local attackDistance = 80
 local connection
+local lastScanTime = 0
+local cachedTargets = {}
+local cacheTimeout = 1
 
 local function getPlayerCharacter()
     return LocalPlayer.Character
@@ -25,12 +28,22 @@ end
 local function getPlayerInventoryTool()
     local inventory = LocalPlayer:FindFirstChild("Inventory")
     if inventory then
-        return inventory:FindFirstChild("Old Axe") or inventory:FindFirstChild("Axe")
+        return inventory:FindFirstChild("Chainsaw") or
+               inventory:FindFirstChild("Strong Axe") or
+               inventory:FindFirstChild("Gooad Axe") or
+               inventory:FindFirstChild("Old Axe") or
+               inventory:FindFirstChild("Axe")
     end
     return nil
 end
 
 local function findCharactersInRange()
+    local currentTime = tick()
+    
+    if currentTime - lastScanTime < cacheTimeout and #cachedTargets > 0 then
+        return cachedTargets
+    end
+    
     local charactersFolder = workspace:FindFirstChild("Characters")
     if not charactersFolder then
         return {}
@@ -47,39 +60,46 @@ local function findCharactersInRange()
         if character:IsA("Model") and character:FindFirstChild("HumanoidRootPart") and character ~= getPlayerCharacter() then
             local distance = (character.HumanoidRootPart.Position - playerPos).Magnitude
             if distance <= attackDistance then
-                table.insert(charactersInRange, character)
+                charactersInRange[#charactersInRange + 1] = {
+                    character = character,
+                    distance = distance
+                }
             end
         end
     end
     
+    if #charactersInRange > 1 then
+        table.sort(charactersInRange, function(a, b)
+            return a.distance < b.distance
+        end)
+    end
+    
+    cachedTargets = charactersInRange
+    lastScanTime = currentTime
+    
     return charactersInRange
 end
 
-local function attackCharacter(character)
+local function attackCharacter(targetData)
     local tool = getPlayerInventoryTool()
     if not tool then
         return false
     end
     
-    local remoteEvent = ReplicatedStorage:FindFirstChild("RemoteEvents")
+    local character = targetData.character
+    if not character or not character.Parent then
+        return false
+    end
+    
+    local remoteEvent = ReplicatedStorage.RemoteEvents and ReplicatedStorage.RemoteEvents:FindFirstChild("ToolDamageObject")
     if remoteEvent then
-        remoteEvent = remoteEvent:FindFirstChild("ToolDamageObject")
-        if remoteEvent then
-            local playerCharacter = getPlayerCharacter()
-            if playerCharacter and playerCharacter:FindFirstChild("HumanoidRootPart") then
-                local args = {
-                    character,
-                    tool,
-                    "2_8592674679",
-                    playerCharacter.HumanoidRootPart.CFrame
-                }
-                
-                local success, result = pcall(function()
-                    remoteEvent:InvokeServer(unpack(args))
-                end)
-                
-                return success
-            end
+        local playerCharacter = getPlayerCharacter()
+        if playerCharacter and playerCharacter:FindFirstChild("HumanoidRootPart") then
+            local success = pcall(function()
+                remoteEvent:InvokeServer(character, tool, "2_8592674679", playerCharacter.HumanoidRootPart.CFrame)
+            end)
+            
+            return success
         end
     end
     
@@ -93,13 +113,9 @@ local function killAuraLoop()
     
     local charactersInRange = findCharactersInRange()
     
-    for _, character in pairs(charactersInRange) do
-        if enabled then
-            attackCharacter(character)
-            wait(0.1)
-        else
-            break
-        end
+    if #charactersInRange > 0 then
+        local closestTarget = charactersInRange[1]
+        attackCharacter(closestTarget)
     end
 end
 
@@ -107,8 +123,9 @@ function KillAura.toggle()
     enabled = not enabled
     
     if enabled then
-        print("Kill Aura: ON")
+        print("Kill Aura: ON (Distance: " .. attackDistance .. ")")
         connection = RunService.Heartbeat:Connect(function()
+            wait(0.1)
             killAuraLoop()
         end)
     else
@@ -117,6 +134,7 @@ function KillAura.toggle()
             connection:Disconnect()
             connection = nil
         end
+        cachedTargets = {}
     end
     
     return enabled
@@ -128,6 +146,7 @@ function KillAura.stop()
         connection:Disconnect()
         connection = nil
     end
+    cachedTargets = {}
     print("Kill Aura: STOPPED")
 end
 
@@ -136,8 +155,9 @@ function KillAura.isEnabled()
 end
 
 function KillAura.setDistance(distance)
-    attackDistance = distance
-    print("Kill Aura distance set to:", distance)
+    attackDistance = math.max(10, math.min(500, distance))
+    cachedTargets = {}
+    print("Kill Aura distance set to:", attackDistance)
 end
 
 function KillAura.getDistance()
@@ -148,7 +168,8 @@ function KillAura.getStatus()
     return {
         enabled = enabled,
         distance = attackDistance,
-        hasConnection = connection ~= nil
+        hasConnection = connection ~= nil,
+        targetsFound = #cachedTargets
     }
 end
 
