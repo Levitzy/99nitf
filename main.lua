@@ -72,7 +72,7 @@ local function createCleanGUI()
     local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
     
     local frameWidth = isMobile and 300 or 340
-    local frameHeight = isMobile and 380 or 420
+    local frameHeight = isMobile and 400 or 450
     
     mainFrame = Instance.new("Frame")
     mainFrame.Size = UDim2.new(0, frameWidth, 0, frameHeight)
@@ -174,10 +174,15 @@ local function createCleanGUI()
     minimizeCorner.CornerRadius = UDim.new(0, 8)
     minimizeCorner.Parent = minimizeButton
     
-    local contentFrame = Instance.new("Frame")
+    local contentFrame = Instance.new("ScrollingFrame")
     contentFrame.Size = UDim2.new(1, -30, 1, isMobile and -90 or -85)
     contentFrame.Position = UDim2.new(0, 15, 0, isMobile and 75 or 70)
     contentFrame.BackgroundTransparency = 1
+    contentFrame.BorderSizePixel = 0
+    contentFrame.ScrollBarThickness = 6
+    contentFrame.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 85)
+    contentFrame.CanvasSize = UDim2.new(0, 0, 0, isMobile and 350 or 360)
+    contentFrame.ScrollingDirection = Enum.ScrollingDirection.Y
     contentFrame.Parent = mainFrame
     
     local killSection = Instance.new("Frame")
@@ -351,8 +356,8 @@ local function createCleanGUI()
     treeToggleCorner.Parent = treeToggleButton
     
     local destroyButton = Instance.new("TextButton")
-    destroyButton.Size = UDim2.new(1, -30, 0, isMobile and 35 or 30)
-    destroyButton.Position = UDim2.new(0, 15, 1, isMobile and -45 or -40)
+    destroyButton.Size = UDim2.new(1, 0, 0, isMobile and 35 or 30)
+    destroyButton.Position = UDim2.new(0, 0, 0, isMobile and 290 or 300)
     destroyButton.BackgroundColor3 = Color3.fromRGB(108, 117, 125)
     destroyButton.Text = "🗑️ Destroy GUI"
     destroyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -389,19 +394,32 @@ end
 local function toggleMinimize()
     isMinimized = not isMinimized
     
-    local targetHeight = isMinimized and (gui.isMobile and 60 or 55) or (gui.isMobile and 380 or 420)
+    local targetHeight = isMinimized and (gui.isMobile and 60 or 55) or (gui.isMobile and 400 or 450)
     local targetText = isMinimized and "+" or "−"
     
-    local tween = TweenService:Create(
-        gui.mainFrame,
-        TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
-        {Size = UDim2.new(0, gui.mainFrame.Size.X.Offset, 0, targetHeight)}
-    )
+    if isMinimized then
+        gui.contentFrame.Visible = false
+        wait(0.1)
+        local tween = TweenService:Create(
+            gui.mainFrame,
+            TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
+            {Size = UDim2.new(0, gui.mainFrame.Size.X.Offset, 0, targetHeight)}
+        )
+        tween:Play()
+    else
+        local tween = TweenService:Create(
+            gui.mainFrame,
+            TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
+            {Size = UDim2.new(0, gui.mainFrame.Size.X.Offset, 0, targetHeight)}
+        )
+        tween:Play()
+        tween.Completed:Connect(function()
+            wait(0.1)
+            gui.contentFrame.Visible = true
+        end)
+    end
     
-    tween:Play()
     gui.minimizeButton.Text = targetText
-    gui.contentFrame.Visible = not isMinimized
-    
     print(isMinimized and "🔽 GUI Minimized" or "🔼 GUI Restored")
 end
 
@@ -504,11 +522,13 @@ local function main()
         setupSlider(gui.treeSliderButton, gui.treeSliderFrame, gui.treeDistanceLabel, TreeAura)
         
         gui.minimizeButton.MouseButton1Click:Connect(function()
+            print("🔄 Minimize button clicked!")
             toggleMinimize()
         end)
         
         if gui.isMobile then
             gui.minimizeButton.TouchTap:Connect(function()
+                print("🔄 Minimize button touched!")
                 toggleMinimize()
             end)
         end
