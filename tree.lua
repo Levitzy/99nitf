@@ -12,9 +12,11 @@ local choppingDelay = 0.1
 local connection
 local farmLandmarks = true
 local farmFoliage = true
+local prioritizeClosest = true
+local scanCooldown = 0
 local lastScanTime = 0
 local cachedTrees = {}
-local cacheTimeout = 1.5
+local cacheTimeout = 2
 
 local function getPlayerCharacter()
     return LocalPlayer.Character
@@ -31,11 +33,13 @@ end
 local function getPlayerInventoryTool()
     local inventory = LocalPlayer:FindFirstChild("Inventory")
     if inventory then
-        return inventory:FindFirstChild("Chainsaw") or
-               inventory:FindFirstChild("Strong Axe") or
+        return inventory:FindFirstChild("Strong Axe") or
                inventory:FindFirstChild("Gooad Axe") or
+               inventory:FindFirstChild("Iron Axe") or
+               inventory:FindFirstChild("Steel Axe") or
                inventory:FindFirstChild("Old Axe") or 
-               inventory:FindFirstChild("Axe")
+               inventory:FindFirstChild("Axe") or
+               inventory:FindFirstChild("Stone Axe")
     end
     return nil
 end
@@ -46,7 +50,7 @@ local function isValidTree(tree)
     end
     
     local name = tree.Name
-    if name:find("Tree") or name == "Small Tree" then
+    if name:find("Tree") then
         return tree:FindFirstChild("Trunk")
     end
     
@@ -146,7 +150,7 @@ local function findAllTreesInRange()
         end
     end
     
-    if #allTrees > 1 then
+    if prioritizeClosest and #allTrees > 1 then
         table.sort(allTrees, function(a, b)
             return a.distance < b.distance
         end)
@@ -192,8 +196,8 @@ local function treeAuraLoop()
     local treesInRange = findAllTreesInRange()
     
     if #treesInRange > 0 then
-        local closestTree = treesInRange[1]
-        attackTree(closestTree)
+        local tree = treesInRange[1]
+        attackTree(tree)
     end
 end
 
@@ -201,7 +205,7 @@ function TreeAura.toggle()
     enabled = not enabled
     
     if enabled then
-        print("Tree Aura: ON (Distance: " .. treeDistance .. ")")
+        print("Tree Aura: ON (Distance: " .. treeDistance .. ", Delay: " .. choppingDelay .. "s)")
         print("Foliage: " .. (farmFoliage and "ON" or "OFF") .. " | Landmarks: " .. (farmLandmarks and "ON" or "OFF"))
         
         connection = RunService.Heartbeat:Connect(function()
@@ -254,7 +258,6 @@ end
 
 function TreeAura.setFarmLandmarks(enabled)
     farmLandmarks = enabled
-    cachedTrees = {}
     print("Landmarks farming:", enabled and "ENABLED" or "DISABLED")
 end
 
@@ -264,12 +267,20 @@ end
 
 function TreeAura.setFarmFoliage(enabled)
     farmFoliage = enabled
-    cachedTrees = {}
     print("Foliage farming:", enabled and "ENABLED" or "DISABLED")
 end
 
 function TreeAura.getFarmFoliage()
     return farmFoliage
+end
+
+function TreeAura.setPrioritizeClosest(enabled)
+    prioritizeClosest = enabled
+    print("Prioritize closest trees:", enabled and "ENABLED" or "DISABLED")
+end
+
+function TreeAura.getPrioritizeClosest()
+    return prioritizeClosest
 end
 
 function TreeAura.getTreeCount()
@@ -303,8 +314,28 @@ function TreeAura.getStatus()
         foliageTrees = treeCounts.foliage,
         landmarkTrees = treeCounts.landmarks,
         farmingFoliage = farmFoliage,
-        farmingLandmarks = farmLandmarks
+        farmingLandmarks = farmLandmarks,
+        prioritizeClosest = prioritizeClosest
     }
+end
+
+function TreeAura.getAllSettings()
+    return {
+        distance = treeDistance,
+        delay = choppingDelay,
+        farmLandmarks = farmLandmarks,
+        farmFoliage = farmFoliage,
+        prioritizeClosest = prioritizeClosest
+    }
+end
+
+function TreeAura.loadSettings(settings)
+    if settings.distance then TreeAura.setDistance(settings.distance) end
+    if settings.delay then TreeAura.setDelay(settings.delay) end
+    if settings.farmLandmarks ~= nil then TreeAura.setFarmLandmarks(settings.farmLandmarks) end
+    if settings.farmFoliage ~= nil then TreeAura.setFarmFoliage(settings.farmFoliage) end
+    if settings.prioritizeClosest ~= nil then TreeAura.setPrioritizeClosest(settings.prioritizeClosest) end
+    print("Settings loaded successfully!")
 end
 
 return TreeAura
