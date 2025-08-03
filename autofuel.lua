@@ -61,9 +61,9 @@ function AutoFuel.moveItemToMainFire(logItem)
         if logItem:FindFirstChild("Handle") then
             local targetCFrame = mainFirePart.CFrame
             logItem.Handle.CFrame = targetCFrame * CFrame.new(
-                math.random(-3, 3),
-                math.random(2, 5),
-                math.random(-3, 3)
+                math.random(-4, 4),
+                math.random(3, 6),
+                math.random(-4, 4)
             )
             
             if logItem.Handle:FindFirstChild("BodyVelocity") then
@@ -75,8 +75,13 @@ function AutoFuel.moveItemToMainFire(logItem)
             
             logItem.Handle.Velocity = Vector3.new(0, 0, 0)
             logItem.Handle.AngularVelocity = Vector3.new(0, 0, 0)
-            logItem.Handle.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            logItem.Handle.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+            
+            if logItem.Handle:FindFirstChild("AssemblyLinearVelocity") then
+                logItem.Handle.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            end
+            if logItem.Handle:FindFirstChild("AssemblyAngularVelocity") then
+                logItem.Handle.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+            end
         end
     end)
     
