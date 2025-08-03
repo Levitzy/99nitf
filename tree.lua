@@ -101,7 +101,7 @@ function TreeChopper.chopTree(tree)
     return true
 end
 
-function TreeChopper.chopBatchTrees(treesData, batchSize)
+function TreeChopper.chopBatchTrees(treesData)
     if not TreeChopper.hasOldAxe() then
         return false
     end
@@ -112,14 +112,16 @@ function TreeChopper.chopBatchTrees(treesData, batchSize)
     end
     
     local choppedCount = 0
-    local maxBatch = math.min(batchSize or 10, #treesData)
+    local maxBatch = math.min(3, #treesData)
     
     for i = 1, maxBatch do
         local treeData = treesData[i]
         if treeData.tree and treeData.tree.Parent then
-            TreeChopper.chopTree(treeData.tree)
-            choppedCount = choppedCount + 1
-            wait(0.05)
+            local success = TreeChopper.chopTree(treeData.tree)
+            if success then
+                choppedCount = choppedCount + 1
+            end
+            wait(0.1)
         end
     end
     
@@ -133,7 +135,7 @@ function TreeChopper.autoChopLoop()
     local allTrees = TreeChopper.findAllSmallTrees()
     
     if #allTrees > 0 then
-        TreeChopper.chopBatchTrees(allTrees, 15)
+        TreeChopper.chopBatchTrees(allTrees)
     end
 end
 
@@ -174,8 +176,8 @@ function TreeChopper.getStatus()
                 end
             end
             
-            return string.format("Status: Found %d trees (F:%d L:%d) - Closest: %.1f - Delay: %.1fs", 
-                   #allTrees, foliageCount, landmarkCount, closestDistance, TreeChopper.chopDelay), #allTrees, closestDistance
+            return string.format("Status: Processing %d trees (F:%d L:%d) - Batch: 3/cycle - Delay: %.1fs", 
+                   #allTrees, foliageCount, landmarkCount, TreeChopper.chopDelay), #allTrees, closestDistance
         else
             return "Status: No small trees found", 0, 0
         end

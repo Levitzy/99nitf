@@ -73,7 +73,7 @@ local ChopDelayDropdown = MainTab:CreateDropdown({
 local InfoSection = MainTab:CreateSection("Tree Chopper Information")
 local StatusLabel = MainTab:CreateLabel("Status: Ready")
 
-local TreeInfoLabel = MainTab:CreateLabel("Trees will be chopped from both Foliage and Landmarks folders")
+local TreeInfoLabel = MainTab:CreateLabel("Trees processed: 3 per cycle for optimal performance")
 
 local AutoFuelToggle = FuelTab:CreateToggle({
    Name = "Auto Fuel MainFire",
@@ -132,7 +132,7 @@ local ComboBotToggle = UtilityTab:CreateToggle({
 
 local ComboInfoSection = UtilityTab:CreateSection("Combo Bot Information")
 local ComboStatusLabel = UtilityTab:CreateLabel("Combo Status: Both bots disabled")
-local ComboInfoLabel = UtilityTab:CreateLabel("Tree Chopper will find ALL small trees on the map")
+local ComboInfoLabel = UtilityTab:CreateLabel("Tree Chopper processes 3 trees per cycle from all map locations")
 
 RunService.Heartbeat:Connect(function()
     local status, treeCount, closestDistance = TreeChopper.getStatus()
@@ -157,7 +157,7 @@ end)
 
 Rayfield:Notify({
    Title = "Auto Tree Chopper & Fuel Bot Loaded",
-   Content = "Script loaded! Tree Chopper will find ALL small trees. Auto Fuel brings logs to MainFire.",
+   Content = "Script loaded! Tree Chopper processes 3 trees per cycle. Auto Fuel brings logs to MainFire.",
    Duration = 6,
    Image = 4483362458
 })
