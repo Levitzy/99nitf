@@ -26,12 +26,7 @@ function AutoFuel.getMainFire()
     local campground = map:WaitForChild("Campground")
     local mainFire = campground:WaitForChild("MainFire")
     
-    local targetPart = mainFire:FindFirstChild("Meshes/log_Cylinder001") or 
-                      mainFire:FindFirstChild("Meshes/log_Cylinder") or
-                      mainFire:FindFirstChildOfClass("Part") or
-                      mainFire:FindFirstChildOfClass("MeshPart")
-    
-    return mainFire, targetPart
+    return mainFire, mainFire
 end
 
 function AutoFuel.findLogItems()
@@ -57,8 +52,8 @@ function AutoFuel.findLogItems()
 end
 
 function AutoFuel.moveItemToMainFire(logItem)
-    local mainFire, mainFirePart = AutoFuel.getMainFire()
-    if not mainFire or not mainFirePart or not logItem or not logItem.Parent then
+    local mainFire, _ = AutoFuel.getMainFire()
+    if not mainFire or not logItem or not logItem.Parent then
         return false
     end
     
@@ -69,8 +64,8 @@ function AutoFuel.moveItemToMainFire(logItem)
                          logItem:FindFirstChildOfClass("MeshPart")
         
         if logHandle then
-            local targetCFrame = mainFirePart.CFrame
-            local dropPosition = targetCFrame * CFrame.new(
+            local mainFireCFrame = mainFire:GetBoundingBox()
+            local dropPosition = mainFireCFrame * CFrame.new(
                 math.random(-4, 4),
                 math.random(15, 25),
                 math.random(-4, 4)
@@ -158,13 +153,14 @@ end
 function AutoFuel.getStatus()
     if AutoFuel.autoFuelEnabled then
         local logItems = AutoFuel.findLogItems()
-        local mainFire, mainFirePart = AutoFuel.getMainFire()
+        local mainFire, _ = AutoFuel.getMainFire()
         
-        if not mainFire or not mainFirePart then
+        if not mainFire then
             return "Status: MainFire not found!", 0
         elseif #logItems > 0 then
             local playerPos = AutoFuel.getPlayerPosition()
-            local mainFirePos = mainFirePart.Position
+            local mainFireCFrame = mainFire:GetBoundingBox()
+            local mainFirePos = mainFireCFrame.Position
             local distance = playerPos and AutoFuel.getDistance(playerPos, mainFirePos) or 0
             return string.format("Status: Fueling MainFire - %d logs available - Delay: %.1fs", #logItems, AutoFuel.fuelDelay), distance
         else
