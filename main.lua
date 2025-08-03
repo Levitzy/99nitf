@@ -89,6 +89,7 @@ local AutoFuelToggle = FuelTab:CreateToggle({
    CurrentValue = false,
    Flag = "AutoFuelToggle",
    Callback = function(Value)
+       AutoFuel.setFuelDelay(1.0)
        AutoFuel.setEnabled(Value)
        
        if Value then
