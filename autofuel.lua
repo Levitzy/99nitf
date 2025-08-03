@@ -139,7 +139,7 @@ function AutoFuel.autoFuelLoop()
             local fuelItem = fuelItems[i]
             if fuelItem and fuelItem.Parent then
                 AutoFuel.moveItemToMainFire(fuelItem)
-                wait(0.5)
+                wait(1.0)
             end
         end
         AutoFuel.lastFuelTime = currentTime
