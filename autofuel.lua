@@ -26,7 +26,15 @@ function AutoFuel.getMainFire()
     local campground = map:WaitForChild("Campground")
     local mainFire = campground:WaitForChild("MainFire")
     
-    return mainFire, mainFire
+    local firePart = nil
+    for _, child in pairs(mainFire:GetDescendants()) do
+        if child:IsA("Part") or child:IsA("MeshPart") then
+            firePart = child
+            break
+        end
+    end
+    
+    return mainFire, firePart
 end
 
 function AutoFuel.findLogItems()
@@ -81,12 +89,12 @@ function AutoFuel.moveItemToMainFire(fuelItem)
         end
         
         if fuelHandle then
-            local firePosition = firePart.Position
+            local centerPosition = firePart.Position
             
             fuelHandle.CFrame = CFrame.new(
-                firePosition.X + math.random(-0.2, 0.2),
-                firePosition.Y + 8,
-                firePosition.Z + math.random(-0.2, 0.2)
+                centerPosition.X,
+                centerPosition.Y + 10,
+                centerPosition.Z
             )
             
             if fuelHandle:FindFirstChild("BodyVelocity") then
@@ -96,22 +104,20 @@ function AutoFuel.moveItemToMainFire(fuelItem)
                 fuelHandle.BodyAngularVelocity:Destroy()
             end
             
-            fuelHandle.Velocity = Vector3.new(0, -10, 0)
+            fuelHandle.Velocity = Vector3.new(0, -8, 0)
             fuelHandle.AngularVelocity = Vector3.new(0, 0, 0)
             
             if fuelHandle:FindFirstChild("AssemblyLinearVelocity") then
-                fuelHandle.AssemblyLinearVelocity = Vector3.new(0, -10, 0)
+                fuelHandle.AssemblyLinearVelocity = Vector3.new(0, -8, 0)
             end
             if fuelHandle:FindFirstChild("AssemblyAngularVelocity") then
                 fuelHandle.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
             end
             
-            wait(0.8)
+            wait(1.0)
             
             if fuelHandle and fuelHandle.Parent then
-                local finalX = firePosition.X + math.random(-1, 1)
-                local finalZ = firePosition.Z + math.random(-1, 1)
-                fuelHandle.CFrame = CFrame.new(finalX, firePosition.Y + 1, finalZ)
+                fuelHandle.CFrame = CFrame.new(centerPosition.X, centerPosition.Y + 2, centerPosition.Z)
                 fuelHandle.Velocity = Vector3.new(0, 0, 0)
                 fuelHandle.AngularVelocity = Vector3.new(0, 0, 0)
                 
