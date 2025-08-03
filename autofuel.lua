@@ -86,12 +86,13 @@ function AutoFuel.moveItemToMainFire(fuelItem)
         
         if fuelHandle then
             local firePosition = firePart.Position
-            
-            fuelHandle.CFrame = CFrame.new(
-                firePosition.X + math.random(-1, 1),
-                firePosition.Y + 1,
-                firePosition.Z + math.random(-1, 1)
+            local dropPosition = CFrame.new(
+                firePosition.X + math.random(-0.5, 0.5),
+                firePosition.Y + math.random(8, 12),
+                firePosition.Z + math.random(-0.5, 0.5)
             )
+            
+            fuelHandle.CFrame = dropPosition
             
             if fuelHandle:FindFirstChild("BodyVelocity") then
                 fuelHandle.BodyVelocity:Destroy()
@@ -100,13 +101,11 @@ function AutoFuel.moveItemToMainFire(fuelItem)
                 fuelHandle.BodyAngularVelocity:Destroy()
             end
             
-            fuelHandle.Velocity = Vector3.new(0, 0, 0)
+            fuelHandle.Velocity = Vector3.new(0, -15, 0)
             fuelHandle.AngularVelocity = Vector3.new(0, 0, 0)
-            fuelHandle.Anchored = false
-            fuelHandle.CanCollide = true
             
             if fuelHandle:FindFirstChild("AssemblyLinearVelocity") then
-                fuelHandle.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                fuelHandle.AssemblyLinearVelocity = Vector3.new(0, -15, 0)
             end
             if fuelHandle:FindFirstChild("AssemblyAngularVelocity") then
                 fuelHandle.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
@@ -115,21 +114,9 @@ function AutoFuel.moveItemToMainFire(fuelItem)
             wait(0.1)
             
             if fuelHandle and fuelHandle.Parent then
-                local finalPosition = CFrame.new(
-                    firePosition.X + math.random(-0.8, 0.8),
-                    firePosition.Y + 0.5,
-                    firePosition.Z + math.random(-0.8, 0.8)
-                )
-                fuelHandle.CFrame = finalPosition
-                
+                fuelHandle.CFrame = CFrame.new(firePosition.X, firePosition.Y + 2, firePosition.Z)
                 fuelHandle.Velocity = Vector3.new(0, 0, 0)
                 fuelHandle.AngularVelocity = Vector3.new(0, 0, 0)
-                
-                wait(0.05)
-                
-                if fuelHandle and fuelHandle.Parent then
-                    fuelHandle.CFrame = CFrame.new(firePosition.X, firePosition.Y, firePosition.Z)
-                end
             end
         end
     end)
@@ -152,7 +139,7 @@ function AutoFuel.autoFuelLoop()
             local fuelItem = fuelItems[i]
             if fuelItem and fuelItem.Parent then
                 AutoFuel.moveItemToMainFire(fuelItem)
-                wait(0.2)
+                wait(0.5)
             end
         end
         AutoFuel.lastFuelTime = currentTime
