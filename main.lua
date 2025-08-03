@@ -258,7 +258,7 @@ RunService.Heartbeat:Connect(function()
 end)
 
 Rayfield:Notify({
-   Title = "Enhanced Tree Chopper & Fuel Bot Loaded",
+   Title = "Enhanced Tree Chopper & Fuel Bot Load",
    Content = "Enhanced script loaded! No distance limits - chops ALL trees in Foliage & Landmarks. Smart tracking prevents re-chopping.",
    Duration = 8,
    Image = 4483362458
