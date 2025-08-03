@@ -166,14 +166,15 @@ end
 function AutoFuel.getStatus()
     if AutoFuel.autoFuelEnabled then
         local fuelItems = AutoFuel.findLogItems()
-        local mainFire, firePart = AutoFuel.getMainFire()
+        local mainFire, _ = AutoFuel.getMainFire()
         
-        if not mainFire or not firePart then
+        if not mainFire then
             return "Status: MainFire not found!", 0
         elseif #fuelItems > 0 then
             local playerPos = AutoFuel.getPlayerPosition()
-            local firePos = firePart.Position
-            local distance = playerPos and AutoFuel.getDistance(playerPos, firePos) or 0
+            local mainFireCFrame = mainFire:GetBoundingBox()
+            local mainFirePos = mainFireCFrame.Position
+            local distance = playerPos and AutoFuel.getDistance(playerPos, mainFirePos) or 0
             
             local logCount = 0
             local coalCount = 0
