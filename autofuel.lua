@@ -98,9 +98,11 @@ function AutoFuel.teleportItemToFire(fuelItem)
     
     local success = pcall(function()
         local firePosition = mainFire.Position
-        local offsetX = math.random(-10, 10)
+        -- FIX: Reduced the random horizontal offset from (-10, 10) to (-3, 3) for accuracy.
+        local offsetX = math.random(-3, 3)
         local offsetY = math.random(15, 25)
-        local offsetZ = math.random(-10, 10)
+        -- FIX: Reduced the random horizontal offset from (-10, 10) to (-3, 3) for accuracy.
+        local offsetZ = math.random(-3, 3)
         
         local targetPosition = firePosition + Vector3.new(offsetX, offsetY, offsetZ)
         
@@ -127,10 +129,11 @@ function AutoFuel.moveItemWithForce(fuelItem)
     
     local success = pcall(function()
         local firePos = mainFire.Position
+        -- FIX: Reduced the random horizontal offset from (-8, 8) to (-3, 3) to create a tighter drop zone.
         local dropPos = firePos + Vector3.new(
-            math.random(-8, 8),
+            math.random(-3, 3),
             math.random(20, 30),
-            math.random(-8, 8)
+            math.random(-3, 3)
         )
         
         for _, bodyMover in pairs(handle:GetChildren()) do
@@ -174,8 +177,9 @@ function AutoFuel.advancedDrop(fuelItem)
         local firePos = fireBox.Position
         
         local dropHeight = firePos.Y + math.random(25, 40)
-        local dropX = firePos.X + math.random(-12, 12)
-        local dropZ = firePos.Z + math.random(-12, 12)
+        -- FIX: Greatly reduced the horizontal offset from (-12, 12) to (-2, 2) to target the center of the fire.
+        local dropX = firePos.X + math.random(-2, 2)
+        local dropZ = firePos.Z + math.random(-2, 2)
         
         handle.CFrame = CFrame.new(dropX, dropHeight, dropZ)
         
