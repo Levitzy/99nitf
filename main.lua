@@ -4,8 +4,8 @@ local AutoFuel = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levi
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "Auto Tree Chopper",
-   LoadingTitle = "Tree Chopping Bot",
+   Name = "Auto Tree Chopper & Fuel",
+   LoadingTitle = "Tree Chopping & Fuel Bot",
    LoadingSubtitle = "by TreeChopper",
    ConfigurationSaving = {
       Enabled = true,
@@ -109,6 +109,17 @@ local AutoFuelToggle = FuelTab:CreateToggle({
    end,
 })
 
+local FuelDistanceSlider = FuelTab:CreateSlider({
+   Name = "Max Fuel Distance",
+   Range = {25, 150},
+   Increment = 5,
+   CurrentValue = 75,
+   Flag = "MaxFuelDistance",
+   Callback = function(Value)
+       AutoFuel.setMaxDistance(Value)
+   end,
+})
+
 local FuelDelayDropdown = FuelTab:CreateDropdown({
    Name = "Fuel Delay",
    Options = {"0.5s", "1s", "3s", "5s", "7s", "10s"},
@@ -141,8 +152,8 @@ RunService.Heartbeat:Connect(function()
 end)
 
 Rayfield:Notify({
-   Title = "Auto Tree Chopper Loaded",
-   Content = "Script loaded successfully! Make sure you have an Old Axe.",
+   Title = "Auto Tree Chopper & Fuel Loaded",
+   Content = "Script loaded successfully! Make sure you have an Old Axe and logs nearby.",
    Duration = 5,
    Image = 4483362458
 })
