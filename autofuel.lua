@@ -135,7 +135,7 @@ function AutoFuel.autoFuelLoop()
     local fuelItems = AutoFuel.findLogItems()
     
     if #fuelItems > 0 then
-        for i = 1, math.min(#fuelItems, 2) do
+        for i = 1, math.min(#fuelItems, 5) do
             local fuelItem = fuelItems[i]
             if fuelItem and fuelItem.Parent then
                 AutoFuel.moveItemToMainFire(fuelItem)
