@@ -1,4 +1,4 @@
-local TreeChopper = require(script.Parent.tree)
+local TreeChopper = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/tree.lua'))()
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
