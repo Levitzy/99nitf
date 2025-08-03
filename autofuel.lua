@@ -9,54 +9,11 @@ AutoFuel.fuelDelay = 1
 AutoFuel.fuelConnection = nil
 AutoFuel.lastFuelTime = 0
 
-function AutoFuel.lightMainFire()
-    local success = pcall(function()
-        local workspace = game:GetService("Workspace")
-        local map = workspace:WaitForChild("Map")
-        local campground = map:WaitForChild("Campground")
-        local mainFire = campground:WaitForChild("MainFire")
-        
-        local fireScript = mainFire:FindFirstChild("Fire") or mainFire:FindFirstChildOfClass("LocalScript")
-        if fireScript then
-            fireScript:FireServer()
-        end
-        
-        local fireEvent = mainFire:FindFirstChild("RemoteEvent")
-        if fireEvent then
-            fireEvent:FireServer("light")
-        end
-        
-        local firePart = mainFire:FindFirstChild("Meshes/log_Cylinder001") or 
-                        mainFire:FindFirstChild("Meshes/log_Cylinder")
-        if firePart then
-            firePart.Material = Enum.Material.Neon
-            firePart.BrickColor = BrickColor.new("Bright orange")
-        end
-    end)
-    
-    return success
-end
-
 function AutoFuel.getPlayerPosition()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         return LocalPlayer.Character.HumanoidRootPart.Position
     end
     return nil
-end
-
-function AutoFuel.initializeMainFire()
-    local success = pcall(function()
-        local fuelItems = AutoFuel.findLogItems()
-        if #fuelItems > 0 then
-            local firstFuel = fuelItems[1]
-            if firstFuel and firstFuel.Parent then
-                AutoFuel.moveItemToMainFire(firstFuel)
-                wait(1)
-                AutoFuel.lightMainFire()
-            end
-        end
-    end)
-    return success
 end
 
 function AutoFuel.getDistance(pos1, pos2)
@@ -106,28 +63,6 @@ function AutoFuel.findLogItems()
     return fuelItems
 end
 
-function AutoFuel.autoFuelLoop()
-    if not AutoFuel.autoFuelEnabled then return end
-    
-    local currentTime = tick()
-    if currentTime - AutoFuel.lastFuelTime < AutoFuel.fuelDelay then
-        return
-    end
-    
-    local fuelItems = AutoFuel.findLogItems()
-    
-    if #fuelItems > 0 then
-        for i = 1, math.min(#fuelItems, 2) do
-            local fuelItem = fuelItems[i]
-            if fuelItem and fuelItem.Parent then
-                AutoFuel.moveItemToMainFire(fuelItem)
-                wait(0.2)
-            end
-        end
-        AutoFuel.lastFuelTime = currentTime
-    end
-end
-
 function AutoFuel.moveItemToMainFire(fuelItem)
     local mainFire, firePart = AutoFuel.getMainFire()
     if not mainFire or not firePart or not fuelItem or not fuelItem.Parent then
@@ -151,13 +86,12 @@ function AutoFuel.moveItemToMainFire(fuelItem)
         
         if fuelHandle then
             local firePosition = firePart.Position
-            local dropPosition = CFrame.new(
-                firePosition.X + math.random(-0.5, 0.5),
-                firePosition.Y + math.random(8, 12),
-                firePosition.Z + math.random(-0.5, 0.5)
-            )
             
-            fuelHandle.CFrame = dropPosition
+            fuelHandle.CFrame = CFrame.new(
+                firePosition.X + math.random(-1, 1),
+                firePosition.Y + 1,
+                firePosition.Z + math.random(-1, 1)
+            )
             
             if fuelHandle:FindFirstChild("BodyVelocity") then
                 fuelHandle.BodyVelocity:Destroy()
@@ -166,11 +100,13 @@ function AutoFuel.moveItemToMainFire(fuelItem)
                 fuelHandle.BodyAngularVelocity:Destroy()
             end
             
-            fuelHandle.Velocity = Vector3.new(0, -15, 0)
+            fuelHandle.Velocity = Vector3.new(0, 0, 0)
             fuelHandle.AngularVelocity = Vector3.new(0, 0, 0)
+            fuelHandle.Anchored = false
+            fuelHandle.CanCollide = true
             
             if fuelHandle:FindFirstChild("AssemblyLinearVelocity") then
-                fuelHandle.AssemblyLinearVelocity = Vector3.new(0, -15, 0)
+                fuelHandle.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
             end
             if fuelHandle:FindFirstChild("AssemblyAngularVelocity") then
                 fuelHandle.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
@@ -179,9 +115,21 @@ function AutoFuel.moveItemToMainFire(fuelItem)
             wait(0.1)
             
             if fuelHandle and fuelHandle.Parent then
-                fuelHandle.CFrame = CFrame.new(firePosition.X, firePosition.Y + 2, firePosition.Z)
+                local finalPosition = CFrame.new(
+                    firePosition.X + math.random(-0.8, 0.8),
+                    firePosition.Y + 0.5,
+                    firePosition.Z + math.random(-0.8, 0.8)
+                )
+                fuelHandle.CFrame = finalPosition
+                
                 fuelHandle.Velocity = Vector3.new(0, 0, 0)
                 fuelHandle.AngularVelocity = Vector3.new(0, 0, 0)
+                
+                wait(0.05)
+                
+                if fuelHandle and fuelHandle.Parent then
+                    fuelHandle.CFrame = CFrame.new(firePosition.X, firePosition.Y, firePosition.Z)
+                end
             end
         end
     end)
@@ -189,12 +137,32 @@ function AutoFuel.moveItemToMainFire(fuelItem)
     return success
 end
 
+function AutoFuel.autoFuelLoop()
+    if not AutoFuel.autoFuelEnabled then return end
+    
+    local currentTime = tick()
+    if currentTime - AutoFuel.lastFuelTime < AutoFuel.fuelDelay then
+        return
+    end
+    
+    local fuelItems = AutoFuel.findLogItems()
+    
+    if #fuelItems > 0 then
+        for i = 1, math.min(#fuelItems, 2) do
+            local fuelItem = fuelItems[i]
+            if fuelItem and fuelItem.Parent then
+                AutoFuel.moveItemToMainFire(fuelItem)
+                wait(0.2)
+            end
+        end
+        AutoFuel.lastFuelTime = currentTime
+    end
+end
+
 function AutoFuel.setEnabled(enabled)
     AutoFuel.autoFuelEnabled = enabled
     
     if enabled then
-        AutoFuel.initializeMainFire()
-        wait(0.5)
         AutoFuel.fuelConnection = RunService.Heartbeat:Connect(AutoFuel.autoFuelLoop)
     else
         if AutoFuel.fuelConnection then
@@ -234,7 +202,7 @@ function AutoFuel.getStatus()
                 end
             end
             
-            return string.format("Status: Auto-lighting & Fueling - Logs:%d Coal:%d Canisters:%d - Delay:%.1fs", 
+            return string.format("Status: Fueling MainFire - Logs:%d Coal:%d Canisters:%d - Delay:%.1fs", 
                    logCount, coalCount, canisterCount, AutoFuel.fuelDelay), distance
         else
             return "Status: No fuel items found", 0
@@ -243,3 +211,5 @@ function AutoFuel.getStatus()
         return "Status: Auto fuel disabled", 0
     end
 end
+
+return AutoFuel
