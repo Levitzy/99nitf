@@ -36,15 +36,20 @@ end
 
 function AutoFuel.findLogItems()
     local workspace = game:GetService("Workspace")
-    local itemsFolder = workspace:FindFirstChild("Items")
-    
-    if not itemsFolder then return {} end
-    
     local logItems = {}
     
-    for _, item in pairs(itemsFolder:GetChildren()) do
-        if item.Name == "Log" and item:FindFirstChild("Handle") then
+    for _, item in pairs(workspace:GetChildren()) do
+        if item.Name == "Log" and item:FindFirstChild("Meshes/log_Cylinder") then
             table.insert(logItems, item)
+        end
+    end
+    
+    local itemsFolder = workspace:FindFirstChild("Items")
+    if itemsFolder then
+        for _, item in pairs(itemsFolder:GetChildren()) do
+            if item.Name == "Log" and (item:FindFirstChild("Handle") or item:FindFirstChild("Meshes/log_Cylinder")) then
+                table.insert(logItems, item)
+            end
         end
     end
     
@@ -58,29 +63,34 @@ function AutoFuel.moveItemToMainFire(logItem)
     end
     
     local success = pcall(function()
-        if logItem:FindFirstChild("Handle") then
+        local logHandle = logItem:FindFirstChild("Handle") or 
+                         logItem:FindFirstChild("Meshes/log_Cylinder") or
+                         logItem:FindFirstChildOfClass("Part") or
+                         logItem:FindFirstChildOfClass("MeshPart")
+        
+        if logHandle then
             local targetCFrame = mainFirePart.CFrame
-            logItem.Handle.CFrame = targetCFrame * CFrame.new(
+            logHandle.CFrame = targetCFrame * CFrame.new(
                 math.random(-4, 4),
                 math.random(3, 6),
                 math.random(-4, 4)
             )
             
-            if logItem.Handle:FindFirstChild("BodyVelocity") then
-                logItem.Handle.BodyVelocity:Destroy()
+            if logHandle:FindFirstChild("BodyVelocity") then
+                logHandle.BodyVelocity:Destroy()
             end
-            if logItem.Handle:FindFirstChild("BodyAngularVelocity") then
-                logItem.Handle.BodyAngularVelocity:Destroy()
+            if logHandle:FindFirstChild("BodyAngularVelocity") then
+                logHandle.BodyAngularVelocity:Destroy()
             end
             
-            logItem.Handle.Velocity = Vector3.new(0, 0, 0)
-            logItem.Handle.AngularVelocity = Vector3.new(0, 0, 0)
+            logHandle.Velocity = Vector3.new(0, 0, 0)
+            logHandle.AngularVelocity = Vector3.new(0, 0, 0)
             
-            if logItem.Handle:FindFirstChild("AssemblyLinearVelocity") then
-                logItem.Handle.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            if logHandle:FindFirstChild("AssemblyLinearVelocity") then
+                logHandle.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
             end
-            if logItem.Handle:FindFirstChild("AssemblyAngularVelocity") then
-                logItem.Handle.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+            if logHandle:FindFirstChild("AssemblyAngularVelocity") then
+                logHandle.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
             end
         end
     end)
