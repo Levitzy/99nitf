@@ -88,6 +88,25 @@ function AutoFuel.getMainFire()
 end
 
 function AutoFuel.getMainFirePosition()
+    local mainFire = AutoFuel.getMainFire()
+    if not mainFire then return nil end
+    
+    local center = mainFire:FindFirstChild("Center")
+    if center and center:IsA("BasePart") then
+        return center.Position
+    end
+    
+    local primaryPart = mainFire.PrimaryPart
+    if primaryPart then
+        return primaryPart.Position
+    end
+    
+    for _, child in pairs(mainFire:GetChildren()) do
+        if child:IsA("BasePart") then
+            return child.Position
+        end
+    end
+    
     return Vector3.new(0, 6, 1)
 end
 
@@ -103,7 +122,7 @@ function AutoFuel.isInRange(maxDistance)
     return distance <= maxDistance, distance
 end
 
-function AutoFuel.dropLogAtFire()
+function AutoFuel.fuelMainFire()
     if not AutoFuel.hasLogItem() then
         return false, "No Log items found in workspace"
     end
@@ -113,37 +132,40 @@ function AutoFuel.dropLogAtFire()
         return false, "Delay not reached"
     end
     
+    local mainFire = AutoFuel.getMainFire()
+    if not mainFire then
+        return false, "MainFire not found"
+    end
+    
     local logToUse = AutoFuel.getBestLogItem()
     if not logToUse then
         return false, "No suitable Log item available"
     end
     
-    local firePosition = AutoFuel.getMainFirePosition()
+    local args = {
+        mainFire,
+        logToUse
+    }
     
     local success, result = pcall(function()
-        if logToUse:FindFirstChild("Main") and logToUse.Main:IsA("BasePart") then
-            logToUse.Main.CFrame = CFrame.new(firePosition + Vector3.new(math.random(-2, 2), 1, math.random(-2, 2)))
-            logToUse.Main.Velocity = Vector3.new(0, 0, 0)
-            logToUse.Main.AngularVelocity = Vector3.new(0, 0, 0)
-        end
-        return true
+        return ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestBurnItem"):FireServer(unpack(args))
     end)
     
     if success then
         AutoFuel.lastFuelTime = currentTime
-        return true, string.format("Log dropped at MainFire position using %s", logToUse.Name)
+        return true, string.format("Successfully fueled MainFire with %s", logToUse.Name)
     else
-        return false, "Failed to drop log: " .. tostring(result)
+        return false, "Failed to fuel MainFire: " .. tostring(result)
     end
 end
 
 function AutoFuel.autoFuelLoop()
     if not AutoFuel.autoFuelEnabled then return end
     
-    local inRange, distance = AutoFuel.isInRange(50)
+    local inRange, distance = AutoFuel.isInRange(100)
     
     if inRange then
-        local success, message = AutoFuel.dropLogAtFire()
+        local success, message = AutoFuel.fuelMainFire()
     end
 end
 
@@ -168,18 +190,18 @@ function AutoFuel.getStatus()
     if AutoFuel.autoFuelEnabled then
         local logs = AutoFuel.findLogItems()
         local logCount = #logs
-        local inRange, distance = AutoFuel.isInRange(50)
+        local inRange, distance = AutoFuel.isInRange(100)
         
         if logCount == 0 then
             return "Status: No Log items found in workspace.Items!", 0
         elseif not inRange then
             return string.format("Status: Too far from MainFire (%.1f studs) - %d logs available", distance or 0, logCount), distance or 0
         else
-            return string.format("Status: Auto dropping logs at MainFire (%.1f studs) - %d logs available - Delay: %.1fs", distance, logCount, AutoFuel.fuelDelay), distance
+            return string.format("Status: Auto fueling MainFire (%.1f studs) - %d logs available - Delay: %.1fs", distance, logCount, AutoFuel.fuelDelay), distance
         end
     else
         local logs = AutoFuel.findLogItems()
-        return string.format("Status: Auto drop disabled - %d logs available", #logs), 0
+        return string.format("Status: Auto fuel disabled - %d logs available", #logs), 0
     end
 end
 
