@@ -83,9 +83,9 @@ function AutoFuel.moveItemToMainFire(fuelItem)
         if fuelHandle then
             local mainFireCFrame = mainFire:GetBoundingBox()
             local dropPosition = mainFireCFrame * CFrame.new(
-                math.random(-1, 1),
-                math.random(15, 20),
-                math.random(-1, 1)
+                math.random(-5, 5),
+                math.random(20, 30),
+                math.random(-5, 5)
             )
             
             fuelHandle.CFrame = dropPosition
@@ -97,30 +97,30 @@ function AutoFuel.moveItemToMainFire(fuelItem)
                 fuelHandle.BodyAngularVelocity:Destroy()
             end
             
-            local dropSpeed = math.random(-10, -5)
+            local dropSpeed = math.random(-8, -3)
             fuelHandle.Velocity = Vector3.new(
-                math.random(-1, 1),
+                math.random(-3, 3),
                 dropSpeed,
-                math.random(-1, 1)
+                math.random(-3, 3)
             )
             fuelHandle.AngularVelocity = Vector3.new(
-                math.random(-3, 3),
-                math.random(-3, 3),
-                math.random(-3, 3)
+                math.random(-8, 8),
+                math.random(-8, 8),
+                math.random(-8, 8)
             )
             
             if fuelHandle:FindFirstChild("AssemblyLinearVelocity") then
                 fuelHandle.AssemblyLinearVelocity = Vector3.new(
-                    math.random(-1, 1),
+                    math.random(-3, 3),
                     dropSpeed,
-                    math.random(-1, 1)
+                    math.random(-3, 3)
                 )
             end
             if fuelHandle:FindFirstChild("AssemblyAngularVelocity") then
                 fuelHandle.AssemblyAngularVelocity = Vector3.new(
-                    math.random(-3, 3),
-                    math.random(-3, 3),
-                    math.random(-3, 3)
+                    math.random(-8, 8),
+                    math.random(-8, 8),
+                    math.random(-8, 8)
                 )
             end
         end
@@ -144,7 +144,7 @@ function AutoFuel.autoFuelLoop()
             local fuelItem = fuelItems[i]
             if fuelItem and fuelItem.Parent then
                 AutoFuel.moveItemToMainFire(fuelItem)
-                wait(0.2)
+                wait(0.3)
             end
         end
         AutoFuel.lastFuelTime = currentTime
