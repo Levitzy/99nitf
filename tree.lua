@@ -112,7 +112,7 @@ function TreeChopper.chopBatchTrees(treesData)
     end
     
     local choppedCount = 0
-    local maxBatch = math.min(3, #treesData)
+    local maxBatch = math.min(5, #treesData)
     
     for i = 1, maxBatch do
         local treeData = treesData[i]
@@ -176,7 +176,7 @@ function TreeChopper.getStatus()
                 end
             end
             
-            return string.format("Status: Processing %d trees (F:%d L:%d) - Batch: 3/cycle - Delay: %.1fs", 
+            return string.format("Status: Processing %d trees (F:%d L:%d) - Batch: 5/cycle - Delay: %.1fs", 
                    #allTrees, foliageCount, landmarkCount, TreeChopper.chopDelay), #allTrees, closestDistance
         else
             return "Status: No small trees found", 0, 0
