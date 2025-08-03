@@ -94,38 +94,18 @@ local AutoFuelToggle = FuelTab:CreateToggle({
        if Value then
            Rayfield:Notify({
                Title = "Auto Fuel Enabled",
-               Content = "Started bringing logs to MainFire automatically!",
+               Content = "Started bringing fuel to MainFire automatically!",
                Duration = 3,
                Image = 4335489011
            })
        else
            Rayfield:Notify({
                Title = "Auto Fuel Disabled",
-               Content = "Stopped bringing logs to MainFire.",
+               Content = "Stopped bringing fuel to MainFire.",
                Duration = 3,
                Image = 4335489011
            })
        end
-   end,
-})
-
-local FuelDelayDropdown = FuelTab:CreateDropdown({
-   Name = "Fuel Delay",
-   Options = {"0.5s", "1s", "2s", "3s", "5s", "7s", "10s"},
-   CurrentOption = "2s",
-   Flag = "FuelDelay",
-   Callback = function(Option)
-       local delayMap = {
-           ["0.5s"] = 0.5,
-           ["1s"] = 1,
-           ["2s"] = 2,
-           ["3s"] = 3,
-           ["5s"] = 5,
-           ["7s"] = 7,
-           ["10s"] = 10
-       }
-       local delay = delayMap[Option] or 2
-       AutoFuel.setFuelDelay(delay)
    end,
 })
 

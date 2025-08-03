@@ -5,7 +5,7 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
 AutoFuel.autoFuelEnabled = false
-AutoFuel.fuelDelay = 1
+AutoFuel.fuelDelay = 0.1
 AutoFuel.fuelConnection = nil
 AutoFuel.lastFuelTime = 0
 
