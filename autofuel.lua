@@ -189,7 +189,7 @@ function AutoFuel.getStatus()
                 end
             end
             
-            return string.format("Status: Fueling MainFire - Logs:%d Coal:%d Canisters:%d - Delay:%.1fs", 
+            return string.format("Status: Fueling MainFire - Log:%d Coal:%d Canisters:%d - Delay:%.1fs", 
                    logCount, coalCount, canisterCount, AutoFuel.fuelDelay), distance
         else
             return "Status: No fuel items found", 0
