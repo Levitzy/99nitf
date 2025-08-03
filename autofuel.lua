@@ -26,11 +26,7 @@ function AutoFuel.getMainFire()
     local campground = map:WaitForChild("Campground")
     local mainFire = campground:WaitForChild("MainFire")
     
-    local firePart = mainFire:FindFirstChild("Meshes/log_Cylinder001") or 
-                    mainFire:FindFirstChild("Meshes/log_Cylinder") or
-                    mainFire:FindFirstChildOfClass("Part")
-    
-    return mainFire, firePart
+    return mainFire, mainFire
 end
 
 function AutoFuel.findLogItems()
