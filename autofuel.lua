@@ -24,7 +24,14 @@ function AutoFuel.getMainFire()
     local workspace = game:GetService("Workspace")
     local map = workspace:WaitForChild("Map")
     local campground = map:WaitForChild("Campground")
-    return campground:WaitForChild("MainFire")
+    local mainFire = campground:WaitForChild("MainFire")
+    
+    local targetPart = mainFire:FindFirstChild("Meshes/log_Cylinder001") or 
+                      mainFire:FindFirstChild("Meshes/log_Cylinder") or
+                      mainFire:FindFirstChildOfClass("Part") or
+                      mainFire:FindFirstChildOfClass("MeshPart")
+    
+    return mainFire, targetPart
 end
 
 function AutoFuel.findLogItems()
@@ -45,23 +52,31 @@ function AutoFuel.findLogItems()
 end
 
 function AutoFuel.moveItemToMainFire(logItem)
-    local mainFire = AutoFuel.getMainFire()
-    if not mainFire or not logItem or not logItem.Parent then
+    local mainFire, mainFirePart = AutoFuel.getMainFire()
+    if not mainFire or not mainFirePart or not logItem or not logItem.Parent then
         return false
     end
     
-    local playerPos = AutoFuel.getPlayerPosition()
-    if not playerPos then return false end
-    
     local success = pcall(function()
         if logItem:FindFirstChild("Handle") then
-            logItem.Handle.CFrame = mainFire.CFrame * CFrame.new(
-                math.random(-2, 2),
-                math.random(1, 3),
-                math.random(-2, 2)
+            local targetCFrame = mainFirePart.CFrame
+            logItem.Handle.CFrame = targetCFrame * CFrame.new(
+                math.random(-3, 3),
+                math.random(2, 5),
+                math.random(-3, 3)
             )
+            
+            if logItem.Handle:FindFirstChild("BodyVelocity") then
+                logItem.Handle.BodyVelocity:Destroy()
+            end
+            if logItem.Handle:FindFirstChild("BodyAngularVelocity") then
+                logItem.Handle.BodyAngularVelocity:Destroy()
+            end
+            
             logItem.Handle.Velocity = Vector3.new(0, 0, 0)
             logItem.Handle.AngularVelocity = Vector3.new(0, 0, 0)
+            logItem.Handle.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            logItem.Handle.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
         end
     end)
     
@@ -110,13 +125,13 @@ end
 function AutoFuel.getStatus()
     if AutoFuel.autoFuelEnabled then
         local logItems = AutoFuel.findLogItems()
-        local mainFire = AutoFuel.getMainFire()
+        local mainFire, mainFirePart = AutoFuel.getMainFire()
         
-        if not mainFire then
+        if not mainFire or not mainFirePart then
             return "Status: MainFire not found!", 0
         elseif #logItems > 0 then
             local playerPos = AutoFuel.getPlayerPosition()
-            local mainFirePos = mainFire.Position
+            local mainFirePos = mainFirePart.Position
             local distance = playerPos and AutoFuel.getDistance(playerPos, mainFirePos) or 0
             return string.format("Status: Fueling MainFire - %d logs available - Delay: %.1fs", #logItems, AutoFuel.fuelDelay), distance
         else
