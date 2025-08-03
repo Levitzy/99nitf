@@ -4,7 +4,7 @@ local AutoFuel = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levi
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "Auto Tree Chopper & Fuel",
+   Name = "Auto Tree Chopper & Fuel Bot",
    LoadingTitle = "Tree Chopping & Auto Fuel Bot",
    LoadingSubtitle = "by TreeChopper",
    ConfigurationSaving = {
@@ -22,6 +22,7 @@ local Window = Rayfield:CreateWindow({
 
 local MainTab = Window:CreateTab("Tree Chopper", 4483362458)
 local FuelTab = Window:CreateTab("Auto Fuel", 4335489011)
+local UtilityTab = Window:CreateTab("Utilities", 4370317008)
 
 local RunService = game:GetService("RunService")
 
@@ -80,8 +81,7 @@ local ChopDelayDropdown = MainTab:CreateDropdown({
    end,
 })
 
-local InfoSection = MainTab:CreateSection("Information")
-
+local InfoSection = MainTab:CreateSection("Tree Chopper Information")
 local StatusLabel = MainTab:CreateLabel("Status: Ready")
 
 local AutoFuelToggle = FuelTab:CreateToggle({
@@ -94,14 +94,14 @@ local AutoFuelToggle = FuelTab:CreateToggle({
        if Value then
            Rayfield:Notify({
                Title = "Auto Fuel Enabled",
-               Content = "Started fueling MainFire automatically!",
+               Content = "Started bringing logs to MainFire automatically!",
                Duration = 3,
                Image = 4335489011
            })
        else
            Rayfield:Notify({
                Title = "Auto Fuel Disabled",
-               Content = "Stopped fueling MainFire.",
+               Content = "Stopped bringing logs to MainFire.",
                Duration = 3,
                Image = 4335489011
            })
@@ -111,37 +111,55 @@ local AutoFuelToggle = FuelTab:CreateToggle({
 
 local FuelDelayDropdown = FuelTab:CreateDropdown({
    Name = "Fuel Delay",
-   Options = {"0.5s", "1s", "3s", "5s", "7s", "10s"},
-   CurrentOption = "1s",
+   Options = {"0.5s", "1s", "2s", "3s", "5s", "7s", "10s"},
+   CurrentOption = "2s",
    Flag = "FuelDelay",
    Callback = function(Option)
        local delayMap = {
            ["0.5s"] = 0.5,
            ["1s"] = 1,
+           ["2s"] = 2,
            ["3s"] = 3,
            ["5s"] = 5,
            ["7s"] = 7,
            ["10s"] = 10
        }
-       local delay = delayMap[Option] or 1
+       local delay = delayMap[Option] or 2
        AutoFuel.setFuelDelay(delay)
    end,
 })
 
-local FuelDistanceSlider = FuelTab:CreateSlider({
-   Name = "Max Fuel Distance",
-   Range = {20, 200},
-   Increment = 10,
-   CurrentValue = 100,
-   Flag = "MaxFuelDistance",
+local FuelInfoSection = FuelTab:CreateSection("Auto Fuel Information")
+local FuelStatusLabel = FuelTab:CreateLabel("Status: Ready")
+
+local ComboBotToggle = UtilityTab:CreateToggle({
+   Name = "Enable Both Bots",
+   CurrentValue = false,
+   Flag = "ComboBotToggle",
    Callback = function(Value)
-       AutoFuel.setMaxDistance(Value)
+       TreeChopper.setEnabled(Value)
+       AutoFuel.setEnabled(Value)
+       
+       if Value then
+           Rayfield:Notify({
+               Title = "Combo Bot Enabled",
+               Content = "Both Tree Chopper and Auto Fuel are now active!",
+               Duration = 4,
+               Image = 4370317008
+           })
+       else
+           Rayfield:Notify({
+               Title = "Combo Bot Disabled",
+               Content = "Both bots have been stopped.",
+               Duration = 3,
+               Image = 4370317008
+           })
+       end
    end,
 })
 
-local FuelInfoSection = FuelTab:CreateSection("Information")
-
-local FuelStatusLabel = FuelTab:CreateLabel("Status: Ready")
+local ComboInfoSection = UtilityTab:CreateSection("Combo Bot Information")
+local ComboStatusLabel = UtilityTab:CreateLabel("Combo Status: Both bots disabled")
 
 RunService.Heartbeat:Connect(function()
     local status, treeCount, closestDistance = TreeChopper.getStatus()
@@ -149,11 +167,24 @@ RunService.Heartbeat:Connect(function()
     
     local fuelStatus, distance = AutoFuel.getStatus()
     FuelStatusLabel:Set(fuelStatus)
+    
+    local chopEnabled = TreeChopper.autoChopEnabled
+    local fuelEnabled = AutoFuel.autoFuelEnabled
+    
+    if chopEnabled and fuelEnabled then
+        ComboStatusLabel:Set("Combo Status: Both bots active - Chopping & Fueling")
+    elseif chopEnabled then
+        ComboStatusLabel:Set("Combo Status: Only Tree Chopper active")
+    elseif fuelEnabled then
+        ComboStatusLabel:Set("Combo Status: Only Auto Fuel active")
+    else
+        ComboStatusLabel:Set("Combo Status: Both bots disabled")
+    end
 end)
 
 Rayfield:Notify({
-   Title = "Auto Tree Chopper & Fuel Loaded",
-   Content = "Script loaded successfully! Make sure you have an Old Axe and logs are available.",
-   Duration = 5,
+   Title = "Auto Tree Chopper & Fuel Bot Loaded",
+   Content = "Script loaded successfully! Tree Chopper needs Old Axe. Auto Fuel will bring logs to MainFire.",
+   Duration = 6,
    Image = 4483362458
 })
