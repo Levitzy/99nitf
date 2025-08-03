@@ -87,9 +87,9 @@ function AutoFuel.moveItemToMainFire(fuelItem)
         if fuelHandle then
             local firePosition = firePart.Position
             local dropPosition = CFrame.new(
-                firePosition.X + math.random(-0.5, 0.5),
-                firePosition.Y + math.random(8, 12),
-                firePosition.Z + math.random(-0.5, 0.5)
+                firePosition.X + math.random(-0.3, 0.3),
+                firePosition.Y + math.random(4, 6),
+                firePosition.Z + math.random(-0.3, 0.3)
             )
             
             fuelHandle.CFrame = dropPosition
@@ -101,20 +101,20 @@ function AutoFuel.moveItemToMainFire(fuelItem)
                 fuelHandle.BodyAngularVelocity:Destroy()
             end
             
-            fuelHandle.Velocity = Vector3.new(0, -15, 0)
+            fuelHandle.Velocity = Vector3.new(0, -20, 0)
             fuelHandle.AngularVelocity = Vector3.new(0, 0, 0)
             
             if fuelHandle:FindFirstChild("AssemblyLinearVelocity") then
-                fuelHandle.AssemblyLinearVelocity = Vector3.new(0, -15, 0)
+                fuelHandle.AssemblyLinearVelocity = Vector3.new(0, -20, 0)
             end
             if fuelHandle:FindFirstChild("AssemblyAngularVelocity") then
                 fuelHandle.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
             end
             
-            wait(0.1)
+            wait(0.05)
             
             if fuelHandle and fuelHandle.Parent then
-                fuelHandle.CFrame = CFrame.new(firePosition.X, firePosition.Y + 2, firePosition.Z)
+                fuelHandle.CFrame = CFrame.new(firePosition.X, firePosition.Y + 0.5, firePosition.Z)
                 fuelHandle.Velocity = Vector3.new(0, 0, 0)
                 fuelHandle.AngularVelocity = Vector3.new(0, 0, 0)
             end
@@ -139,7 +139,7 @@ function AutoFuel.autoFuelLoop()
             local fuelItem = fuelItems[i]
             if fuelItem and fuelItem.Parent then
                 AutoFuel.moveItemToMainFire(fuelItem)
-                wait(1.0)
+                wait(0.5)
             end
         end
         AutoFuel.lastFuelTime = currentTime
