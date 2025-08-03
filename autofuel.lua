@@ -21,50 +21,78 @@ function AutoFuel.getDistance(pos1, pos2)
     return (pos1 - pos2).Magnitude
 end
 
-function AutoFuel.hasLogItem()
+function AutoFuel.findLogItems()
     local workspace = game:GetService("Workspace")
-    local itemsFolder = workspace:WaitForChild("Items")
+    local itemsFolder = workspace:FindFirstChild("Items")
     
+    if not itemsFolder then
+        return {}
+    end
+    
+    local logs = {}
     for _, item in pairs(itemsFolder:GetChildren()) do
-        if item.Name == "Log" then
-            return true, item
+        if item.Name == "Log" and item:FindFirstChild("Main") then
+            table.insert(logs, item)
         end
     end
-    return false, nil
+    
+    return logs
 end
 
-function AutoFuel.getLogItem()
-    local workspace = game:GetService("Workspace")
-    local itemsFolder = workspace:WaitForChild("Items")
-    local items = itemsFolder:GetChildren()
+function AutoFuel.getBestLogItem()
+    local logs = AutoFuel.findLogItems()
     
-    if #items >= 100 then
-        return items[100]
-    else
-        for _, item in pairs(items) do
-            if item.Name == "Log" then
-                return item
+    if #logs == 0 then
+        return nil
+    end
+    
+    local playerPos = AutoFuel.getPlayerPosition()
+    if not playerPos then
+        return logs[1]
+    end
+    
+    local closestLog = nil
+    local closestDistance = math.huge
+    
+    for _, log in pairs(logs) do
+        if log.Main then
+            local logPos = log.Main.Position
+            local distance = AutoFuel.getDistance(playerPos, logPos)
+            
+            if distance < closestDistance then
+                closestDistance = distance
+                closestLog = log
             end
         end
     end
-    return nil
+    
+    return closestLog or logs[1]
+end
+
+function AutoFuel.hasLogItem()
+    local logs = AutoFuel.findLogItems()
+    return #logs > 0
 end
 
 function AutoFuel.getMainFire()
     local workspace = game:GetService("Workspace")
-    local mapFolder = workspace:WaitForChild("Map")
-    local campgroundFolder = mapFolder:WaitForChild("Campground")
-    local mainFire = campgroundFolder:WaitForChild("MainFire")
+    local success, result = pcall(function()
+        return workspace:WaitForChild("Map"):WaitForChild("Campground"):WaitForChild("MainFire")
+    end)
     
-    return mainFire
+    if success then
+        return result
+    else
+        return nil
+    end
 end
 
 function AutoFuel.isInRange(maxDistance)
     local playerPos = AutoFuel.getPlayerPosition()
-    if not playerPos then return false end
+    if not playerPos then return false, 0 end
     
     local mainFire = AutoFuel.getMainFire()
-    if not mainFire then return false end
+    if not mainFire then return false, 0 end
     
     local firePos = mainFire.Position
     local distance = AutoFuel.getDistance(playerPos, firePos)
@@ -73,9 +101,8 @@ function AutoFuel.isInRange(maxDistance)
 end
 
 function AutoFuel.fuelFire()
-    local hasLog, logItem = AutoFuel.hasLogItem()
-    if not hasLog then
-        return false, "No Log item found"
+    if not AutoFuel.hasLogItem() then
+        return false, "No Log items found in workspace"
     end
     
     local currentTime = tick()
@@ -88,9 +115,9 @@ function AutoFuel.fuelFire()
         return false, "MainFire not found"
     end
     
-    local logToUse = AutoFuel.getLogItem()
+    local logToUse = AutoFuel.getBestLogItem()
     if not logToUse then
-        return false, "No Log item available"
+        return false, "No suitable Log item available"
     end
     
     local args = {
@@ -104,9 +131,9 @@ function AutoFuel.fuelFire()
     
     if success then
         AutoFuel.lastFuelTime = currentTime
-        return true, "Fuel added successfully"
+        return true, string.format("Fuel added successfully using %s", logToUse.Name)
     else
-        return false, "Failed to fuel fire"
+        return false, "Failed to fuel fire: " .. tostring(result)
     end
 end
 
@@ -116,7 +143,7 @@ function AutoFuel.autoFuelLoop()
     local inRange, distance = AutoFuel.isInRange(50)
     
     if inRange then
-        AutoFuel.fuelFire()
+        local success, message = AutoFuel.fuelFire()
     end
 end
 
@@ -139,18 +166,20 @@ end
 
 function AutoFuel.getStatus()
     if AutoFuel.autoFuelEnabled then
-        local hasLog, logItem = AutoFuel.hasLogItem()
+        local logs = AutoFuel.findLogItems()
+        local logCount = #logs
         local inRange, distance = AutoFuel.isInRange(50)
         
-        if not hasLog then
-            return "Status: No Log item found in workspace!", 0
+        if logCount == 0 then
+            return "Status: No Log items found in workspace.Items!", 0
         elseif not inRange then
-            return string.format("Status: Too far from MainFire (%.1f studs)", distance or 0), distance or 0
+            return string.format("Status: Too far from MainFire (%.1f studs) - %d logs available", distance or 0, logCount), distance or 0
         else
-            return string.format("Status: Auto fueling MainFire (%.1f studs) - Delay: %.1fs", distance, AutoFuel.fuelDelay), distance
+            return string.format("Status: Auto fueling MainFire (%.1f studs) - %d logs available - Delay: %.1fs", distance, logCount, AutoFuel.fuelDelay), distance
         end
     else
-        return "Status: Auto fuel disabled", 0
+        local logs = AutoFuel.findLogItems()
+        return string.format("Status: Auto fuel disabled - %d logs available", #logs), 0
     end
 end
 
