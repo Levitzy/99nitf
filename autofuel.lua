@@ -70,11 +70,13 @@ function AutoFuel.moveItemToMainFire(logItem)
         
         if logHandle then
             local targetCFrame = mainFirePart.CFrame
-            logHandle.CFrame = targetCFrame * CFrame.new(
+            local dropPosition = targetCFrame * CFrame.new(
                 math.random(-4, 4),
-                math.random(3, 6),
+                math.random(15, 25),
                 math.random(-4, 4)
             )
+            
+            logHandle.CFrame = dropPosition
             
             if logHandle:FindFirstChild("BodyVelocity") then
                 logHandle.BodyVelocity:Destroy()
@@ -83,14 +85,30 @@ function AutoFuel.moveItemToMainFire(logItem)
                 logHandle.BodyAngularVelocity:Destroy()
             end
             
-            logHandle.Velocity = Vector3.new(0, 0, 0)
-            logHandle.AngularVelocity = Vector3.new(0, 0, 0)
+            logHandle.Velocity = Vector3.new(
+                math.random(-2, 2),
+                math.random(-5, -1),
+                math.random(-2, 2)
+            )
+            logHandle.AngularVelocity = Vector3.new(
+                math.random(-5, 5),
+                math.random(-5, 5),
+                math.random(-5, 5)
+            )
             
             if logHandle:FindFirstChild("AssemblyLinearVelocity") then
-                logHandle.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                logHandle.AssemblyLinearVelocity = Vector3.new(
+                    math.random(-2, 2),
+                    math.random(-5, -1),
+                    math.random(-2, 2)
+                )
             end
             if logHandle:FindFirstChild("AssemblyAngularVelocity") then
-                logHandle.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                logHandle.AssemblyAngularVelocity = Vector3.new(
+                    math.random(-5, 5),
+                    math.random(-5, 5),
+                    math.random(-5, 5)
+                )
             end
         end
     end)
