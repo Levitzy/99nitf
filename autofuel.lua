@@ -26,7 +26,11 @@ function AutoFuel.getMainFire()
     local campground = map:WaitForChild("Campground")
     local mainFire = campground:WaitForChild("MainFire")
     
-    return mainFire, mainFire
+    local firePart = mainFire:FindFirstChild("Meshes/log_Cylinder001") or 
+                    mainFire:FindFirstChild("Meshes/log_Cylinder") or
+                    mainFire:FindFirstChildOfClass("Part")
+    
+    return mainFire, firePart
 end
 
 function AutoFuel.findLogItems()
@@ -60,8 +64,8 @@ function AutoFuel.findLogItems()
 end
 
 function AutoFuel.moveItemToMainFire(fuelItem)
-    local mainFire, _ = AutoFuel.getMainFire()
-    if not mainFire or not fuelItem or not fuelItem.Parent then
+    local mainFire, firePart = AutoFuel.getMainFire()
+    if not mainFire or not firePart or not fuelItem or not fuelItem.Parent then
         return false
     end
     
@@ -81,11 +85,11 @@ function AutoFuel.moveItemToMainFire(fuelItem)
         end
         
         if fuelHandle then
-            local mainFireCFrame = mainFire:GetBoundingBox()
-            local dropPosition = mainFireCFrame * CFrame.new(
-                math.random(-1, 1),
-                math.random(15, 20),
-                math.random(-1, 1)
+            local firePosition = firePart.Position
+            local dropPosition = CFrame.new(
+                firePosition.X + math.random(-0.5, 0.5),
+                firePosition.Y + math.random(8, 12),
+                firePosition.Z + math.random(-0.5, 0.5)
             )
             
             fuelHandle.CFrame = dropPosition
@@ -97,31 +101,22 @@ function AutoFuel.moveItemToMainFire(fuelItem)
                 fuelHandle.BodyAngularVelocity:Destroy()
             end
             
-            local dropSpeed = math.random(-10, -5)
-            fuelHandle.Velocity = Vector3.new(
-                math.random(-1, 1),
-                dropSpeed,
-                math.random(-1, 1)
-            )
-            fuelHandle.AngularVelocity = Vector3.new(
-                math.random(-3, 3),
-                math.random(-3, 3),
-                math.random(-3, 3)
-            )
+            fuelHandle.Velocity = Vector3.new(0, -15, 0)
+            fuelHandle.AngularVelocity = Vector3.new(0, 0, 0)
             
             if fuelHandle:FindFirstChild("AssemblyLinearVelocity") then
-                fuelHandle.AssemblyLinearVelocity = Vector3.new(
-                    math.random(-1, 1),
-                    dropSpeed,
-                    math.random(-1, 1)
-                )
+                fuelHandle.AssemblyLinearVelocity = Vector3.new(0, -15, 0)
             end
             if fuelHandle:FindFirstChild("AssemblyAngularVelocity") then
-                fuelHandle.AssemblyAngularVelocity = Vector3.new(
-                    math.random(-3, 3),
-                    math.random(-3, 3),
-                    math.random(-3, 3)
-                )
+                fuelHandle.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+            end
+            
+            wait(0.1)
+            
+            if fuelHandle and fuelHandle.Parent then
+                fuelHandle.CFrame = CFrame.new(firePosition.X, firePosition.Y + 2, firePosition.Z)
+                fuelHandle.Velocity = Vector3.new(0, 0, 0)
+                fuelHandle.AngularVelocity = Vector3.new(0, 0, 0)
             end
         end
     end)
@@ -171,15 +166,14 @@ end
 function AutoFuel.getStatus()
     if AutoFuel.autoFuelEnabled then
         local fuelItems = AutoFuel.findLogItems()
-        local mainFire, _ = AutoFuel.getMainFire()
+        local mainFire, firePart = AutoFuel.getMainFire()
         
-        if not mainFire then
+        if not mainFire or not firePart then
             return "Status: MainFire not found!", 0
         elseif #fuelItems > 0 then
             local playerPos = AutoFuel.getPlayerPosition()
-            local mainFireCFrame = mainFire:GetBoundingBox()
-            local mainFirePos = mainFireCFrame.Position
-            local distance = playerPos and AutoFuel.getDistance(playerPos, mainFirePos) or 0
+            local firePos = firePart.Position
+            local distance = playerPos and AutoFuel.getDistance(playerPos, firePos) or 0
             
             local logCount = 0
             local coalCount = 0
