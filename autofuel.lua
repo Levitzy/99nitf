@@ -10,7 +10,6 @@ AutoFuel.autoFuelEnabled = false
 AutoFuel.fuelDelay = 1
 AutoFuel.fuelConnection = nil
 AutoFuel.lastFuelTime = 0
-AutoFuel.maxDistance = 75
 
 function AutoFuel.getPlayerPosition()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -23,54 +22,51 @@ function AutoFuel.getDistance(pos1, pos2)
     return (pos1 - pos2).Magnitude
 end
 
-function AutoFuel.getMainFirePosition()
-    local mainFire = Workspace:FindFirstChild("Map")
-    if mainFire then
-        mainFire = mainFire:FindFirstChild("Campground")
-        if mainFire then
-            mainFire = mainFire:FindFirstChild("MainFire")
-            if mainFire and mainFire:FindFirstChild("PrimaryPart") then
-                return mainFire.PrimaryPart.Position
-            elseif mainFire then
-                local firstChild = mainFire:GetChildren()[1]
-                if firstChild and firstChild:IsA("BasePart") then
-                    return firstChild.Position
-                end
-            end
+function AutoFuel.getMainFire()
+    local map = Workspace:FindFirstChild("Map")
+    if map then
+        local campground = map:FindFirstChild("Campground")
+        if campground then
+            local mainFire = campground:FindFirstChild("MainFire")
+            return mainFire
         end
     end
     return nil
 end
 
-function AutoFuel.findLogsInRange()
-    local playerPos = AutoFuel.getPlayerPosition()
-    if not playerPos then return {} end
-    
+function AutoFuel.findAllLogs()
     local itemsFolder = Workspace:FindFirstChild("Items")
     if not itemsFolder then return {} end
     
-    local logsInRange = {}
+    local playerPos = AutoFuel.getPlayerPosition()
+    if not playerPos then return {} end
+    
+    local allLogs = {}
     
     for _, item in pairs(itemsFolder:GetChildren()) do
-        if item.Name == "Log" and item:IsA("Model") and item:FindFirstChild("Meshes/log_Cylinder") then
-            local logPos = item["Meshes/log_Cylinder"].Position
-            local distance = AutoFuel.getDistance(playerPos, logPos)
-            
-            if distance <= AutoFuel.maxDistance then
-                table.insert(logsInRange, {log = item, distance = distance})
+        if item.Name == "Log" and item:IsA("Model") then
+            local logPart = item:FindFirstChild("Meshes/log_Cylinder")
+            if logPart then
+                local logPos = logPart.Position
+                local distance = AutoFuel.getDistance(playerPos, logPos)
+                
+                table.insert(allLogs, {log = item, distance = distance})
             end
         end
     end
     
-    table.sort(logsInRange, function(a, b)
+    table.sort(allLogs, function(a, b)
         return a.distance < b.distance
     end)
     
-    return logsInRange
+    return allLogs
 end
 
 function AutoFuel.burnLogToMainFire(log)
-    local mainFire = Workspace:WaitForChild("Map"):WaitForChild("Campground"):WaitForChild("MainFire")
+    local mainFire = AutoFuel.getMainFire()
+    if not mainFire then
+        return false, "MainFire not found"
+    end
     
     local args = {
         mainFire,
@@ -81,7 +77,7 @@ function AutoFuel.burnLogToMainFire(log)
         return ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestBurnItem"):FireServer(unpack(args))
     end)
     
-    return success
+    return success, result
 end
 
 function AutoFuel.burnMultipleLogs(logsData)
@@ -91,14 +87,17 @@ function AutoFuel.burnMultipleLogs(logsData)
     end
     
     local burnedCount = 0
+    local maxBurnPerCycle = 10
     
-    for _, logData in pairs(logsData) do
+    for i, logData in pairs(logsData) do
+        if i > maxBurnPerCycle then break end
+        
         if logData.log and logData.log.Parent then
-            local success = AutoFuel.burnLogToMainFire(logData.log)
+            local success, error = AutoFuel.burnLogToMainFire(logData.log)
             if success then
                 burnedCount = burnedCount + 1
             end
-            wait(0.1)
+            wait(0.05)
         end
     end
     
@@ -109,10 +108,10 @@ end
 function AutoFuel.autoFuelLoop()
     if not AutoFuel.autoFuelEnabled then return end
     
-    local logsInRange = AutoFuel.findLogsInRange()
+    local allLogs = AutoFuel.findAllLogs()
     
-    if #logsInRange > 0 then
-        local success = AutoFuel.burnMultipleLogs(logsInRange)
+    if #allLogs > 0 then
+        local success = AutoFuel.burnMultipleLogs(allLogs)
     end
 end
 
@@ -133,22 +132,18 @@ function AutoFuel.setFuelDelay(delay)
     AutoFuel.fuelDelay = delay
 end
 
-function AutoFuel.setMaxDistance(distance)
-    AutoFuel.maxDistance = distance
-end
-
 function AutoFuel.getStatus()
     if AutoFuel.autoFuelEnabled then
-        local logsInRange = AutoFuel.findLogsInRange()
-        local mainFirePos = AutoFuel.getMainFirePosition()
+        local allLogs = AutoFuel.findAllLogs()
+        local mainFire = AutoFuel.getMainFire()
         
-        if not mainFirePos then
-            return "Status: MainFire not found!", 0
-        elseif #logsInRange > 0 then
-            local closestDistance = logsInRange[1].distance
-            return string.format("Status: Fueling with %d logs (closest: %.1f studs) - Delay: %.1fs", #logsInRange, closestDistance, AutoFuel.fuelDelay), closestDistance
+        if not mainFire then
+            return "Status: MainFire not found in Map/Campground!", 0
+        elseif #allLogs > 0 then
+            local closestDistance = allLogs[1].distance
+            return string.format("Status: Fueling with %d logs (closest: %.1f studs) - Delay: %.1fs", #allLogs, closestDistance, AutoFuel.fuelDelay), closestDistance
         else
-            return "Status: No logs in range", 0
+            return "Status: No logs found in workspace", 0
         end
     else
         return "Status: Auto fuel disabled", 0

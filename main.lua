@@ -94,7 +94,7 @@ local AutoFuelToggle = FuelTab:CreateToggle({
        if Value then
            Rayfield:Notify({
                Title = "Auto Fuel Enabled",
-               Content = "Started fueling MainFire automatically!",
+               Content = "Started fueling MainFire with all logs in workspace!",
                Duration = 3,
                Image = 4335489011
            })
@@ -106,17 +106,6 @@ local AutoFuelToggle = FuelTab:CreateToggle({
                Image = 4335489011
            })
        end
-   end,
-})
-
-local FuelDistanceSlider = FuelTab:CreateSlider({
-   Name = "Max Fuel Distance",
-   Range = {25, 150},
-   Increment = 5,
-   CurrentValue = 75,
-   Flag = "MaxFuelDistance",
-   Callback = function(Value)
-       AutoFuel.setMaxDistance(Value)
    end,
 })
 
@@ -153,7 +142,7 @@ end)
 
 Rayfield:Notify({
    Title = "Auto Tree Chopper & Fuel Loaded",
-   Content = "Script loaded successfully! Make sure you have an Old Axe and logs nearby.",
+   Content = "Script loaded successfully! Auto fuel will find ALL logs in workspace.",
    Duration = 5,
    Image = 4483362458
 })
