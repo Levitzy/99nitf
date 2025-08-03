@@ -86,13 +86,12 @@ function AutoFuel.moveItemToMainFire(fuelItem)
         
         if fuelHandle then
             local firePosition = firePart.Position
-            local dropPosition = CFrame.new(
-                firePosition.X + math.random(-0.3, 0.3),
-                firePosition.Y + math.random(4, 6),
-                firePosition.Z + math.random(-0.3, 0.3)
-            )
             
-            fuelHandle.CFrame = dropPosition
+            fuelHandle.CFrame = CFrame.new(
+                firePosition.X + math.random(-0.2, 0.2),
+                firePosition.Y + 8,
+                firePosition.Z + math.random(-0.2, 0.2)
+            )
             
             if fuelHandle:FindFirstChild("BodyVelocity") then
                 fuelHandle.BodyVelocity:Destroy()
@@ -101,22 +100,31 @@ function AutoFuel.moveItemToMainFire(fuelItem)
                 fuelHandle.BodyAngularVelocity:Destroy()
             end
             
-            fuelHandle.Velocity = Vector3.new(0, -20, 0)
+            fuelHandle.Velocity = Vector3.new(0, -10, 0)
             fuelHandle.AngularVelocity = Vector3.new(0, 0, 0)
             
             if fuelHandle:FindFirstChild("AssemblyLinearVelocity") then
-                fuelHandle.AssemblyLinearVelocity = Vector3.new(0, -20, 0)
+                fuelHandle.AssemblyLinearVelocity = Vector3.new(0, -10, 0)
             end
             if fuelHandle:FindFirstChild("AssemblyAngularVelocity") then
                 fuelHandle.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
             end
             
-            wait(0.05)
+            wait(0.8)
             
             if fuelHandle and fuelHandle.Parent then
-                fuelHandle.CFrame = CFrame.new(firePosition.X, firePosition.Y + 0.5, firePosition.Z)
+                local finalX = firePosition.X + math.random(-1, 1)
+                local finalZ = firePosition.Z + math.random(-1, 1)
+                fuelHandle.CFrame = CFrame.new(finalX, firePosition.Y + 1, finalZ)
                 fuelHandle.Velocity = Vector3.new(0, 0, 0)
                 fuelHandle.AngularVelocity = Vector3.new(0, 0, 0)
+                
+                if fuelHandle:FindFirstChild("AssemblyLinearVelocity") then
+                    fuelHandle.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                end
+                if fuelHandle:FindFirstChild("AssemblyAngularVelocity") then
+                    fuelHandle.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                end
             end
         end
     end)
