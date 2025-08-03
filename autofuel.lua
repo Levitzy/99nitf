@@ -3,13 +3,13 @@ local AutoFuel = {}
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 
 AutoFuel.autoFuelEnabled = false
 AutoFuel.fuelDelay = 1
 AutoFuel.fuelConnection = nil
 AutoFuel.lastFuelTime = 0
+AutoFuel.maxDistance = 100
 
 function AutoFuel.getPlayerPosition()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -23,96 +23,98 @@ function AutoFuel.getDistance(pos1, pos2)
 end
 
 function AutoFuel.getMainFire()
-    local map = Workspace:FindFirstChild("Map")
-    if map then
-        local campground = map:FindFirstChild("Campground")
-        if campground then
-            local mainFire = campground:FindFirstChild("MainFire")
-            return mainFire
-        end
+    local workspace = game:GetService("Workspace")
+    local success, mainFire = pcall(function()
+        return workspace:WaitForChild("Map"):WaitForChild("Campground"):WaitForChild("MainFire")
+    end)
+    
+    if success and mainFire then
+        return mainFire
     end
     return nil
 end
 
-function AutoFuel.findAllLogs()
-    local itemsFolder = Workspace:FindFirstChild("Items")
-    if not itemsFolder then return {} end
-    
+function AutoFuel.findLogsInWorkspace()
     local playerPos = AutoFuel.getPlayerPosition()
     if not playerPos then return {} end
     
-    local allLogs = {}
+    local workspace = game:GetService("Workspace")
+    local itemsFolder = workspace:FindFirstChild("Items")
+    
+    if not itemsFolder then return {} end
+    
+    local logsInRange = {}
     
     for _, item in pairs(itemsFolder:GetChildren()) do
-        if item.Name == "Log" and item:IsA("Model") then
-            local logPart = item:FindFirstChild("Meshes/log_Cylinder")
-            if logPart then
-                local logPos = logPart.Position
-                local distance = AutoFuel.getDistance(playerPos, logPos)
-                
-                table.insert(allLogs, {log = item, distance = distance})
+        if item.Name == "Log" and item:IsA("Model") and item:FindFirstChild("Meshes/log_Cylinder") then
+            local logPos = item:FindFirstChild("Meshes/log_Cylinder").Position
+            local distance = AutoFuel.getDistance(playerPos, logPos)
+            
+            if distance <= AutoFuel.maxDistance then
+                table.insert(logsInRange, {log = item, distance = distance})
             end
         end
     end
     
-    table.sort(allLogs, function(a, b)
+    table.sort(logsInRange, function(a, b)
         return a.distance < b.distance
     end)
     
-    return allLogs
+    return logsInRange
 end
 
-function AutoFuel.burnLogToMainFire(log)
+function AutoFuel.dropLogToFire(log)
     local mainFire = AutoFuel.getMainFire()
-    if not mainFire then
-        return false, "MainFire not found"
+    if not mainFire or not log or not log.Parent then
+        return false
     end
     
-    local args = {
-        mainFire,
-        log
-    }
+    local playerPos = AutoFuel.getPlayerPosition()
+    if not playerPos then return false end
+    
+    local firePos = mainFire.Position
+    local logMesh = log:FindFirstChild("Meshes/log_Cylinder")
+    if not logMesh then return false end
+    
+    local lookDirection = (firePos - playerPos).Unit
+    local cframe = CFrame.lookAt(playerPos, firePos)
     
     local success, result = pcall(function()
-        return ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestBurnItem"):FireServer(unpack(args))
+        logMesh.CFrame = CFrame.new(firePos + Vector3.new(0, 2, 0))
+        wait(0.1)
+        logMesh.CFrame = CFrame.new(firePos)
     end)
     
-    return success, result
+    return success
 end
 
-function AutoFuel.burnMultipleLogs(logsData)
+function AutoFuel.fuelFire()
+    if not AutoFuel.autoFuelEnabled then return end
+    
     local currentTime = tick()
     if currentTime - AutoFuel.lastFuelTime < AutoFuel.fuelDelay then
         return false
     end
     
-    local burnedCount = 0
-    local maxBurnPerCycle = 10
+    local logsInRange = AutoFuel.findLogsInWorkspace()
     
-    for i, logData in pairs(logsData) do
-        if i > maxBurnPerCycle then break end
+    if #logsInRange > 0 then
+        local logData = logsInRange[1]
+        local success = AutoFuel.dropLogToFire(logData.log)
         
-        if logData.log and logData.log.Parent then
-            local success, error = AutoFuel.burnLogToMainFire(logData.log)
-            if success then
-                burnedCount = burnedCount + 1
-            end
-            wait(0.05)
+        if success then
+            AutoFuel.lastFuelTime = currentTime
+            return true
         end
     end
     
-    AutoFuel.lastFuelTime = currentTime
-    return burnedCount > 0
+    return false
 end
 
 function AutoFuel.autoFuelLoop()
     if not AutoFuel.autoFuelEnabled then return end
     
-    local allLogs = AutoFuel.findAllLogs()
-    
-    if #allLogs > 0 then
-        local success = AutoFuel.burnMultipleLogs(allLogs)
-    end
+    AutoFuel.fuelFire()
 end
 
 function AutoFuel.setEnabled(enabled)
@@ -134,16 +136,16 @@ end
 
 function AutoFuel.getStatus()
     if AutoFuel.autoFuelEnabled then
-        local allLogs = AutoFuel.findAllLogs()
+        local logsInRange = AutoFuel.findLogsInWorkspace()
         local mainFire = AutoFuel.getMainFire()
         
         if not mainFire then
-            return "Status: MainFire not found in Map/Campground!", 0
-        elseif #allLogs > 0 then
-            local closestDistance = allLogs[1].distance
-            return string.format("Status: Fueling with %d logs (closest: %.1f studs) - Delay: %.1fs", #allLogs, closestDistance, AutoFuel.fuelDelay), closestDistance
+            return "Status: MainFire not found!", 0
+        elseif #logsInRange > 0 then
+            local closestDistance = logsInRange[1].distance
+            return string.format("Status: Fueling fire with %d logs (closest: %.1f studs) - Delay: %.1fs", #logsInRange, closestDistance, AutoFuel.fuelDelay), closestDistance
         else
-            return "Status: No logs found in workspace", 0
+            return "Status: No logs in range", 0
         end
     else
         return "Status: Auto fuel disabled", 0

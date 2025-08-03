@@ -5,7 +5,7 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
    Name = "Auto Tree Chopper & Fuel",
-   LoadingTitle = "Tree Chopping & Fuel Bot",
+   LoadingTitle = "Tree Chopping & Auto Fuel Bot",
    LoadingSubtitle = "by TreeChopper",
    ConfigurationSaving = {
       Enabled = true,
@@ -94,7 +94,7 @@ local AutoFuelToggle = FuelTab:CreateToggle({
        if Value then
            Rayfield:Notify({
                Title = "Auto Fuel Enabled",
-               Content = "Started fueling MainFire with all logs in workspace!",
+               Content = "Started fueling MainFire automatically!",
                Duration = 3,
                Image = 4335489011
            })
@@ -128,6 +128,17 @@ local FuelDelayDropdown = FuelTab:CreateDropdown({
    end,
 })
 
+local FuelDistanceSlider = FuelTab:CreateSlider({
+   Name = "Max Fuel Distance",
+   Range = {20, 200},
+   Increment = 10,
+   CurrentValue = 100,
+   Flag = "MaxFuelDistance",
+   Callback = function(Value)
+       AutoFuel.setMaxDistance(Value)
+   end,
+})
+
 local FuelInfoSection = FuelTab:CreateSection("Information")
 
 local FuelStatusLabel = FuelTab:CreateLabel("Status: Ready")
@@ -142,7 +153,7 @@ end)
 
 Rayfield:Notify({
    Title = "Auto Tree Chopper & Fuel Loaded",
-   Content = "Script loaded successfully! Auto fuel will find ALL logs in workspace.",
+   Content = "Script loaded successfully! Make sure you have an Old Axe and logs are available.",
    Duration = 5,
    Image = 4483362458
 })
