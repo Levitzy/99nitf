@@ -2,6 +2,7 @@ local AutoFuel = {}
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 
 AutoFuel.autoFuelEnabled = false
@@ -28,6 +29,7 @@ function AutoFuel.getMainFire()
     
     local firePart = mainFire:FindFirstChild("Meshes/log_Cylinder001") or 
                     mainFire:FindFirstChild("Meshes/log_Cylinder") or
+                    mainFire:FindFirstChild("Fire") or
                     mainFire:FindFirstChildOfClass("Part")
     
     return mainFire, firePart
@@ -63,7 +65,7 @@ function AutoFuel.findLogItems()
     return fuelItems
 end
 
-function AutoFuel.moveItemToMainFire(fuelItem)
+function AutoFuel.fuelFireWithItem(fuelItem)
     local mainFire, firePart = AutoFuel.getMainFire()
     if not mainFire or not firePart or not fuelItem or not fuelItem.Parent then
         return false
@@ -86,37 +88,63 @@ function AutoFuel.moveItemToMainFire(fuelItem)
         
         if fuelHandle then
             local firePosition = firePart.Position
-            local dropPosition = CFrame.new(
-                firePosition.X + math.random(-0.5, 0.5),
-                firePosition.Y + math.random(8, 12),
-                firePosition.Z + math.random(-0.5, 0.5)
-            )
+            local playerPos = AutoFuel.getPlayerPosition()
             
-            fuelHandle.CFrame = dropPosition
-            
-            if fuelHandle:FindFirstChild("BodyVelocity") then
-                fuelHandle.BodyVelocity:Destroy()
+            if playerPos then
+                local lookDirection = (firePosition - playerPos).Unit
+                local cframe = CFrame.lookAt(playerPos, firePosition)
+                
+                local remoteEvents = ReplicatedStorage:FindFirstChild("RemoteEvents")
+                if remoteEvents then
+                    local fuelRemote = remoteEvents:FindFirstChild("AddFuelToFire") or
+                                     remoteEvents:FindFirstChild("FuelFire") or
+                                     remoteEvents:FindFirstChild("InteractWithFire")
+                    
+                    if fuelRemote then
+                        local args = {
+                            mainFire,
+                            fuelItem,
+                            fuelHandle,
+                            cframe
+                        }
+                        
+                        if fuelRemote.ClassName == "RemoteFunction" then
+                            fuelRemote:InvokeServer(unpack(args))
+                        else
+                            fuelRemote:FireServer(unpack(args))
+                        end
+                    else
+                        local interactRemote = remoteEvents:FindFirstChild("InteractWithObject") or
+                                             remoteEvents:FindFirstChild("UseItem") or
+                                             remoteEvents:FindFirstChild("ToolDamageObject")
+                        
+                        if interactRemote then
+                            local args = {
+                                mainFire,
+                                fuelItem,
+                                "fuel_action",
+                                cframe
+                            }
+                            
+                            if interactRemote.ClassName == "RemoteFunction" then
+                                interactRemote:InvokeServer(unpack(args))
+                            else
+                                interactRemote:FireServer(unpack(args))
+                            end
+                        end
+                    end
+                end
             end
-            if fuelHandle:FindFirstChild("BodyAngularVelocity") then
-                fuelHandle.BodyAngularVelocity:Destroy()
-            end
             
-            fuelHandle.Velocity = Vector3.new(0, -15, 0)
+            fuelHandle.CFrame = CFrame.new(firePosition.X + math.random(-1, 1), firePosition.Y + 2, firePosition.Z + math.random(-1, 1))
+            fuelHandle.Velocity = Vector3.new(0, 0, 0)
             fuelHandle.AngularVelocity = Vector3.new(0, 0, 0)
             
             if fuelHandle:FindFirstChild("AssemblyLinearVelocity") then
-                fuelHandle.AssemblyLinearVelocity = Vector3.new(0, -15, 0)
+                fuelHandle.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
             end
             if fuelHandle:FindFirstChild("AssemblyAngularVelocity") then
                 fuelHandle.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-            end
-            
-            wait(0.1)
-            
-            if fuelHandle and fuelHandle.Parent then
-                fuelHandle.CFrame = CFrame.new(firePosition.X, firePosition.Y + 2, firePosition.Z)
-                fuelHandle.Velocity = Vector3.new(0, 0, 0)
-                fuelHandle.AngularVelocity = Vector3.new(0, 0, 0)
             end
         end
     end)
@@ -135,14 +163,12 @@ function AutoFuel.autoFuelLoop()
     local fuelItems = AutoFuel.findLogItems()
     
     if #fuelItems > 0 then
-        for i = 1, math.min(#fuelItems, 2) do
-            local fuelItem = fuelItems[i]
-            if fuelItem and fuelItem.Parent then
-                AutoFuel.moveItemToMainFire(fuelItem)
-                wait(0.2)
-            end
+        local fuelItem = fuelItems[1]
+        if fuelItem and fuelItem.Parent then
+            AutoFuel.fuelFireWithItem(fuelItem)
+            AutoFuel.lastFuelTime = currentTime
+            wait(0.5)
         end
-        AutoFuel.lastFuelTime = currentTime
     end
 end
 
@@ -189,7 +215,7 @@ function AutoFuel.getStatus()
                 end
             end
             
-            return string.format("Status: Fueling MainFire - Log:%d Coal:%d Canisters:%d - Delay:%.1fs", 
+            return string.format("Status: Auto-fueling MainFire - Log:%d Coal:%d Canisters:%d - Delay:%.1fs", 
                    logCount, coalCount, canisterCount, AutoFuel.fuelDelay), distance
         else
             return "Status: No fuel items found", 0
