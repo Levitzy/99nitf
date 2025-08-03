@@ -31,7 +31,7 @@ function AutoFuel.findLogItems()
     
     local logs = {}
     for _, item in pairs(itemsFolder:GetChildren()) do
-        if item.Name == "Log" and item:FindFirstChild("Main") then
+        if item.Name == "Log" and item:FindFirstChild("Main") and item.Main:IsA("BasePart") then
             table.insert(logs, item)
         end
     end
@@ -55,7 +55,7 @@ function AutoFuel.getBestLogItem()
     local closestDistance = math.huge
     
     for _, log in pairs(logs) do
-        if log.Main then
+        if log:FindFirstChild("Main") and log.Main:IsA("BasePart") then
             local logPos = log.Main.Position
             local distance = AutoFuel.getDistance(playerPos, logPos)
             
@@ -87,14 +87,31 @@ function AutoFuel.getMainFire()
     end
 end
 
+function AutoFuel.getMainFirePosition()
+    local mainFire = AutoFuel.getMainFire()
+    if not mainFire then return nil end
+    
+    local primaryPart = mainFire.PrimaryPart
+    if primaryPart then
+        return primaryPart.Position
+    end
+    
+    for _, child in pairs(mainFire:GetChildren()) do
+        if child:IsA("BasePart") then
+            return child.Position
+        end
+    end
+    
+    return nil
+end
+
 function AutoFuel.isInRange(maxDistance)
     local playerPos = AutoFuel.getPlayerPosition()
     if not playerPos then return false, 0 end
     
-    local mainFire = AutoFuel.getMainFire()
-    if not mainFire then return false, 0 end
+    local firePos = AutoFuel.getMainFirePosition()
+    if not firePos then return false, 0 end
     
-    local firePos = mainFire.Position
     local distance = AutoFuel.getDistance(playerPos, firePos)
     
     return distance <= maxDistance, distance
