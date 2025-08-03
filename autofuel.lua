@@ -34,8 +34,11 @@ function AutoFuel.findLogItems()
     local fuelItems = {}
     
     for _, item in pairs(workspace:GetChildren()) do
-        if (item.Name == "Log" or item.Name == "Coal" or item.Name == "FuelCanister") and 
-           (item:FindFirstChild("Meshes/log_Cylinder") or item:FindFirstChild("Handle") or item:FindFirstChildOfClass("Part")) then
+        if item.Name == "Log" and item:FindFirstChild("Meshes/log_Cylinder") then
+            table.insert(fuelItems, item)
+        elseif item.Name == "Coal" and item:FindFirstChild("Coal") then
+            table.insert(fuelItems, item)
+        elseif item.Name == "FuelCanister" and (item:FindFirstChild("Handle") or item:FindFirstChildOfClass("Part")) then
             table.insert(fuelItems, item)
         end
     end
@@ -43,8 +46,11 @@ function AutoFuel.findLogItems()
     local itemsFolder = workspace:FindFirstChild("Items")
     if itemsFolder then
         for _, item in pairs(itemsFolder:GetChildren()) do
-            if (item.Name == "Log" or item.Name == "Coal" or item.Name == "FuelCanister") and 
-               (item:FindFirstChild("Handle") or item:FindFirstChild("Meshes/log_Cylinder") or item:FindFirstChildOfClass("Part")) then
+            if item.Name == "Log" and (item:FindFirstChild("Handle") or item:FindFirstChild("Meshes/log_Cylinder")) then
+                table.insert(fuelItems, item)
+            elseif item.Name == "Coal" and item:FindFirstChild("Coal") then
+                table.insert(fuelItems, item)
+            elseif item.Name == "FuelCanister" and (item:FindFirstChild("Handle") or item:FindFirstChildOfClass("Part")) then
                 table.insert(fuelItems, item)
             end
         end
@@ -60,10 +66,19 @@ function AutoFuel.moveItemToMainFire(fuelItem)
     end
     
     local success = pcall(function()
-        local fuelHandle = fuelItem:FindFirstChild("Handle") or 
-                          fuelItem:FindFirstChild("Meshes/log_Cylinder") or
-                          fuelItem:FindFirstChildOfClass("Part") or
-                          fuelItem:FindFirstChildOfClass("MeshPart")
+        local fuelHandle = nil
+        
+        if fuelItem.Name == "Log" then
+            fuelHandle = fuelItem:FindFirstChild("Handle") or fuelItem:FindFirstChild("Meshes/log_Cylinder")
+        elseif fuelItem.Name == "Coal" then
+            fuelHandle = fuelItem:FindFirstChild("Coal")
+        elseif fuelItem.Name == "FuelCanister" then
+            fuelHandle = fuelItem:FindFirstChild("Handle") or fuelItem:FindFirstChildOfClass("Part")
+        end
+        
+        if not fuelHandle then
+            fuelHandle = fuelItem:FindFirstChildOfClass("Part") or fuelItem:FindFirstChildOfClass("MeshPart")
+        end
         
         if fuelHandle then
             local mainFireCFrame = mainFire:GetBoundingBox()
