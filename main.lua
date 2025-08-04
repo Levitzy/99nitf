@@ -2,159 +2,209 @@ local TreeChopper = loadstring(game:HttpGet('https://raw.githubusercontent.com/L
 local AutoFuel = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autofuel.lua'))()
 local Fly = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/fly.lua'))()
 
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/Library.lua"))()
-local ThemeManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/addons/ThemeManager.lua"))()
+local Flux = loadstring(game:HttpGet('https://raw.githubusercontent.com/weakhoes/Roblox-UI-Libs/refs/heads/main/Flux%20Lib/Flux%20Lib%20Source.lua'))()
 
-local Window = Library:CreateWindow({
-    Title = 'Multi-Tool Bot Suite',
-    Center = true,
-    AutoShow = true,
-    TabPadding = 8,
-    MenuFadeTime = 0.2
+local Window = Flux:Window({
+    Title = "Multi-Tool Bot Suite",
+    SubTitle = "Fly, Tree Chopper & Auto Fuel",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(530, 350),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
 })
 
-local MainTab = Window:AddTab('Fly')
-local TreeTab = Window:AddTab('Tree Chopper') 
-local FuelTab = Window:AddTab('Auto Fuel')
-local UtilityTab = Window:AddTab('Utilities')
+local FlyTab = Window:Tab({
+    Title = "Fly",
+    Icon = "rbxassetid://10734950309"
+})
+
+local TreeTab = Window:Tab({
+    Title = "Tree Chopper", 
+    Icon = "rbxassetid://10734884548"
+})
+
+local FuelTab = Window:Tab({
+    Title = "Auto Fuel",
+    Icon = "rbxassetid://10747374131"
+})
+
+local UtilityTab = Window:Tab({
+    Title = "Utilities",
+    Icon = "rbxassetid://10734950020"
+})
 
 local RunService = game:GetService("RunService")
 
-local FlyGroup = MainTab:AddLeftGroupbox('Flight Controls')
-
-local FlyToggle = FlyGroup:AddToggle('FlyToggle', {
-    Text = 'Enable Fly',
+local FlyToggle = FlyTab:Toggle({
+    Title = "Enable Fly",
+    Description = "Activate flight mode with WASD controls",
     Default = false,
-    Tooltip = 'Activate flight mode with WASD controls',
     Callback = function(Value)
         local success = Fly.setEnabled(Value)
         
         if Value and success then
-            Library:Notify('Fly Enabled - PC: WASD + Space/Shift | Mobile: Touch & drag', 4)
+            Flux:Notification({
+                Title = "Fly Enabled",
+                Content = "PC: WASD + Space/Shift | Mobile: Touch & drag to fly!",
+                Duration = 4
+            })
         elseif Value and not success then
-            Library:Notify('Fly Failed - Character not found!', 3) 
+            Flux:Notification({
+                Title = "Fly Failed", 
+                Content = "Could not enable fly - character not found!",
+                Duration = 3
+            })
         else
-            Library:Notify('Fly Disabled', 2)
+            Flux:Notification({
+                Title = "Fly Disabled",
+                Content = "Flight mode deactivated.",
+                Duration = 2
+            })
         end
     end
 })
 
-local FlySpeedSlider = FlyGroup:AddSlider('FlySpeed', {
-    Text = 'Fly Speed',
+local FlySpeedSlider = FlyTab:Slider({
+    Title = "Fly Speed",
+    Description = "Adjust your flight speed",
     Default = 50,
     Min = 1,
     Max = 200,
     Rounding = 0,
-    Compact = false,
     Callback = function(Value)
         Fly.setSpeed(Value)
     end
 })
 
-local TreeGroup = TreeTab:AddLeftGroupbox('Tree Chopper')
-
-local TreeToggle = TreeGroup:AddToggle('TreeToggle', {
-    Text = 'Auto Chop Trees',
+local TreeToggle = TreeTab:Toggle({
+    Title = "Auto Chop Trees",
+    Description = "Automatically chop all small trees on the map", 
     Default = false,
-    Tooltip = 'Automatically chop all small trees on the map',
     Callback = function(Value)
         TreeChopper.setEnabled(Value)
         
         if Value then
-            Library:Notify('Tree Chopper Enabled - Chopping all small trees!', 3)
+            Flux:Notification({
+                Title = "Tree Chopper Enabled",
+                Content = "Started chopping all small trees in map!",
+                Duration = 3
+            })
         else
-            Library:Notify('Tree Chopper Disabled', 3)
+            Flux:Notification({
+                Title = "Tree Chopper Disabled",
+                Content = "Stopped chopping trees.",
+                Duration = 3  
+            })
         end
     end
 })
 
-local TreeDelayDropdown = TreeGroup:AddDropdown('TreeDelay', {
-    Values = {'0.1s', '0.5s', '1s', '2s', '3s', '5s'},
-    Default = '1s',
+local TreeDelayDropdown = TreeTab:Dropdown({
+    Title = "Chop Delay",
+    Description = "Time between tree chopping cycles",
+    Values = {"0.1s", "0.5s", "1s", "2s", "3s", "5s"},
+    Default = "1s",
     Multi = false,
-    Text = 'Chop Delay',
-    Tooltip = 'Time between tree chopping cycles',
     Callback = function(Value)
         local delayMap = {
-            ['0.1s'] = 0.1,
-            ['0.5s'] = 0.5,
-            ['1s'] = 1,
-            ['2s'] = 2,
-            ['3s'] = 3,
-            ['5s'] = 5
+            ["0.1s"] = 0.1,
+            ["0.5s"] = 0.5,
+            ["1s"] = 1,
+            ["2s"] = 2,
+            ["3s"] = 3,
+            ["5s"] = 5
         }
         local delay = delayMap[Value] or 1
         TreeChopper.setChopDelay(delay)
     end
 })
 
-local TreeStatusGroup = TreeTab:AddRightGroupbox('Status')
-local TreeStatusLabel = TreeStatusGroup:AddLabel('Status: Ready - Processes 5 trees per cycle')
+local TreeStatusParagraph = TreeTab:Paragraph({
+    Title = "Tree Chopper Status",
+    Content = "Status: Ready - Processes 5 trees per cycle"
+})
 
-local FuelGroup = FuelTab:AddLeftGroupbox('Auto Fuel')
-
-local FuelToggle = FuelGroup:AddToggle('FuelToggle', {
-    Text = 'Auto Fuel Collection',
+local FuelToggle = FuelTab:Toggle({
+    Title = "Auto Fuel Collection",
+    Description = "Teleport fuel items to position (0,4,-3)",
     Default = false,
-    Tooltip = 'Teleport fuel items to position (0,4,-3)',
     Callback = function(Value)
         AutoFuel.setEnabled(Value)
         
         if Value then
-            Library:Notify('Auto Fuel Enabled - Teleporting to (0,4,-3)!', 3)
+            Flux:Notification({
+                Title = "Auto Fuel Enabled",
+                Content = "Teleporting fuel to position (0,4,-3) with enhanced dropping!",
+                Duration = 3
+            })
         else
-            Library:Notify('Auto Fuel Disabled', 3)
+            Flux:Notification({
+                Title = "Auto Fuel Disabled", 
+                Content = "Stopped collecting fuel items.",
+                Duration = 3
+            })
         end
     end
 })
 
-local FuelStatusGroup = FuelTab:AddRightGroupbox('Status')
-local FuelStatusLabel = FuelStatusGroup:AddLabel('Status: Ready - 1.0s delay, stacks at (0,4,-3)')
+local FuelStatusParagraph = FuelTab:Paragraph({
+    Title = "Auto Fuel Status",
+    Content = "Status: Ready - 1.0s delay, stacks at (0,4,-3)"
+})
 
-local ComboGroup = UtilityTab:AddLeftGroupbox('Combo Controls')
-
-local ComboToggle = ComboGroup:AddToggle('ComboToggle', {
-    Text = 'Tree + Fuel Combo',
+local ComboToggle = UtilityTab:Toggle({
+    Title = "Tree + Fuel Combo",
+    Description = "Enable both Tree Chopper and Auto Fuel together",
     Default = false,
-    Tooltip = 'Enable both Tree Chopper and Auto Fuel together',
     Callback = function(Value)
         TreeChopper.setEnabled(Value)
         AutoFuel.setEnabled(Value)
         
         if Value then
-            Library:Notify('Combo Bot Enabled - Both systems active!', 4)
+            Flux:Notification({
+                Title = "Combo Bot Enabled",
+                Content = "Tree Chopper and Auto Fuel are now active!",
+                Duration = 4
+            })
         else
-            Library:Notify('Combo Bot Disabled', 3)
+            Flux:Notification({
+                Title = "Combo Bot Disabled",
+                Content = "Both bots have been stopped.",
+                Duration = 3
+            })
         end
     end
 })
 
-local ComboStatusGroup = UtilityTab:AddRightGroupbox('Status')
-local ComboStatusLabel = ComboStatusGroup:AddLabel('Both bots disabled')
+local ComboStatusParagraph = UtilityTab:Paragraph({
+    Title = "Combo Status",
+    Content = "Both bots disabled"
+})
 
 RunService.Heartbeat:Connect(function()
     local treeStatus, treeCount, closestDistance = TreeChopper.getStatus()
-    TreeStatusLabel:SetText(treeStatus)
+    TreeStatusParagraph:SetContent(treeStatus)
     
     local fuelStatus, distance = AutoFuel.getStatus()
-    FuelStatusLabel:SetText(fuelStatus)
+    FuelStatusParagraph:SetContent(fuelStatus)
     
     local chopEnabled = TreeChopper.autoChopEnabled
     local fuelEnabled = AutoFuel.autoFuelEnabled
     
     if chopEnabled and fuelEnabled then
-        ComboStatusLabel:SetText('Both bots active - Chopping & Fueling')
+        ComboStatusParagraph:SetContent("Both bots active - Chopping & Fueling")
     elseif chopEnabled then
-        ComboStatusLabel:SetText('Only Tree Chopper active')
+        ComboStatusParagraph:SetContent("Only Tree Chopper active")
     elseif fuelEnabled then
-        ComboStatusLabel:SetText('Only Auto Fuel active')
+        ComboStatusParagraph:SetContent("Only Auto Fuel active")
     else
-        ComboStatusLabel:SetText('Both bots disabled')
+        ComboStatusParagraph:SetContent("Both bots disabled")  
     end
 end)
 
-Library:Notify('Multi-Tool Bot Suite Loaded - Clean UI with fly-focused main tab!', 6)
-
-ThemeManager:SetLibrary(Library)
-ThemeManager:SetFolder('MultiToolThemes')
-ThemeManager:ApplyToTab(UtilityTab)
+Flux:Notification({
+    Title = "Multi-Tool Bot Suite Loaded",
+    Content = "Flux UI loaded! Clean fly-focused main tab ready to use.",
+    Duration = 6
+})
