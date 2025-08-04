@@ -245,7 +245,7 @@ RunService.Heartbeat:Connect(function()
 end)
 
 Rayfield:Notify({
-   Title = "Multi-Tool Bot Suite Loaded",
+   Title = "Multi-Tool Bot Suite Load",
    Content = "All modules loaded! Fly, Tree Chopper, and Auto Fuel ready. Mobile compatible!",
    Duration = 6,
    Image = 4483362458
