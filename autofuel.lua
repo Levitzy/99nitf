@@ -6,7 +6,7 @@ local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 
 AutoFuel.autoFuelEnabled = false
-AutoFuel.fuelDelay = 0.5
+AutoFuel.fuelDelay = 0.3
 AutoFuel.fuelConnection = nil
 AutoFuel.lastFuelTime = 0
 AutoFuel.dropPosition = Vector3.new(0, 6, 0)
@@ -98,15 +98,17 @@ function AutoFuel.moveItemToPosition(fuelData)
             handle.BodyPosition:Destroy()
         end
         
+        local randomOffset = Vector3.new(
+            math.random(-3, 3),
+            math.random(0, 4),
+            math.random(-3, 3)
+        )
+        
         local bodyPosition = Instance.new("BodyPosition")
         bodyPosition.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-        bodyPosition.Position = AutoFuel.dropPosition + Vector3.new(
-            math.random(-2, 2),
-            math.random(0, 3),
-            math.random(-2, 2)
-        )
-        bodyPosition.D = 2000
-        bodyPosition.P = 10000
+        bodyPosition.Position = AutoFuel.dropPosition + randomOffset
+        bodyPosition.D = 3000
+        bodyPosition.P = 15000
         bodyPosition.Parent = handle
         
         local bodyAngularVelocity = Instance.new("BodyAngularVelocity")
@@ -114,8 +116,15 @@ function AutoFuel.moveItemToPosition(fuelData)
         bodyAngularVelocity.AngularVelocity = Vector3.new(0, 0, 0)
         bodyAngularVelocity.Parent = handle
         
-        game:GetService("Debris"):AddItem(bodyPosition, 3)
-        game:GetService("Debris"):AddItem(bodyAngularVelocity, 3)
+        game:GetService("Debris"):AddItem(bodyPosition, 4)
+        game:GetService("Debris"):AddItem(bodyAngularVelocity, 4)
+        
+        spawn(function()
+            wait(0.5)
+            if handle and handle.Parent then
+                handle.CanCollide = true
+            end
+        end)
     end)
     
     return success
@@ -132,16 +141,22 @@ function AutoFuel.autoFuelLoop()
     local fuelItems = AutoFuel.findLogItems()
     
     if #fuelItems > 0 then
-        local batchSize = math.min(3, #fuelItems)
+        local batchSize = math.min(6, #fuelItems)
+        local movedItems = 0
         
         for i = 1, batchSize do
             local fuelData = fuelItems[i]
             if fuelData and fuelData.item and fuelData.item.Parent then
-                AutoFuel.moveItemToPosition(fuelData)
-                wait(0.1)
+                spawn(function()
+                    AutoFuel.moveItemToPosition(fuelData)
+                end)
+                movedItems = movedItems + 1
             end
         end
-        AutoFuel.lastFuelTime = currentTime
+        
+        if movedItems > 0 then
+            AutoFuel.lastFuelTime = currentTime
+        end
     end
 end
 

@@ -82,7 +82,7 @@ local AllBotsToggle = MainTab:CreateToggle({
    Flag = "AllBotsToggle",
    Callback = function(Value)
        TreeChopper.setEnabled(Value)
-       AutoFuel.setFuelDelay(0.5)
+       AutoFuel.setFuelDelay(0.3)
        AutoFuel.setEnabled(Value)
        
        if Value then
@@ -163,7 +163,7 @@ local AutoFuelToggle = FuelTab:CreateToggle({
    CurrentValue = false,
    Flag = "AutoFuelToggle",
    Callback = function(Value)
-       AutoFuel.setFuelDelay(0.5)
+       AutoFuel.setFuelDelay(0.3)
        AutoFuel.setEnabled(Value)
        
        if Value then
@@ -186,18 +186,18 @@ local AutoFuelToggle = FuelTab:CreateToggle({
 
 local FuelSpeedDropdown = FuelTab:CreateDropdown({
    Name = "Fuel Collection Speed",
-   Options = {"Very Fast (0.1s)", "Fast (0.3s)", "Normal (0.5s)", "Slow (1s)", "Very Slow (2s)"},
-   CurrentOption = "Normal (0.5s)",
+   Options = {"Ultra Fast (0.1s)", "Very Fast (0.2s)", "Fast (0.3s)", "Normal (0.5s)", "Slow (1s)"},
+   CurrentOption = "Fast (0.3s)",
    Flag = "FuelSpeed",
    Callback = function(Option)
        local speedMap = {
-           ["Very Fast (0.1s)"] = 0.1,
+           ["Ultra Fast (0.1s)"] = 0.1,
+           ["Very Fast (0.2s)"] = 0.2,
            ["Fast (0.3s)"] = 0.3,
            ["Normal (0.5s)"] = 0.5,
-           ["Slow (1s)"] = 1,
-           ["Very Slow (2s)"] = 2
+           ["Slow (1s)"] = 1
        }
-       local delay = speedMap[Option] or 0.5
+       local delay = speedMap[Option] or 0.3
        AutoFuel.setFuelDelay(delay)
    end,
 })
@@ -211,7 +211,7 @@ local ComboBotToggle = UtilityTab:CreateToggle({
    Flag = "ComboBotToggle",
    Callback = function(Value)
        TreeChopper.setEnabled(Value)
-       AutoFuel.setFuelDelay(0.5)
+       AutoFuel.setFuelDelay(0.3)
        AutoFuel.setEnabled(Value)
        
        if Value then
