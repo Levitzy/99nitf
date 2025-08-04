@@ -1,15 +1,16 @@
 local TreeChopper = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/tree.lua'))()
 local AutoFuel = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autofuel.lua'))()
+local Fly = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/fly.lua'))()
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "Auto Tree Chopper & Fuel Bot",
-   LoadingTitle = "Tree Chopping & Auto Fuel Bot",
+   Name = "Multi-Tool Bot Suite",
+   LoadingTitle = "Tree Chopper, Auto Fuel & Fly Bot",
    LoadingSubtitle = "by TreeChopper",
    ConfigurationSaving = {
       Enabled = true,
-      FolderName = "TreeChopperConfig",
+      FolderName = "MultiToolConfig",
       FileName = "Config"
    },
    Discord = {
@@ -20,13 +21,73 @@ local Window = Rayfield:CreateWindow({
    KeySystem = false
 })
 
-local MainTab = Window:CreateTab("Tree Chopper", 4483362458)
+local MainTab = Window:CreateTab("Main Controls", 4483362458)
+local TreeTab = Window:CreateTab("Tree Chopper", 4483362458)
 local FuelTab = Window:CreateTab("Auto Fuel", 4335489011)
+local FlyTab = Window:CreateTab("Fly", 4370317008)
 local UtilityTab = Window:CreateTab("Utilities", 4370317008)
 
 local RunService = game:GetService("RunService")
 
-local AutoChopToggle = MainTab:CreateToggle({
+local MainSection = MainTab:CreateSection("Bot Controls")
+
+local AllBotsToggle = MainTab:CreateToggle({
+   Name = "Enable All Bots",
+   CurrentValue = false,
+   Flag = "AllBotsToggle",
+   Callback = function(Value)
+       TreeChopper.setEnabled(Value)
+       AutoFuel.setEnabled(Value)
+       
+       if Value then
+           Rayfield:Notify({
+               Title = "All Bots Enabled",
+               Content = "Tree Chopper and Auto Fuel are now active!",
+               Duration = 4,
+               Image = 4483362458
+           })
+       else
+           Rayfield:Notify({
+               Title = "All Bots Disabled",
+               Content = "Tree Chopper and Auto Fuel have been stopped.",
+               Duration = 3,
+               Image = 4483362458
+           })
+       end
+   end,
+})
+
+local QuickActionsSection = MainTab:CreateSection("Quick Actions")
+
+local QuickFlyToggle = MainTab:CreateToggle({
+   Name = "Quick Fly Toggle",
+   CurrentValue = false,
+   Flag = "QuickFlyToggle",
+   Callback = function(Value)
+       Fly.setEnabled(Value)
+       
+       if Value then
+           Rayfield:Notify({
+               Title = "Fly Enabled",
+               Content = "Use WASD + Space/Shift to fly around!",
+               Duration = 3,
+               Image = 4370317008
+           })
+       else
+           Rayfield:Notify({
+               Title = "Fly Disabled",
+               Content = "Flight mode deactivated.",
+               Duration = 2,
+               Image = 4370317008
+           })
+       end
+   end,
+})
+
+local MainStatusSection = MainTab:CreateSection("Status Overview")
+local MainStatusLabel = MainTab:CreateLabel("All systems ready")
+
+local AutoChopToggle = TreeTab:CreateToggle({
    Name = "Auto Chop All Small Trees",
    CurrentValue = false,
    Flag = "AutoChopToggle",
@@ -51,7 +112,7 @@ local AutoChopToggle = MainTab:CreateToggle({
    end,
 })
 
-local ChopDelayDropdown = MainTab:CreateDropdown({
+local ChopDelayDropdown = TreeTab:CreateDropdown({
    Name = "Chop Delay",
    Options = {"0.1s", "0.5s", "1s", "2s", "3s", "5s"},
    CurrentOption = "1s",
@@ -70,10 +131,9 @@ local ChopDelayDropdown = MainTab:CreateDropdown({
    end,
 })
 
-local InfoSection = MainTab:CreateSection("Tree Chopper Information")
-local StatusLabel = MainTab:CreateLabel("Status: Ready")
-
-local TreeInfoLabel = MainTab:CreateLabel("Trees processed: 5 per cycle for optimal performance")
+local TreeInfoSection = TreeTab:CreateSection("Tree Chopper Information")
+local TreeStatusLabel = TreeTab:CreateLabel("Status: Ready")
+local TreeInfoLabel = TreeTab:CreateLabel("Trees processed: 5 per cycle for optimal performance")
 
 local AutoFuelToggle = FuelTab:CreateToggle({
    Name = "Auto Fuel MainFire",
@@ -104,8 +164,57 @@ local AutoFuelToggle = FuelTab:CreateToggle({
 local FuelInfoSection = FuelTab:CreateSection("Auto Fuel Information")
 local FuelStatusLabel = FuelTab:CreateLabel("Status: Ready")
 
+local FlyToggle = FlyTab:CreateToggle({
+   Name = "Enable Fly",
+   CurrentValue = false,
+   Flag = "FlyToggle",
+   Callback = function(Value)
+       local success = Fly.setEnabled(Value)
+       
+       if Value and success then
+           Rayfield:Notify({
+               Title = "Fly Enabled",
+               Content = "Use WASD to move, Space to go up, Shift to go down!",
+               Duration = 4,
+               Image = 4370317008
+           })
+       elseif Value and not success then
+           Rayfield:Notify({
+               Title = "Fly Failed",
+               Content = "Could not enable fly - character not found!",
+               Duration = 3,
+               Image = 4370317008
+           })
+       else
+           Rayfield:Notify({
+               Title = "Fly Disabled",
+               Content = "Flight mode deactivated.",
+               Duration = 2,
+               Image = 4370317008
+           })
+       end
+   end,
+})
+
+local FlySpeedSlider = FlyTab:CreateSlider({
+   Name = "Fly Speed",
+   Range = {1, 200},
+   Increment = 5,
+   Suffix = " Speed",
+   CurrentValue = 50,
+   Flag = "FlySpeed",
+   Callback = function(Value)
+       Fly.setSpeed(Value)
+   end,
+})
+
+local FlyControlsSection = FlyTab:CreateSection("Fly Controls")
+local FlyControlsLabel = FlyTab:CreateLabel("WASD: Move | Space: Up | Shift: Down")
+local FlyStatusSection = FlyTab:CreateSection("Fly Status")
+local FlyStatusLabel = FlyTab:CreateLabel("Status: Fly disabled")
+
 local ComboBotToggle = UtilityTab:CreateToggle({
-   Name = "Enable Both Bots",
+   Name = "Tree + Fuel Combo",
    CurrentValue = false,
    Flag = "ComboBotToggle",
    Callback = function(Value)
@@ -135,29 +244,41 @@ local ComboStatusLabel = UtilityTab:CreateLabel("Combo Status: Both bots disable
 local ComboInfoLabel = UtilityTab:CreateLabel("Tree Chopper processes 5 trees per cycle from all map locations")
 
 RunService.Heartbeat:Connect(function()
-    local status, treeCount, closestDistance = TreeChopper.getStatus()
-    StatusLabel:Set(status)
+    local treeStatus, treeCount, closestDistance = TreeChopper.getStatus()
+    TreeStatusLabel:Set(treeStatus)
     
     local fuelStatus, distance = AutoFuel.getStatus()
     FuelStatusLabel:Set(fuelStatus)
     
+    local flyStatus = Fly.getStatus()
+    FlyStatusLabel:Set(flyStatus)
+    
     local chopEnabled = TreeChopper.autoChopEnabled
     local fuelEnabled = AutoFuel.autoFuelEnabled
+    local flyEnabled = Fly.flyEnabled
     
     if chopEnabled and fuelEnabled then
         ComboStatusLabel:Set("Combo Status: Both bots active - Chopping & Fueling")
+        MainStatusLabel:Set("Main Status: Tree Chopper + Auto Fuel Active")
     elseif chopEnabled then
         ComboStatusLabel:Set("Combo Status: Only Tree Chopper active")
+        MainStatusLabel:Set("Main Status: Tree Chopper Active")
     elseif fuelEnabled then
         ComboStatusLabel:Set("Combo Status: Only Auto Fuel active")
+        MainStatusLabel:Set("Main Status: Auto Fuel Active")
     else
         ComboStatusLabel:Set("Combo Status: Both bots disabled")
+        if flyEnabled then
+            MainStatusLabel:Set("Main Status: Only Fly Active")
+        else
+            MainStatusLabel:Set("Main Status: All systems idle")
+        end
     end
 end)
 
 Rayfield:Notify({
-   Title = "Auto Tree Chopper & Fuel Bot Loaded",
-   Content = "Script loaded! Tree Chopper processes 5 trees per cycle. Auto Fuel brings logs to MainFire.",
+   Title = "Multi-Tool Bot Suite Loaded",
+   Content = "All modules loaded! Tree Chopper, Auto Fuel, and Fly are ready to use.",
    Duration = 6,
    Image = 4483362458
 })
