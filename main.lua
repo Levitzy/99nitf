@@ -195,7 +195,7 @@ RunService.Heartbeat:Connect(function()
 end)
 
 Rayfield:Notify({
-    Title = "Multi-Tool Bot Suite Loaded",
+    Title = "Multi-Tool Bot Suite Load",
     Content = "Clean interface loaded! Fly tab is focused and clutter-free.",
     Duration = 6,
     Image = 4483362458
