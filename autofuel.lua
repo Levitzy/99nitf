@@ -6,7 +6,7 @@ local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 
 AutoFuel.autoFuelEnabled = false
-AutoFuel.fuelDelay = 0.3
+AutoFuel.fuelDelay = 0.8
 AutoFuel.fuelConnection = nil
 AutoFuel.lastFuelTime = 0
 AutoFuel.dropPosition = Vector3.new(0, 6, 0)
@@ -49,10 +49,10 @@ function AutoFuel.findLogItems()
             if handle then
                 table.insert(fuelItems, {item = item, handle = handle, type = "Coal"})
             end
-        elseif item.Name == "Fuel Canister" then
+        elseif item.Name == "FuelCanister" then
             local handle = item:FindFirstChild("Handle") or item:FindFirstChildOfClass("Part")
             if handle then
-                table.insert(fuelItems, {item = item, handle = handle, type = "Fuel Canister"})
+                table.insert(fuelItems, {item = item, handle = handle, type = "FuelCanister"})
             end
         end
     end
@@ -201,7 +201,7 @@ function AutoFuel.getStatus()
                     logCount = logCount + 1
                 elseif fuelData.type == "Coal" then
                     coalCount = coalCount + 1
-                elseif fuelData.type == "Fuel Canister" then
+                elseif fuelData.type == "FuelCanister" then
                     canisterCount = canisterCount + 1
                 end
             end

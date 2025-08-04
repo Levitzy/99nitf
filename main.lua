@@ -82,13 +82,12 @@ local AllBotsToggle = MainTab:CreateToggle({
    Flag = "AllBotsToggle",
    Callback = function(Value)
        TreeChopper.setEnabled(Value)
-       AutoFuel.setFuelDelay(0.3)
        AutoFuel.setEnabled(Value)
        
        if Value then
            Rayfield:Notify({
                Title = "All Bots Enabled",
-               Content = "Tree Chopper and Auto Fuel are now active! Items teleport to (0,6,0)",
+               Content = "Tree Chopper and Auto Fuel active! 0.8s optimal timing.",
                Duration = 4,
                Image = 4483362458
            })
@@ -163,7 +162,6 @@ local AutoFuelToggle = FuelTab:CreateToggle({
    CurrentValue = false,
    Flag = "AutoFuelToggle",
    Callback = function(Value)
-       AutoFuel.setFuelDelay(0.3)
        AutoFuel.setEnabled(Value)
        
        if Value then
@@ -184,26 +182,9 @@ local AutoFuelToggle = FuelTab:CreateToggle({
    end,
 })
 
-local FuelSpeedDropdown = FuelTab:CreateDropdown({
-   Name = "Fuel Collection Speed",
-   Options = {"Ultra Fast (0.1s)", "Very Fast (0.2s)", "Fast (0.3s)", "Normal (0.5s)", "Slow (1s)"},
-   CurrentOption = "Fast (0.3s)",
-   Flag = "FuelSpeed",
-   Callback = function(Option)
-       local speedMap = {
-           ["Ultra Fast (0.1s)"] = 0.1,
-           ["Very Fast (0.2s)"] = 0.2,
-           ["Fast (0.3s)"] = 0.3,
-           ["Normal (0.5s)"] = 0.5,
-           ["Slow (1s)"] = 1
-       }
-       local delay = speedMap[Option] or 0.3
-       AutoFuel.setFuelDelay(delay)
-   end,
-})
-
 local FuelInfoSection = FuelTab:CreateSection("Auto Fuel Information")
 local FuelStatusLabel = FuelTab:CreateLabel("Status: Ready")
+local FuelInfoLabel = FuelTab:CreateLabel("Optimized delay: 0.8s for best performance")
 
 local ComboBotToggle = UtilityTab:CreateToggle({
    Name = "Tree + Fuel Combo",
@@ -211,13 +192,12 @@ local ComboBotToggle = UtilityTab:CreateToggle({
    Flag = "ComboBotToggle",
    Callback = function(Value)
        TreeChopper.setEnabled(Value)
-       AutoFuel.setFuelDelay(0.3)
        AutoFuel.setEnabled(Value)
        
        if Value then
            Rayfield:Notify({
                Title = "Combo Bot Enabled",
-               Content = "Tree Chopper and Auto Fuel active! Fuel goes to (0,6,0)",
+               Content = "Tree Chopper and Auto Fuel active! Optimized 0.8s timing.",
                Duration = 4,
                Image = 4370317008
            })
