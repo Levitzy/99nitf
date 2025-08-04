@@ -87,7 +87,7 @@ local AllBotsToggle = MainTab:CreateToggle({
        if Value then
            Rayfield:Notify({
                Title = "All Bots Enabled",
-               Content = "Tree Chopper and Auto Fuel active! 0.8s optimal timing.",
+               Content = "Tree Chopper and Auto Fuel active! Items stack at (0,6,0)",
                Duration = 4,
                Image = 4483362458
            })
@@ -167,7 +167,7 @@ local AutoFuelToggle = FuelTab:CreateToggle({
        if Value then
            Rayfield:Notify({
                Title = "Auto Fuel Enabled",
-               Content = "Teleporting all fuel items to position (0,6,0) then dropping!",
+               Content = "Teleporting fuel to exact position (0,6,0) - Stacking enabled!",
                Duration = 3,
                Image = 4335489011
            })
@@ -184,7 +184,7 @@ local AutoFuelToggle = FuelTab:CreateToggle({
 
 local FuelInfoSection = FuelTab:CreateSection("Auto Fuel Information")
 local FuelStatusLabel = FuelTab:CreateLabel("Status: Ready")
-local FuelInfoLabel = FuelTab:CreateLabel("Optimized delay: 0.8s for best performance")
+local FuelInfoLabel = FuelTab:CreateLabel("Fixed delay: 1.0s - Items stack at exact position (0,6,0)")
 
 local ComboBotToggle = UtilityTab:CreateToggle({
    Name = "Tree + Fuel Combo",
@@ -197,7 +197,7 @@ local ComboBotToggle = UtilityTab:CreateToggle({
        if Value then
            Rayfield:Notify({
                Title = "Combo Bot Enabled",
-               Content = "Tree Chopper and Auto Fuel active! Optimized 0.8s timing.",
+               Content = "Tree Chopper and Auto Fuel active! Fuel stacks at (0,6,0)",
                Duration = 4,
                Image = 4370317008
            })

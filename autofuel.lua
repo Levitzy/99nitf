@@ -6,7 +6,7 @@ local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 
 AutoFuel.autoFuelEnabled = false
-AutoFuel.fuelDelay = 0.8
+AutoFuel.fuelDelay = 1.0
 AutoFuel.fuelConnection = nil
 AutoFuel.lastFuelTime = 0
 AutoFuel.dropPosition = Vector3.new(0, 6, 0)
@@ -98,15 +98,7 @@ function AutoFuel.moveItemToPosition(fuelData)
             handle.BodyPosition:Destroy()
         end
         
-        local randomOffset = Vector3.new(
-            math.random(-4, 4),
-            math.random(0, 2),
-            math.random(-4, 4)
-        )
-        
-        local targetPosition = AutoFuel.dropPosition + randomOffset
-        
-        handle.CFrame = CFrame.new(targetPosition)
+        handle.CFrame = CFrame.new(AutoFuel.dropPosition)
         handle.Velocity = Vector3.new(0, 0, 0)
         
         if handle:FindFirstChild("AssemblyAngularVelocity") then
@@ -120,13 +112,9 @@ function AutoFuel.moveItemToPosition(fuelData)
         end
         
         spawn(function()
-            wait(0.1)
+            wait(0.2)
             if handle and handle.Parent then
-                local dropVelocity = Vector3.new(
-                    math.random(-2, 2),
-                    math.random(-15, -8),
-                    math.random(-2, 2)
-                )
+                local dropVelocity = Vector3.new(0, -12, 0)
                 handle.Velocity = dropVelocity
                 handle.CanCollide = true
             end
