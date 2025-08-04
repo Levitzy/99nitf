@@ -30,15 +30,7 @@ function Fly.createFlyObjects()
     local rootPart = character.HumanoidRootPart
     local humanoid = character:FindFirstChild("Humanoid")
     
-    if Fly.bodyVelocity then
-        Fly.bodyVelocity:Destroy()
-    end
-    if Fly.bodyPosition then
-        Fly.bodyPosition:Destroy()
-    end
-    if Fly.bodyAngularVelocity then
-        Fly.bodyAngularVelocity:Destroy()
-    end
+    Fly.destroyFlyObjects()
     
     Fly.bodyVelocity = Instance.new("BodyVelocity")
     Fly.bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
@@ -82,7 +74,12 @@ function Fly.destroyFlyObjects()
         
         if rootPart then
             rootPart.Velocity = Vector3.new(0, 0, 0)
-            rootPart.AngularVelocity = Vector3.new(0, 0, 0)
+            if rootPart:FindFirstChild("AssemblyAngularVelocity") then
+                rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+            end
+            if rootPart:FindFirstChild("AngularVelocity") then
+                rootPart.AngularVelocity = Vector3.new(0, 0, 0)
+            end
         end
     end
 end

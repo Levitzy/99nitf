@@ -103,24 +103,26 @@ function AutoFuel.moveItemToMainFire(fuelItem)
                 dropSpeed,
                 math.random(-3, 3)
             )
-            fuelHandle.AngularVelocity = Vector3.new(
-                math.random(-8, 8),
-                math.random(-8, 8),
-                math.random(-8, 8)
-            )
+            
+            if fuelHandle:FindFirstChild("AssemblyAngularVelocity") then
+                fuelHandle.AssemblyAngularVelocity = Vector3.new(
+                    math.random(-8, 8),
+                    math.random(-8, 8),
+                    math.random(-8, 8)
+                )
+            elseif fuelHandle:FindFirstChild("AngularVelocity") then
+                fuelHandle.AngularVelocity = Vector3.new(
+                    math.random(-8, 8),
+                    math.random(-8, 8),
+                    math.random(-8, 8)
+                )
+            end
             
             if fuelHandle:FindFirstChild("AssemblyLinearVelocity") then
                 fuelHandle.AssemblyLinearVelocity = Vector3.new(
                     math.random(-3, 3),
                     dropSpeed,
                     math.random(-3, 3)
-                )
-            end
-            if fuelHandle:FindFirstChild("AssemblyAngularVelocity") then
-                fuelHandle.AssemblyAngularVelocity = Vector3.new(
-                    math.random(-8, 8),
-                    math.random(-8, 8),
-                    math.random(-8, 8)
                 )
             end
         end
