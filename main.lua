@@ -82,12 +82,13 @@ local AllBotsToggle = MainTab:CreateToggle({
    Flag = "AllBotsToggle",
    Callback = function(Value)
        TreeChopper.setEnabled(Value)
+       AutoFuel.setFuelDelay(0.5)
        AutoFuel.setEnabled(Value)
        
        if Value then
            Rayfield:Notify({
                Title = "All Bots Enabled",
-               Content = "Tree Chopper and Auto Fuel are now active!",
+               Content = "Tree Chopper and Auto Fuel are now active! Fuel drops at (0,6,0)",
                Duration = 4,
                Image = 4483362458
            })
@@ -158,28 +159,46 @@ local TreeStatusLabel = TreeTab:CreateLabel("Status: Ready")
 local TreeInfoLabel = TreeTab:CreateLabel("Trees processed: 5 per cycle for optimal performance")
 
 local AutoFuelToggle = FuelTab:CreateToggle({
-   Name = "Auto Fuel MainFire",
+   Name = "Auto Fuel to Position (0,6,0)",
    CurrentValue = false,
    Flag = "AutoFuelToggle",
    Callback = function(Value)
-       AutoFuel.setFuelDelay(1.0)
+       AutoFuel.setFuelDelay(0.5)
        AutoFuel.setEnabled(Value)
        
        if Value then
            Rayfield:Notify({
                Title = "Auto Fuel Enabled",
-               Content = "Started bringing fuel to MainFire automatically!",
+               Content = "Moving all fuel items to position (0,6,0) automatically!",
                Duration = 3,
                Image = 4335489011
            })
        else
            Rayfield:Notify({
                Title = "Auto Fuel Disabled",
-               Content = "Stopped bringing fuel to MainFire.",
+               Content = "Stopped moving fuel items.",
                Duration = 3,
                Image = 4335489011
            })
        end
+   end,
+})
+
+local FuelSpeedDropdown = FuelTab:CreateDropdown({
+   Name = "Fuel Collection Speed",
+   Options = {"Very Fast (0.1s)", "Fast (0.3s)", "Normal (0.5s)", "Slow (1s)", "Very Slow (2s)"},
+   CurrentOption = "Normal (0.5s)",
+   Flag = "FuelSpeed",
+   Callback = function(Option)
+       local speedMap = {
+           ["Very Fast (0.1s)"] = 0.1,
+           ["Fast (0.3s)"] = 0.3,
+           ["Normal (0.5s)"] = 0.5,
+           ["Slow (1s)"] = 1,
+           ["Very Slow (2s)"] = 2
+       }
+       local delay = speedMap[Option] or 0.5
+       AutoFuel.setFuelDelay(delay)
    end,
 })
 
@@ -192,12 +211,13 @@ local ComboBotToggle = UtilityTab:CreateToggle({
    Flag = "ComboBotToggle",
    Callback = function(Value)
        TreeChopper.setEnabled(Value)
+       AutoFuel.setFuelDelay(0.5)
        AutoFuel.setEnabled(Value)
        
        if Value then
            Rayfield:Notify({
                Title = "Combo Bot Enabled",
-               Content = "Both Tree Chopper and Auto Fuel are now active!",
+               Content = "Tree Chopper and Auto Fuel active! Fuel goes to (0,6,0)",
                Duration = 4,
                Image = 4370317008
            })

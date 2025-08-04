@@ -38,7 +38,7 @@ function Fly.createFlyObjects()
     Fly.bodyVelocity.Parent = rootPart
     
     Fly.bodyAngularVelocity = Instance.new("BodyAngularVelocity")
-    Fly.bodyAngularVelocity.MaxTorque = Vector3.new(0, 0, 0)
+    Fly.bodyAngularVelocity.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
     Fly.bodyAngularVelocity.AngularVelocity = Vector3.new(0, 0, 0)
     Fly.bodyAngularVelocity.Parent = rootPart
     
@@ -122,15 +122,12 @@ function Fly.updateMovement()
     
     Fly.bodyVelocity.Velocity = moveVector * Fly.flySpeed
     
+    if Fly.bodyAngularVelocity then
+        Fly.bodyAngularVelocity.AngularVelocity = Vector3.new(0, 0, 0)
+    end
+    
     if humanoid then
         humanoid.PlatformStand = true
-        if moveVector.Magnitude > 0 then
-            local horizontalDirection = Vector3.new(moveVector.X, 0, moveVector.Z)
-            if horizontalDirection.Magnitude > 0 then
-                local newCFrame = CFrame.lookAt(rootPart.Position, rootPart.Position + horizontalDirection.Unit)
-                rootPart.CFrame = rootPart.CFrame:Lerp(newCFrame, 0.1)
-            end
-        end
     end
 end
 
