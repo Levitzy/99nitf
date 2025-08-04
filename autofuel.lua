@@ -49,10 +49,10 @@ function AutoFuel.findLogItems()
             if handle then
                 table.insert(fuelItems, {item = item, handle = handle, type = "Coal"})
             end
-        elseif item.Name == "FuelCanister" then
+        elseif item.Name == "Fuel Canister" then
             local handle = item:FindFirstChild("Handle") or item:FindFirstChildOfClass("Part")
             if handle then
-                table.insert(fuelItems, {item = item, handle = handle, type = "FuelCanister"})
+                table.insert(fuelItems, {item = item, handle = handle, type = "Fuel Canister"})
             end
         end
     end
@@ -201,7 +201,7 @@ function AutoFuel.getStatus()
                     logCount = logCount + 1
                 elseif fuelData.type == "Coal" then
                     coalCount = coalCount + 1
-                elseif fuelData.type == "FuelCanister" then
+                elseif fuelData.type == "Fuel Canister" then
                     canisterCount = canisterCount + 1
                 end
             end
