@@ -40,7 +40,7 @@ local FlyToggle = MainTab:CreateToggle({
        if Value and success then
            Rayfield:Notify({
                Title = "Fly Enabled",
-               Content = "WASD to move, Space/Shift for up/down. Mobile: Touch to move!",
+               Content = "W: Up | S: Down | A/D: Left/Right. Mobile: Touch to move!",
                Duration = 4,
                Image = 4370317008
            })
@@ -104,10 +104,9 @@ local AllBotsToggle = MainTab:CreateToggle({
 
 local StatusSection = MainTab:CreateSection("Status Overview")
 local MainStatusLabel = MainTab:CreateLabel("All systems ready")
-local FlyStatusLabel = MainTab:CreateLabel("Fly Status: Disabled")
 
 local ControlsSection = MainTab:CreateSection("Controls Guide")
-local FlyControlsLabel = MainTab:CreateLabel("PC: WASD + Space/Shift | Mobile: Touch screen to move")
+local FlyControlsLabel = MainTab:CreateLabel("PC: W/S Up/Down, A/D Left/Right | Mobile: Touch to move")
 local BotControlsLabel = MainTab:CreateLabel("Use individual tabs for detailed bot settings")
 
 local AutoChopToggle = TreeTab:CreateToggle({
@@ -223,9 +222,6 @@ RunService.Heartbeat:Connect(function()
     
     local fuelStatus, distance = AutoFuel.getStatus()
     FuelStatusLabel:Set(fuelStatus)
-    
-    local flyStatus = Fly.getStatus()
-    FlyStatusLabel:Set(flyStatus)
     
     local chopEnabled = TreeChopper.autoChopEnabled
     local fuelEnabled = AutoFuel.autoFuelEnabled

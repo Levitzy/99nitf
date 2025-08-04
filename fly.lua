@@ -18,9 +18,7 @@ local keys = {
     W = false,
     A = false,
     S = false,
-    D = false,
-    Space = false,
-    LeftShift = false
+    D = false
 }
 
 function Fly.createFlyObjects()
@@ -109,22 +107,16 @@ function Fly.updateMovement()
     local rightVector = cameraCFrame.RightVector
     
     if keys.W then
-        moveVector = moveVector + Vector3.new(lookVector.X, 0, lookVector.Z).Unit
+        moveVector = moveVector + Vector3.new(0, 1, 0)
     end
     if keys.S then
-        moveVector = moveVector - Vector3.new(lookVector.X, 0, lookVector.Z).Unit
+        moveVector = moveVector + Vector3.new(0, -1, 0)
     end
     if keys.A then
         moveVector = moveVector - Vector3.new(rightVector.X, 0, rightVector.Z).Unit
     end
     if keys.D then
         moveVector = moveVector + Vector3.new(rightVector.X, 0, rightVector.Z).Unit
-    end
-    if keys.Space then
-        moveVector = moveVector + Vector3.new(0, 1, 0)
-    end
-    if keys.LeftShift then
-        moveVector = moveVector + Vector3.new(0, -1, 0)
     end
     
     if moveVector.Magnitude > 0 then
@@ -135,7 +127,7 @@ function Fly.updateMovement()
     
     if humanoid then
         humanoid.PlatformStand = true
-        if moveVector.Magnitude > 0 then
+        if moveVector.X ~= 0 or moveVector.Z ~= 0 then
             local newCFrame = CFrame.lookAt(rootPart.Position, rootPart.Position + Vector3.new(moveVector.X, 0, moveVector.Z))
             rootPart.CFrame = rootPart.CFrame:Lerp(newCFrame, 0.1)
         end
@@ -153,10 +145,6 @@ function Fly.onKeyDown(input, gameProcessed)
         keys.S = true
     elseif input.KeyCode == Enum.KeyCode.D then
         keys.D = true
-    elseif input.KeyCode == Enum.KeyCode.Space then
-        keys.Space = true
-    elseif input.KeyCode == Enum.KeyCode.LeftShift then
-        keys.LeftShift = true
     end
 end
 
@@ -171,10 +159,6 @@ function Fly.onKeyUp(input, gameProcessed)
         keys.S = false
     elseif input.KeyCode == Enum.KeyCode.D then
         keys.D = false
-    elseif input.KeyCode == Enum.KeyCode.Space then
-        keys.Space = false
-    elseif input.KeyCode == Enum.KeyCode.LeftShift then
-        keys.LeftShift = false
     end
 end
 
@@ -261,16 +245,9 @@ end
 
 function Fly.getStatus()
     if Fly.flyEnabled then
-        local character = LocalPlayer.Character
-        if character and character:FindFirstChild("HumanoidRootPart") then
-            local position = character.HumanoidRootPart.Position
-            return string.format("Status: Flying at speed %.0f - Pos: (%.0f, %.0f, %.0f)", 
-                   Fly.flySpeed, position.X, position.Y, position.Z)
-        else
-            return "Status: Flying - No character found"
-        end
+        return "Fly: Active"
     else
-        return "Status: Fly disabled"
+        return "Fly: Disabled"
     end
 end
 
