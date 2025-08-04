@@ -227,30 +227,20 @@ RunService.Heartbeat:Connect(function()
     local fuelEnabled = AutoFuel.autoFuelEnabled
     local flyEnabled = Fly.flyEnabled
     
-    if chopEnabled and fuelEnabled and flyEnabled then
-        ComboStatusLabel:Set("Combo Status: All systems active")
-        MainStatusLabel:Set("Main Status: All Systems Active")
-    elseif chopEnabled and fuelEnabled then
+    if flyEnabled then
+        MainStatusLabel:Set("Main Status: Fly Active")
+    else
+        MainStatusLabel:Set("Main Status: Fly Disabled")
+    end
+    
+    if chopEnabled and fuelEnabled then
         ComboStatusLabel:Set("Combo Status: Both bots active - Chopping & Fueling")
-        MainStatusLabel:Set("Main Status: Tree Chopper + Auto Fuel Active")
-    elseif chopEnabled and flyEnabled then
-        MainStatusLabel:Set("Main Status: Tree Chopper + Fly Active")
-        ComboStatusLabel:Set("Combo Status: Tree Chopper active")
-    elseif fuelEnabled and flyEnabled then
-        MainStatusLabel:Set("Main Status: Auto Fuel + Fly Active")
-        ComboStatusLabel:Set("Combo Status: Auto Fuel active")
     elseif chopEnabled then
         ComboStatusLabel:Set("Combo Status: Only Tree Chopper active")
-        MainStatusLabel:Set("Main Status: Tree Chopper Active")
     elseif fuelEnabled then
         ComboStatusLabel:Set("Combo Status: Only Auto Fuel active")
-        MainStatusLabel:Set("Main Status: Auto Fuel Active")
-    elseif flyEnabled then
-        MainStatusLabel:Set("Main Status: Fly Active")
-        ComboStatusLabel:Set("Combo Status: Both bots disabled")
     else
         ComboStatusLabel:Set("Combo Status: Both bots disabled")
-        MainStatusLabel:Set("Main Status: All systems idle")
     end
 end)
 
