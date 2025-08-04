@@ -99,29 +99,35 @@ function AutoFuel.moveItemToPosition(fuelData)
         end
         
         local randomOffset = Vector3.new(
-            math.random(-3, 3),
-            math.random(0, 4),
-            math.random(-3, 3)
+            math.random(-4, 4),
+            math.random(0, 2),
+            math.random(-4, 4)
         )
         
-        local bodyPosition = Instance.new("BodyPosition")
-        bodyPosition.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-        bodyPosition.Position = AutoFuel.dropPosition + randomOffset
-        bodyPosition.D = 3000
-        bodyPosition.P = 15000
-        bodyPosition.Parent = handle
+        local targetPosition = AutoFuel.dropPosition + randomOffset
         
-        local bodyAngularVelocity = Instance.new("BodyAngularVelocity")
-        bodyAngularVelocity.MaxTorque = Vector3.new(0, 0, 0)
-        bodyAngularVelocity.AngularVelocity = Vector3.new(0, 0, 0)
-        bodyAngularVelocity.Parent = handle
+        handle.CFrame = CFrame.new(targetPosition)
+        handle.Velocity = Vector3.new(0, 0, 0)
         
-        game:GetService("Debris"):AddItem(bodyPosition, 4)
-        game:GetService("Debris"):AddItem(bodyAngularVelocity, 4)
+        if handle:FindFirstChild("AssemblyAngularVelocity") then
+            handle.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+        end
+        if handle:FindFirstChild("AngularVelocity") then
+            handle.AngularVelocity = Vector3.new(0, 0, 0)
+        end
+        if handle:FindFirstChild("AssemblyLinearVelocity") then
+            handle.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+        end
         
         spawn(function()
-            wait(0.5)
+            wait(0.1)
             if handle and handle.Parent then
+                local dropVelocity = Vector3.new(
+                    math.random(-2, 2),
+                    math.random(-15, -8),
+                    math.random(-2, 2)
+                )
+                handle.Velocity = dropVelocity
                 handle.CanCollide = true
             end
         end)

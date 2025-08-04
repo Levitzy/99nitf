@@ -40,7 +40,7 @@ local FlyToggle = MainTab:CreateToggle({
        if Value and success then
            Rayfield:Notify({
                Title = "Fly Enabled",
-               Content = "WASD to fly in camera direction! Look where you want to go!",
+               Content = "PC: WASD + Space/Shift | Mobile: Touch & drag to fly!",
                Duration = 4,
                Image = 4370317008
            })
@@ -88,7 +88,7 @@ local AllBotsToggle = MainTab:CreateToggle({
        if Value then
            Rayfield:Notify({
                Title = "All Bots Enabled",
-               Content = "Tree Chopper and Auto Fuel are now active! Fuel drops at (0,6,0)",
+               Content = "Tree Chopper and Auto Fuel are now active! Items teleport to (0,6,0)",
                Duration = 4,
                Image = 4483362458
            })
@@ -107,7 +107,7 @@ local StatusSection = MainTab:CreateSection("Status Overview")
 local MainStatusLabel = MainTab:CreateLabel("All systems ready")
 
 local ControlsSection = MainTab:CreateSection("Controls Guide")
-local FlyControlsLabel = MainTab:CreateLabel("PC: WASD flies in camera direction | Mobile: Touch to move")
+local FlyControlsLabel = MainTab:CreateLabel("PC: WASD move, Space up, Shift down | Mobile: Touch & drag")
 local BotControlsLabel = MainTab:CreateLabel("Use individual tabs for detailed bot settings")
 
 local AutoChopToggle = TreeTab:CreateToggle({
@@ -169,7 +169,7 @@ local AutoFuelToggle = FuelTab:CreateToggle({
        if Value then
            Rayfield:Notify({
                Title = "Auto Fuel Enabled",
-               Content = "Moving all fuel items to position (0,6,0) automatically!",
+               Content = "Teleporting all fuel items to position (0,6,0) then dropping!",
                Duration = 3,
                Image = 4335489011
            })

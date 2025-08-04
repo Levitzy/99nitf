@@ -8,18 +8,61 @@ local LocalPlayer = Players.LocalPlayer
 Fly.flyEnabled = false
 Fly.flySpeed = 50
 Fly.flyConnection = nil
-Fly.inputConnection1 = nil
-Fly.inputConnection2 = nil
+Fly.inputConnections = {}
 Fly.bodyVelocity = nil
-Fly.bodyPosition = nil
 Fly.bodyAngularVelocity = nil
 
-local keys = {
-    W = false,
-    A = false,
-    S = false,
-    D = false
+local movement = {
+    forward = false,
+    backward = false,
+    left = false,
+    right = false,
+    up = false,
+    down = false
 }
+
+local mobileControls = {
+    moveVector = Vector3.new(0, 0, 0),
+    isTouching = false,
+    touchStartPos = nil
+}
+
+function Fly.cleanupConnections()
+    for _, connection in pairs(Fly.inputConnections) do
+        if connection then
+            connection:Disconnect()
+        end
+    end
+    Fly.inputConnections = {}
+end
+
+function Fly.destroyFlyObjects()
+    if Fly.bodyVelocity then
+        Fly.bodyVelocity:Destroy()
+        Fly.bodyVelocity = nil
+    end
+    if Fly.bodyAngularVelocity then
+        Fly.bodyAngularVelocity:Destroy()
+        Fly.bodyAngularVelocity = nil
+    end
+    
+    local character = LocalPlayer.Character
+    if character then
+        local humanoid = character:FindFirstChild("Humanoid")
+        local rootPart = character:FindFirstChild("HumanoidRootPart")
+        
+        if humanoid then
+            humanoid.PlatformStand = false
+        end
+        
+        if rootPart then
+            rootPart.Velocity = Vector3.new(0, 0, 0)
+            if rootPart:FindFirstChild("AssemblyAngularVelocity") then
+                rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+            end
+        end
+    end
+end
 
 function Fly.createFlyObjects()
     local character = LocalPlayer.Character
@@ -49,41 +92,6 @@ function Fly.createFlyObjects()
     return true
 end
 
-function Fly.destroyFlyObjects()
-    if Fly.bodyVelocity then
-        Fly.bodyVelocity:Destroy()
-        Fly.bodyVelocity = nil
-    end
-    if Fly.bodyPosition then
-        Fly.bodyPosition:Destroy()
-        Fly.bodyPosition = nil
-    end
-    if Fly.bodyAngularVelocity then
-        Fly.bodyAngularVelocity:Destroy()
-        Fly.bodyAngularVelocity = nil
-    end
-    
-    local character = LocalPlayer.Character
-    if character then
-        local humanoid = character:FindFirstChild("Humanoid")
-        local rootPart = character:FindFirstChild("HumanoidRootPart")
-        
-        if humanoid then
-            humanoid.PlatformStand = false
-        end
-        
-        if rootPart then
-            rootPart.Velocity = Vector3.new(0, 0, 0)
-            if rootPart:FindFirstChild("AssemblyAngularVelocity") then
-                rootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-            end
-            if rootPart:FindFirstChild("AngularVelocity") then
-                rootPart.AngularVelocity = Vector3.new(0, 0, 0)
-            end
-        end
-    end
-end
-
 function Fly.updateMovement()
     if not Fly.flyEnabled or not Fly.bodyVelocity then
         return
@@ -94,26 +102,35 @@ function Fly.updateMovement()
         return
     end
     
-    local rootPart = character.HumanoidRootPart
-    local humanoid = character:FindFirstChild("Humanoid")
     local camera = workspace.CurrentCamera
     local moveVector = Vector3.new(0, 0, 0)
     
-    local cameraCFrame = camera.CFrame
-    local lookVector = cameraCFrame.LookVector
-    local rightVector = cameraCFrame.RightVector
-    
-    if keys.W then
-        moveVector = moveVector + lookVector
-    end
-    if keys.S then
-        moveVector = moveVector - lookVector
-    end
-    if keys.A then
-        moveVector = moveVector - rightVector
-    end
-    if keys.D then
-        moveVector = moveVector + rightVector
+    if UserInputService.TouchEnabled and mobileControls.isTouching then
+        moveVector = mobileControls.moveVector
+    else
+        local cameraCFrame = camera.CFrame
+        local lookVector = cameraCFrame.LookVector
+        local rightVector = cameraCFrame.RightVector
+        local upVector = Vector3.new(0, 1, 0)
+        
+        if movement.forward then
+            moveVector = moveVector + lookVector
+        end
+        if movement.backward then
+            moveVector = moveVector - lookVector
+        end
+        if movement.left then
+            moveVector = moveVector - rightVector
+        end
+        if movement.right then
+            moveVector = moveVector + rightVector
+        end
+        if movement.up then
+            moveVector = moveVector + upVector
+        end
+        if movement.down then
+            moveVector = moveVector - upVector
+        end
     end
     
     if moveVector.Magnitude > 0 then
@@ -125,23 +142,23 @@ function Fly.updateMovement()
     if Fly.bodyAngularVelocity then
         Fly.bodyAngularVelocity.AngularVelocity = Vector3.new(0, 0, 0)
     end
-    
-    if humanoid then
-        humanoid.PlatformStand = true
-    end
 end
 
 function Fly.onKeyDown(input, gameProcessed)
     if gameProcessed then return end
     
     if input.KeyCode == Enum.KeyCode.W then
-        keys.W = true
-    elseif input.KeyCode == Enum.KeyCode.A then
-        keys.A = true
+        movement.forward = true
     elseif input.KeyCode == Enum.KeyCode.S then
-        keys.S = true
+        movement.backward = true
+    elseif input.KeyCode == Enum.KeyCode.A then
+        movement.left = true
     elseif input.KeyCode == Enum.KeyCode.D then
-        keys.D = true
+        movement.right = true
+    elseif input.KeyCode == Enum.KeyCode.Space then
+        movement.up = true
+    elseif input.KeyCode == Enum.KeyCode.LeftShift or input.KeyCode == Enum.KeyCode.LeftControl then
+        movement.down = true
     end
 end
 
@@ -149,44 +166,84 @@ function Fly.onKeyUp(input, gameProcessed)
     if gameProcessed then return end
     
     if input.KeyCode == Enum.KeyCode.W then
-        keys.W = false
-    elseif input.KeyCode == Enum.KeyCode.A then
-        keys.A = false
+        movement.forward = false
     elseif input.KeyCode == Enum.KeyCode.S then
-        keys.S = false
+        movement.backward = false
+    elseif input.KeyCode == Enum.KeyCode.A then
+        movement.left = false
     elseif input.KeyCode == Enum.KeyCode.D then
-        keys.D = false
+        movement.right = false
+    elseif input.KeyCode == Enum.KeyCode.Space then
+        movement.up = false
+    elseif input.KeyCode == Enum.KeyCode.LeftShift or input.KeyCode == Enum.KeyCode.LeftControl then
+        movement.down = false
     end
 end
 
-function Fly.onTouchMoved(touch, gameProcessed)
+function Fly.onTouchStart(touch, gameProcessed)
     if not Fly.flyEnabled or gameProcessed then return end
     
+    mobileControls.isTouching = true
+    mobileControls.touchStartPos = touch.Position
+end
+
+function Fly.onTouchMove(touch, gameProcessed)
+    if not Fly.flyEnabled or gameProcessed or not mobileControls.isTouching then return end
+    
     local camera = workspace.CurrentCamera
-    local touchPosition = touch.Position
     local screenSize = camera.ViewportSize
+    local touchPos = touch.Position
     
     local centerX = screenSize.X / 2
     local centerY = screenSize.Y / 2
     
-    local deltaX = (touchPosition.X - centerX) / centerX
-    local deltaY = (touchPosition.Y - centerY) / centerY
+    local deltaX = (touchPos.X - centerX) / (screenSize.X / 2)
+    local deltaY = (touchPos.Y - centerY) / (screenSize.Y / 2)
     
-    local deadZone = 0.3
+    local deadZone = 0.15
+    local moveX = math.abs(deltaX) > deadZone and deltaX or 0
+    local moveY = math.abs(deltaY) > deadZone and deltaY or 0
     
-    keys.W = deltaY < -deadZone
-    keys.S = deltaY > deadZone
-    keys.A = deltaX < -deadZone
-    keys.D = deltaX > deadZone
+    local cameraCFrame = camera.CFrame
+    local lookVector = cameraCFrame.LookVector
+    local rightVector = cameraCFrame.RightVector
+    
+    local moveVector = Vector3.new(0, 0, 0)
+    
+    if moveY < 0 then
+        moveVector = moveVector + lookVector * math.abs(moveY)
+    elseif moveY > 0 then
+        moveVector = moveVector - lookVector * moveY
+    end
+    
+    if moveX < 0 then
+        moveVector = moveVector - rightVector * math.abs(moveX)
+    elseif moveX > 0 then
+        moveVector = moveVector + rightVector * moveX
+    end
+    
+    mobileControls.moveVector = moveVector
 end
 
-function Fly.onTouchEnded(touch, gameProcessed)
+function Fly.onTouchEnd(touch, gameProcessed)
     if not Fly.flyEnabled then return end
     
-    keys.W = false
-    keys.S = false
-    keys.A = false
-    keys.D = false
+    mobileControls.isTouching = false
+    mobileControls.moveVector = Vector3.new(0, 0, 0)
+    mobileControls.touchStartPos = nil
+end
+
+function Fly.setupMobileControls()
+    if not UserInputService.TouchEnabled then return end
+    
+    table.insert(Fly.inputConnections, UserInputService.TouchStarted:Connect(Fly.onTouchStart))
+    table.insert(Fly.inputConnections, UserInputService.TouchMoved:Connect(Fly.onTouchMove))
+    table.insert(Fly.inputConnections, UserInputService.TouchEnded:Connect(Fly.onTouchEnd))
+end
+
+function Fly.setupDesktopControls()
+    table.insert(Fly.inputConnections, UserInputService.InputBegan:Connect(Fly.onKeyDown))
+    table.insert(Fly.inputConnections, UserInputService.InputEnded:Connect(Fly.onKeyUp))
 end
 
 function Fly.setEnabled(enabled)
@@ -196,16 +253,9 @@ function Fly.setEnabled(enabled)
         if Fly.createFlyObjects() then
             Fly.flyConnection = RunService.Heartbeat:Connect(Fly.updateMovement)
             
-            if Fly.inputConnection1 then Fly.inputConnection1:Disconnect() end
-            if Fly.inputConnection2 then Fly.inputConnection2:Disconnect() end
-            
-            Fly.inputConnection1 = UserInputService.InputBegan:Connect(Fly.onKeyDown)
-            Fly.inputConnection2 = UserInputService.InputEnded:Connect(Fly.onKeyUp)
-            
-            if UserInputService.TouchEnabled then
-                UserInputService.TouchMoved:Connect(Fly.onTouchMoved)
-                UserInputService.TouchEnded:Connect(Fly.onTouchEnded)
-            end
+            Fly.cleanupConnections()
+            Fly.setupDesktopControls()
+            Fly.setupMobileControls()
         else
             Fly.flyEnabled = false
             return false
@@ -216,21 +266,15 @@ function Fly.setEnabled(enabled)
             Fly.flyConnection = nil
         end
         
-        if Fly.inputConnection1 then
-            Fly.inputConnection1:Disconnect()
-            Fly.inputConnection1 = nil
-        end
-        
-        if Fly.inputConnection2 then
-            Fly.inputConnection2:Disconnect()
-            Fly.inputConnection2 = nil
-        end
-        
+        Fly.cleanupConnections()
         Fly.destroyFlyObjects()
         
-        for key, _ in pairs(keys) do
-            keys[key] = false
+        for key in pairs(movement) do
+            movement[key] = false
         end
+        
+        mobileControls.isTouching = false
+        mobileControls.moveVector = Vector3.new(0, 0, 0)
     end
     
     return true
