@@ -40,7 +40,7 @@ local FlyToggle = MainTab:CreateToggle({
        if Value and success then
            Rayfield:Notify({
                Title = "Fly Enabled",
-               Content = "W: Up | S: Down | A/D: Left/Right. Mobile: Touch to move!",
+               Content = "WASD to fly in camera direction! Look where you want to go!",
                Duration = 4,
                Image = 4370317008
            })
@@ -106,7 +106,7 @@ local StatusSection = MainTab:CreateSection("Status Overview")
 local MainStatusLabel = MainTab:CreateLabel("All systems ready")
 
 local ControlsSection = MainTab:CreateSection("Controls Guide")
-local FlyControlsLabel = MainTab:CreateLabel("PC: W/S Up/Down, A/D Left/Right | Mobile: Touch to move")
+local FlyControlsLabel = MainTab:CreateLabel("PC: WASD flies in camera direction | Mobile: Touch to move")
 local BotControlsLabel = MainTab:CreateLabel("Use individual tabs for detailed bot settings")
 
 local AutoChopToggle = TreeTab:CreateToggle({

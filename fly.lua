@@ -107,16 +107,16 @@ function Fly.updateMovement()
     local rightVector = cameraCFrame.RightVector
     
     if keys.W then
-        moveVector = moveVector + Vector3.new(0, 1, 0)
+        moveVector = moveVector + lookVector
     end
     if keys.S then
-        moveVector = moveVector + Vector3.new(0, -1, 0)
+        moveVector = moveVector - lookVector
     end
     if keys.A then
-        moveVector = moveVector - Vector3.new(rightVector.X, 0, rightVector.Z).Unit
+        moveVector = moveVector - rightVector
     end
     if keys.D then
-        moveVector = moveVector + Vector3.new(rightVector.X, 0, rightVector.Z).Unit
+        moveVector = moveVector + rightVector
     end
     
     if moveVector.Magnitude > 0 then
@@ -127,9 +127,12 @@ function Fly.updateMovement()
     
     if humanoid then
         humanoid.PlatformStand = true
-        if moveVector.X ~= 0 or moveVector.Z ~= 0 then
-            local newCFrame = CFrame.lookAt(rootPart.Position, rootPart.Position + Vector3.new(moveVector.X, 0, moveVector.Z))
-            rootPart.CFrame = rootPart.CFrame:Lerp(newCFrame, 0.1)
+        if moveVector.Magnitude > 0 then
+            local horizontalDirection = Vector3.new(moveVector.X, 0, moveVector.Z)
+            if horizontalDirection.Magnitude > 0 then
+                local newCFrame = CFrame.lookAt(rootPart.Position, rootPart.Position + horizontalDirection.Unit)
+                rootPart.CFrame = rootPart.CFrame:Lerp(newCFrame, 0.1)
+            end
         end
     end
 end
