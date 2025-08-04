@@ -9,7 +9,7 @@ AutoFuel.autoFuelEnabled = false
 AutoFuel.fuelDelay = 1.0
 AutoFuel.fuelConnection = nil
 AutoFuel.lastFuelTime = 0
-AutoFuel.dropPosition = Vector3.new(0, 6, 0)
+AutoFuel.dropPosition = Vector3.new(0, 4, -3)
 
 function AutoFuel.getPlayerPosition()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -100,6 +100,7 @@ function AutoFuel.moveItemToPosition(fuelData)
         
         handle.CFrame = CFrame.new(AutoFuel.dropPosition)
         handle.Velocity = Vector3.new(0, 0, 0)
+        handle.CanCollide = false
         
         if handle:FindFirstChild("AssemblyAngularVelocity") then
             handle.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
@@ -111,12 +112,25 @@ function AutoFuel.moveItemToPosition(fuelData)
             handle.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
         end
         
+        local bodyVelocity = Instance.new("BodyVelocity")
+        bodyVelocity.MaxForce = Vector3.new(0, math.huge, 0)
+        bodyVelocity.Velocity = Vector3.new(0, -15, 0)
+        bodyVelocity.Parent = handle
+        
         spawn(function()
-            wait(0.2)
+            wait(0.5)
             if handle and handle.Parent then
-                local dropVelocity = Vector3.new(0, -12, 0)
-                handle.Velocity = dropVelocity
                 handle.CanCollide = true
+                if bodyVelocity and bodyVelocity.Parent then
+                    bodyVelocity:Destroy()
+                end
+            end
+        end)
+        
+        spawn(function()
+            wait(2)
+            if handle and handle.Parent and handle:FindFirstChild("BodyVelocity") then
+                handle.BodyVelocity:Destroy()
             end
         end)
     end)

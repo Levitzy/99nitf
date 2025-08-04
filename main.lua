@@ -87,7 +87,7 @@ local AllBotsToggle = MainTab:CreateToggle({
        if Value then
            Rayfield:Notify({
                Title = "All Bots Enabled",
-               Content = "Tree Chopper and Auto Fuel active! Items stack at (0,6,0)",
+               Content = "Tree Chopper and Auto Fuel active! Items stack at (0,4,-3)",
                Duration = 4,
                Image = 4483362458
            })
@@ -158,7 +158,7 @@ local TreeStatusLabel = TreeTab:CreateLabel("Status: Ready")
 local TreeInfoLabel = TreeTab:CreateLabel("Trees processed: 5 per cycle for optimal performance")
 
 local AutoFuelToggle = FuelTab:CreateToggle({
-   Name = "Auto Fuel to Position (0,6,0)",
+   Name = "Auto Fuel to Position (0,4,-3)",
    CurrentValue = false,
    Flag = "AutoFuelToggle",
    Callback = function(Value)
@@ -167,7 +167,7 @@ local AutoFuelToggle = FuelTab:CreateToggle({
        if Value then
            Rayfield:Notify({
                Title = "Auto Fuel Enabled",
-               Content = "Teleporting fuel to exact position (0,6,0) - Stacking enabled!",
+               Content = "Teleporting fuel to exact position (0,4,-3) - Enhanced dropping!",
                Duration = 3,
                Image = 4335489011
            })
@@ -184,7 +184,7 @@ local AutoFuelToggle = FuelTab:CreateToggle({
 
 local FuelInfoSection = FuelTab:CreateSection("Auto Fuel Information")
 local FuelStatusLabel = FuelTab:CreateLabel("Status: Ready")
-local FuelInfoLabel = FuelTab:CreateLabel("Fixed delay: 1.0s - Items stack at exact position (0,6,0)")
+local FuelInfoLabel = FuelTab:CreateLabel("Fixed delay: 1.0s - Items stack at position (0,4,-3)")
 
 local ComboBotToggle = UtilityTab:CreateToggle({
    Name = "Tree + Fuel Combo",
@@ -197,7 +197,7 @@ local ComboBotToggle = UtilityTab:CreateToggle({
        if Value then
            Rayfield:Notify({
                Title = "Combo Bot Enabled",
-               Content = "Tree Chopper and Auto Fuel active! Fuel stacks at (0,6,0)",
+               Content = "Tree Chopper and Auto Fuel active! Fuel stacks at (0,4,-3)",
                Duration = 4,
                Image = 4370317008
            })
