@@ -6,7 +6,7 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
     Name = "Multi-Tool Bot Suite",
-    LoadingTitle = "Enhanced Speed Interface",
+    LoadingTitle = "Clean Fly-Focused Interface",
     LoadingSubtitle = "by TreeChopper",
     ConfigurationSaving = {
         Enabled = true,
@@ -73,7 +73,7 @@ local FlySpeedSlider = FlyTab:CreateSlider({
 })
 
 local TreeToggle = TreeTab:CreateToggle({
-    Name = "Auto Chop ALL Small Trees (0.1s)",
+    Name = "Auto Chop All Small Trees",
     CurrentValue = false,
     Flag = "AutoChopToggle",
     Callback = function(Value)
@@ -81,8 +81,8 @@ local TreeToggle = TreeTab:CreateToggle({
         
         if Value then
             Rayfield:Notify({
-                Title = "Fast Auto Chop Enabled",
-                Content = "Chopping ALL small trees simultaneously at 0.1s speed!",
+                Title = "Auto Chop Enabled",
+                Content = "Started chopping ALL small trees in map!",
                 Duration = 3,
                 Image = 4483362458
             })
@@ -97,7 +97,26 @@ local TreeToggle = TreeTab:CreateToggle({
     end,
 })
 
-local TreeStatusLabel = TreeTab:CreateLabel("Status: Ready - Fast Mode 0.1s")
+local ChopDelayDropdown = TreeTab:CreateDropdown({
+    Name = "Chop Delay",
+    Options = {"0.1s", "0.5s", "1s", "2s", "3s", "5s"},
+    CurrentOption = "1s",
+    Flag = "ChopDelay",
+    Callback = function(Option)
+        local delayMap = {
+            ["0.1s"] = 0.1,
+            ["0.5s"] = 0.5,
+            ["1s"] = 1,
+            ["2s"] = 2,
+            ["3s"] = 3,
+            ["5s"] = 5
+        }
+        local delay = delayMap[Option] or 1
+        TreeChopper.setChopDelay(delay)
+    end,
+})
+
+local TreeStatusLabel = TreeTab:CreateLabel("Status: Ready")
 
 local FuelToggle = FuelTab:CreateToggle({
     Name = "Auto Fuel to Position (0,4,-3)",
@@ -109,7 +128,7 @@ local FuelToggle = FuelTab:CreateToggle({
         if Value then
             Rayfield:Notify({
                 Title = "Auto Fuel Enabled",
-                Content = "Fast teleporting fuel to (0,4,-3) with improved drop speed!",
+                Content = "Teleporting fuel to exact position (0,4,-3) - Enhanced dropping!",
                 Duration = 3,
                 Image = 4335489011
             })
@@ -124,10 +143,10 @@ local FuelToggle = FuelTab:CreateToggle({
     end,
 })
 
-local FuelStatusLabel = FuelTab:CreateLabel("Status: Ready - Enhanced Speed")
+local FuelStatusLabel = FuelTab:CreateLabel("Status: Ready")
 
 local ComboToggle = UtilityTab:CreateToggle({
-    Name = "Tree + Fuel Combo (FAST)",
+    Name = "Tree + Fuel Combo",
     CurrentValue = false,
     Flag = "ComboBotToggle",
     Callback = function(Value)
@@ -136,8 +155,8 @@ local ComboToggle = UtilityTab:CreateToggle({
         
         if Value then
             Rayfield:Notify({
-                Title = "FAST Combo Bot Enabled",
-                Content = "Ultra-fast tree chopping (0.1s) + fuel teleporting to (0,4,-3)!",
+                Title = "Combo Bot Enabled",
+                Content = "Tree Chopper and Auto Fuel active! Fuel stacks at (0,4,-3)",
                 Duration = 4,
                 Image = 4370317008
             })
@@ -165,19 +184,19 @@ RunService.Heartbeat:Connect(function()
     local fuelEnabled = AutoFuel.autoFuelEnabled
     
     if chopEnabled and fuelEnabled then
-        ComboStatusLabel:Set("Combo Status: FAST MODE - Both bots active")
+        ComboStatusLabel:Set("Combo Status: Both bots active - Chopping & Fueling")
     elseif chopEnabled then
-        ComboStatusLabel:Set("Combo Status: Only Tree Chopper active (FAST)")
+        ComboStatusLabel:Set("Combo Status: Only Tree Chopper active")
     elseif fuelEnabled then
-        ComboStatusLabel:Set("Combo Status: Only Auto Fuel active (FAST)")
+        ComboStatusLabel:Set("Combo Status: Only Auto Fuel active")
     else
         ComboStatusLabel:Set("Combo Status: Both bots disabled")
     end
 end)
 
 Rayfield:Notify({
-    Title = "Enhanced Multi-Tool Suite",
-    Content = "FAST MODE loaded! Tree chopper at 0.1s, improved fuel teleporting!",
+    Title = "Multi-Tool Bot Suite Load",
+    Content = "Clean interface loaded! Fly tab is focused and clutter-free.",
     Duration = 6,
     Image = 4483362458
 })
