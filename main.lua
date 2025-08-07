@@ -1,6 +1,7 @@
 local TreeChopper = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/tree.lua'))()
 local AutoFuel = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autofuel.lua'))()
 local Fly = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/fly.lua'))()
+local AutoKill = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autokill.lua'))()
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
@@ -24,6 +25,7 @@ local Window = Rayfield:CreateWindow({
 local FlyTab = Window:CreateTab("Fly", 4483362458)
 local TreeTab = Window:CreateTab("Tree Chopper", 4483362458)
 local FuelTab = Window:CreateTab("Auto Fuel", 4335489011)
+local KillTab = Window:CreateTab("Auto Kill", 4370317008)
 local UtilityTab = Window:CreateTab("Utilities", 4370317008)
 
 local RunService = game:GetService("RunService")
@@ -145,6 +147,52 @@ local FuelToggle = FuelTab:CreateToggle({
 
 local FuelStatusLabel = FuelTab:CreateLabel("Status: Ready")
 
+local KillToggle = KillTab:CreateToggle({
+    Name = "Auto Kill All Bunnies",
+    CurrentValue = false,
+    Flag = "AutoKillToggle",
+    Callback = function(Value)
+        AutoKill.setEnabled(Value)
+        
+        if Value then
+            Rayfield:Notify({
+                Title = "Auto Kill Enabled",
+                Content = "Started attacking all bunnies in workspace!",
+                Duration = 3,
+                Image = 4370317008
+            })
+        else
+            Rayfield:Notify({
+                Title = "Auto Kill Disabled",
+                Content = "Stopped attacking bunnies.",
+                Duration = 3,
+                Image = 4370317008
+            })
+        end
+    end,
+})
+
+local KillDelayDropdown = KillTab:CreateDropdown({
+    Name = "Attack Delay",
+    Options = {"0.1s", "0.5s", "1s", "2s", "3s", "5s"},
+    CurrentOption = "0.1s",
+    Flag = "KillDelay",
+    Callback = function(Option)
+        local delayMap = {
+            ["0.1s"] = 0.1,
+            ["0.5s"] = 0.5,
+            ["1s"] = 1,
+            ["2s"] = 2,
+            ["3s"] = 3,
+            ["5s"] = 5
+        }
+        local delay = delayMap[Option] or 0.1
+        AutoKill.setKillDelay(delay)
+    end,
+})
+
+local KillStatusLabel = KillTab:CreateLabel("Status: Ready")
+
 local ComboToggle = UtilityTab:CreateToggle({
     Name = "Tree + Fuel Combo",
     CurrentValue = false,
@@ -171,7 +219,34 @@ local ComboToggle = UtilityTab:CreateToggle({
     end,
 })
 
-local ComboStatusLabel = UtilityTab:CreateLabel("Combo Status: Both bots disabled")
+local UltimateComboToggle = UtilityTab:CreateToggle({
+    Name = "Ultimate Combo (All Bots)",
+    CurrentValue = false,
+    Flag = "UltimateBotToggle",
+    Callback = function(Value)
+        TreeChopper.setEnabled(Value)
+        AutoFuel.setEnabled(Value)
+        AutoKill.setEnabled(Value)
+        
+        if Value then
+            Rayfield:Notify({
+                Title = "Ultimate Combo Enabled",
+                Content = "All bots active! Trees, Fuel, and Bunnies!",
+                Duration = 4,
+                Image = 4370317008
+            })
+        else
+            Rayfield:Notify({
+                Title = "Ultimate Combo Disabled",
+                Content = "All bots have been stopped.",
+                Duration = 3,
+                Image = 4370317008
+            })
+        end
+    end,
+})
+
+local ComboStatusLabel = UtilityTab:CreateLabel("Combo Status: All bots disabled")
 
 RunService.Heartbeat:Connect(function()
     local treeStatus, treeCount, closestDistance = TreeChopper.getStatus()
@@ -180,23 +255,35 @@ RunService.Heartbeat:Connect(function()
     local fuelStatus, distance = AutoFuel.getStatus()
     FuelStatusLabel:Set(fuelStatus)
     
+    local killStatus, bunnyCount, closestBunnyDistance = AutoKill.getStatus()
+    KillStatusLabel:Set(killStatus)
+    
     local chopEnabled = TreeChopper.autoChopEnabled
     local fuelEnabled = AutoFuel.autoFuelEnabled
+    local killEnabled = AutoKill.autoKillEnabled
     
-    if chopEnabled and fuelEnabled then
-        ComboStatusLabel:Set("Combo Status: Both bots active - Chopping & Fueling")
+    if chopEnabled and fuelEnabled and killEnabled then
+        ComboStatusLabel:Set("Combo Status: ALL BOTS ACTIVE - Ultimate Mode!")
+    elseif chopEnabled and fuelEnabled then
+        ComboStatusLabel:Set("Combo Status: Tree + Fuel active")
+    elseif chopEnabled and killEnabled then
+        ComboStatusLabel:Set("Combo Status: Tree + Kill active")
+    elseif fuelEnabled and killEnabled then
+        ComboStatusLabel:Set("Combo Status: Fuel + Kill active")
     elseif chopEnabled then
         ComboStatusLabel:Set("Combo Status: Only Tree Chopper active")
     elseif fuelEnabled then
         ComboStatusLabel:Set("Combo Status: Only Auto Fuel active")
+    elseif killEnabled then
+        ComboStatusLabel:Set("Combo Status: Only Auto Kill active")
     else
-        ComboStatusLabel:Set("Combo Status: Both bots disabled")
+        ComboStatusLabel:Set("Combo Status: All bots disabled")
     end
 end)
 
 Rayfield:Notify({
     Title = "Multi-Tool Bot Suite Load",
-    Content = "Clean interface loaded! Fly tab is focused and clutter-free.",
+    Content = "Clean interface loaded with Auto Kill! Fly tab is focused and clutter-free.",
     Duration = 6,
     Image = 4483362458
 })
