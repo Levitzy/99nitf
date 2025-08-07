@@ -21,31 +21,32 @@ function AutoKill.getDistance(pos1, pos2)
     return (pos1 - pos2).Magnitude
 end
 
-function AutoKill.findAllBunnies()
+function AutoKill.findAllTargets()
     local workspace = game:GetService("Workspace")
     local charactersFolder = workspace:WaitForChild("Characters")
     
-    local allBunnies = {}
+    local allTargets = {}
     local playerPos = AutoKill.getPlayerPosition()
     
-    for _, bunny in pairs(charactersFolder:GetChildren()) do
-        if bunny.Name == "Bunny" and bunny:FindFirstChild("HumanoidRootPart") then
+    for _, target in pairs(charactersFolder:GetChildren()) do
+        if (target.Name == "Bunny" or target.Name == "Wolf" or target.Name == "Alpha Wolf" or target.Name == "Cultist") and target:FindFirstChild("HumanoidRootPart") then
             local distance = 0
             if playerPos then
-                distance = AutoKill.getDistance(playerPos, bunny.HumanoidRootPart.Position)
+                distance = AutoKill.getDistance(playerPos, target.HumanoidRootPart.Position)
             end
-            table.insert(allBunnies, {
-                bunny = bunny, 
-                distance = distance
+            table.insert(allTargets, {
+                target = target, 
+                distance = distance,
+                type = target.Name
             })
         end
     end
     
-    table.sort(allBunnies, function(a, b)
+    table.sort(allTargets, function(a, b)
         return a.distance < b.distance
     end)
     
-    return allBunnies
+    return allTargets
 end
 
 function AutoKill.hasOldAxe()
@@ -56,7 +57,7 @@ function AutoKill.hasOldAxe()
     return false
 end
 
-function AutoKill.attackBunny(bunny)
+function AutoKill.attackTarget(target)
     if not AutoKill.hasOldAxe() then
         return false
     end
@@ -67,13 +68,13 @@ function AutoKill.attackBunny(bunny)
     local playerPos = AutoKill.getPlayerPosition()
     if not playerPos then return false end
     
-    local bunnyPos = bunny.HumanoidRootPart.Position
-    local lookDirection = (bunnyPos - playerPos).Unit
-    local cframe = CFrame.lookAt(playerPos, bunnyPos)
+    local targetPos = target.HumanoidRootPart.Position
+    local lookDirection = (targetPos - playerPos).Unit
+    local cframe = CFrame.lookAt(playerPos, targetPos)
     
     for i = 1, 8 do
         local args = {
-            bunny,
+            target,
             oldAxe,
             "6_9111530262",
             cframe
@@ -93,7 +94,7 @@ function AutoKill.attackBunny(bunny)
     return true
 end
 
-function AutoKill.attackAllBunnies(bunniesData)
+function AutoKill.attackAllTargets(targetsData)
     if not AutoKill.hasOldAxe() then
         return false
     end
@@ -105,10 +106,10 @@ function AutoKill.attackAllBunnies(bunniesData)
     
     local attackedCount = 0
     
-    for _, bunnyData in pairs(bunniesData) do
-        if bunnyData.bunny and bunnyData.bunny.Parent then
+    for _, targetData in pairs(targetsData) do
+        if targetData.target and targetData.target.Parent then
             spawn(function()
-                local success = AutoKill.attackBunny(bunnyData.bunny)
+                local success = AutoKill.attackTarget(targetData.target)
                 if success then
                     attackedCount = attackedCount + 1
                 end
@@ -123,10 +124,10 @@ end
 function AutoKill.autoKillLoop()
     if not AutoKill.autoKillEnabled then return end
     
-    local allBunnies = AutoKill.findAllBunnies()
+    local allTargets = AutoKill.findAllTargets()
     
-    if #allBunnies > 0 then
-        AutoKill.attackAllBunnies(allBunnies)
+    if #allTargets > 0 then
+        AutoKill.attackAllTargets(allTargets)
     end
 end
 
@@ -149,18 +150,35 @@ end
 
 function AutoKill.getStatus()
     if AutoKill.autoKillEnabled then
-        local allBunnies = AutoKill.findAllBunnies()
+        local allTargets = AutoKill.findAllTargets()
         local hasAxe = AutoKill.hasOldAxe()
         
         if not hasAxe then
             return "Status: No Old Axe found!", 0, 0
-        elseif #allBunnies > 0 then
-            local closestDistance = allBunnies[1] and allBunnies[1].distance or 0
+        elseif #allTargets > 0 then
+            local closestDistance = allTargets[1] and allTargets[1].distance or 0
             
-            return string.format("Status: Attacking %d bunnies - Fast Mode!", 
-                   #allBunnies), #allBunnies, closestDistance
+            local bunnyCount = 0
+            local wolfCount = 0
+            local alphaWolfCount = 0
+            local cultistCount = 0
+            
+            for _, targetData in pairs(allTargets) do
+                if targetData.type == "Bunny" then
+                    bunnyCount = bunnyCount + 1
+                elseif targetData.type == "Wolf" then
+                    wolfCount = wolfCount + 1
+                elseif targetData.type == "Alpha Wolf" then
+                    alphaWolfCount = alphaWolfCount + 1
+                elseif targetData.type == "Cultist" then
+                    cultistCount = cultistCount + 1
+                end
+            end
+            
+            return string.format("Status: Attacking B:%d W:%d AW:%d C:%d - Fast Mode!", 
+                   bunnyCount, wolfCount, alphaWolfCount, cultistCount), #allTargets, closestDistance
         else
-            return "Status: No bunnies found", 0, 0
+            return "Status: No targets found", 0, 0
         end
     else
         return "Status: Auto kill disabled", 0, 0
