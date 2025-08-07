@@ -23,25 +23,38 @@ end
 
 function TreeChopper.findAllSmallTrees()
     local workspace = game:GetService("Workspace")
-    local mapFolder = workspace:WaitForChild("Map")
-    local foliageFolder = mapFolder:WaitForChild("Foliage")
-    local landmarksFolder = mapFolder:WaitForChild("Landmarks")
+    
+    local mapFolder = workspace:FindFirstChild("Map")
+    if not mapFolder then return {} end
+    
+    local foliageFolder = mapFolder:FindFirstChild("Foliage")
+    local landmarksFolder = mapFolder:FindFirstChild("Landmarks")
     
     local allTrees = {}
     local playerPos = TreeChopper.getPlayerPosition()
     
     local function scanFolder(folder, folderName)
+        if not folder then return end
+        
         for _, tree in pairs(folder:GetChildren()) do
-            if tree.Name == "Small Tree" and tree:FindFirstChild("Trunk") then
-                local distance = 0
-                if playerPos then
-                    distance = TreeChopper.getDistance(playerPos, tree.Trunk.Position)
+            if tree and tree.Parent and tree.Name == "Small Tree" then
+                local trunk = tree:FindFirstChild("Trunk")
+                if trunk and trunk.Parent then
+                    local distance = 0
+                    if playerPos then
+                        local success, result = pcall(function()
+                            return TreeChopper.getDistance(playerPos, trunk.Position)
+                        end)
+                        if success then
+                            distance = result
+                        end
+                    end
+                    table.insert(allTrees, {
+                        tree = tree, 
+                        distance = distance,
+                        folder = folderName
+                    })
                 end
-                table.insert(allTrees, {
-                    tree = tree, 
-                    distance = distance,
-                    folder = folderName
-                })
             end
         end
     end
@@ -69,17 +82,37 @@ function TreeChopper.chopTree(tree)
         return false
     end
     
-    local inventory = LocalPlayer:WaitForChild("Inventory")
-    local oldAxe = inventory:WaitForChild("Old Axe")
+    if not tree or not tree.Parent then
+        return false
+    end
+    
+    local trunk = tree:FindFirstChild("Trunk")
+    if not trunk or not trunk.Parent then
+        return false
+    end
+    
+    local inventory = LocalPlayer:FindFirstChild("Inventory")
+    if not inventory then return false end
+    
+    local oldAxe = inventory:FindFirstChild("Old Axe")
+    if not oldAxe then return false end
     
     local playerPos = TreeChopper.getPlayerPosition()
     if not playerPos then return false end
     
-    local treePos = tree.Trunk.Position
-    local lookDirection = (treePos - playerPos).Unit
-    local cframe = CFrame.lookAt(playerPos, treePos)
+    local success, cframe = pcall(function()
+        local treePos = trunk.Position
+        local lookDirection = (treePos - playerPos).Unit
+        return CFrame.lookAt(playerPos, treePos)
+    end)
+    
+    if not success then return false end
     
     for i = 1, 8 do
+        if not tree or not tree.Parent or not trunk or not trunk.Parent then
+            break
+        end
+        
         local args = {
             tree,
             oldAxe,
@@ -87,11 +120,11 @@ function TreeChopper.chopTree(tree)
             cframe
         }
         
-        local success, result = pcall(function()
+        local chopSuccess, result = pcall(function()
             return ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("ToolDamageObject"):InvokeServer(unpack(args))
         end)
         
-        if not success then
+        if not chopSuccess then
             wait(0.01)
         else
             wait(0.005)
@@ -132,6 +165,11 @@ function TreeChopper.autoChopLoop()
     if not TreeChopper.autoChopEnabled then return end
     
     local allTrees = TreeChopper.findAllSmallTrees()
+    
+    if #allTrees == 0 then
+        TreeChopper.setEnabled(false)
+        return
+    end
     
     if #allTrees > 0 then
         TreeChopper.chopAllTrees(allTrees)
@@ -178,7 +216,7 @@ function TreeChopper.getStatus()
             return string.format("Status: Chopping ALL %d trees (F:%d L:%d) - Fast Mode 0.1s!", 
                    #allTrees, foliageCount, landmarkCount), #allTrees, closestDistance
         else
-            return "Status: No small trees found", 0, 0
+            return "Status: All trees chopped! Auto-stopped.", 0, 0
         end
     else
         return "Status: Auto chop disabled", 0, 0
