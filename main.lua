@@ -24,89 +24,147 @@ local function createMobileToggle()
     local ToggleButton = Instance.new("TextButton")
     local UICorner = Instance.new("UICorner")
     local UIStroke = Instance.new("UIStroke")
+    local UISizeConstraint = Instance.new("UISizeConstraint")
     
     ScreenGui.Name = "ForestToggle"
     ScreenGui.Parent = game:GetService("CoreGui")
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     ScreenGui.ResetOnSpawn = false
+    ScreenGui.IgnoreGuiInset = true
     
     ToggleButton.Parent = ScreenGui
-    ToggleButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    ToggleButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
     ToggleButton.BorderSizePixel = 0
-    ToggleButton.Position = UDim2.new(0, 20, 0, 100)
-    ToggleButton.Size = UDim2.new(0, 60, 0, 60)
+    ToggleButton.Position = UDim2.new(0, 20, 0, 80)
+    ToggleButton.Size = UDim2.new(0, 65, 0, 65)
     ToggleButton.Font = Enum.Font.GothamBold
     ToggleButton.Text = "🌲"
     ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ToggleButton.TextSize = 28
-    ToggleButton.ZIndex = 1000
+    ToggleButton.TextSize = 32
+    ToggleButton.ZIndex = 10000
+    ToggleButton.Active = true
+    ToggleButton.BackgroundTransparency = 0.1
     
     UICorner.Parent = ToggleButton
-    UICorner.CornerRadius = UDim.new(0, 12)
+    UICorner.CornerRadius = UDim.new(0, 16)
     
     UIStroke.Parent = ToggleButton
     UIStroke.Color = Color3.fromRGB(76, 175, 80)
-    UIStroke.Thickness = 2
+    UIStroke.Thickness = 3
+    UIStroke.Transparency = 0.2
+    
+    UISizeConstraint.Parent = ToggleButton
+    UISizeConstraint.MaxSize = Vector2.new(80, 80)
+    UISizeConstraint.MinSize = Vector2.new(50, 50)
     
     local isVisible = true
-    
-    ToggleButton.MouseButton1Click:Connect(function()
-        isVisible = not isVisible
-        
-        if isVisible then
-            Window.Root.Visible = true
-            ToggleButton.Text = "🌲"
-            UIStroke.Color = Color3.fromRGB(76, 175, 80)
-            ToggleButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-        else
-            Window.Root.Visible = false
-            ToggleButton.Text = "❌"
-            UIStroke.Color = Color3.fromRGB(244, 67, 54)
-            ToggleButton.BackgroundColor3 = Color3.fromRGB(40, 25, 25)
-        end
-        
-        local Tween = game:GetService("TweenService"):Create(
-            ToggleButton,
-            TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {Size = UDim2.new(0, 70, 0, 70)}
-        )
-        Tween:Play()
-        
-        Tween.Completed:Connect(function()
-            local TweenBack = game:GetService("TweenService"):Create(
-                ToggleButton,
-                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {Size = UDim2.new(0, 60, 0, 60)}
-            )
-            TweenBack:Play()
-        end)
-    end)
-    
-    local UserInputService = game:GetService("UserInputService")
-    local dragging = false
+    local isDragging = false
     local dragStart = nil
     local startPos = nil
+    local clickTime = 0
+    local TweenService = game:GetService("TweenService")
+    
+    local function createPulseEffect()
+        local pulse = TweenService:Create(
+            ToggleButton,
+            TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+            {BackgroundTransparency = 0.3}
+        )
+        pulse:Play()
+        return pulse
+    end
+    
+    local pulseAnimation = createPulseEffect()
+    
+    local function updateVisualState()
+        if isVisible then
+            UIStroke.Color = Color3.fromRGB(76, 175, 80)
+            ToggleButton.BackgroundColor3 = Color3.fromRGB(20, 30, 20)
+            UIStroke.Transparency = 0.1
+        else
+            UIStroke.Color = Color3.fromRGB(158, 158, 158)
+            ToggleButton.BackgroundColor3 = Color3.fromRGB(30, 20, 20)
+            UIStroke.Transparency = 0.4
+        end
+    end
+    
+    local function animateClick()
+        local clickTween = TweenService:Create(
+            ToggleButton,
+            TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {Size = UDim2.new(0, 75, 0, 75), TextSize = 36}
+        )
+        clickTween:Play()
+        
+        clickTween.Completed:Connect(function()
+            local backTween = TweenService:Create(
+                ToggleButton,
+                TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {Size = UDim2.new(0, 65, 0, 65), TextSize = 32}
+            )
+            backTween:Play()
+        end)
+    end
     
     ToggleButton.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
+            isDragging = true
             dragStart = input.Position
             startPos = ToggleButton.Position
+            clickTime = tick()
+            
+            animateClick()
         end
     end)
     
     ToggleButton.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            if dragging then
+            if isDragging and dragStart then
                 local delta = input.Position - dragStart
-                ToggleButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+                local newPosX = math.clamp(startPos.X.Offset + delta.X, 10, ScreenGui.AbsoluteSize.X - 75)
+                local newPosY = math.clamp(startPos.Y.Offset + delta.Y, 10, ScreenGui.AbsoluteSize.Y - 75)
+                ToggleButton.Position = UDim2.new(0, newPosX, 0, newPosY)
             end
         end
     end)
     
     ToggleButton.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
+            if isDragging then
+                isDragging = false
+                local timeDiff = tick() - clickTime
+                
+                if timeDiff < 0.3 and dragStart then
+                    local dragDistance = (input.Position - dragStart).Magnitude
+                    if dragDistance < 10 then
+                        isVisible = not isVisible
+                        Window.Root.Visible = isVisible
+                        updateVisualState()
+                        
+                        if isVisible then
+                            Fluent:Notify({
+                                Title = "Forest GUI",
+                                Content = "Interface restored",
+                                Duration = 2
+                            })
+                        end
+                    end
+                end
+                
+                dragStart = nil
+                startPos = nil
+            end
+        end
+    end)
+    
+    updateVisualState()
+    
+    local UserInputService = game:GetService("UserInputService")
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if not gameProcessed and input.KeyCode == Enum.KeyCode.LeftControl then
+            isVisible = not isVisible
+            Window.Root.Visible = isVisible
+            updateVisualState()
         end
     end)
     
