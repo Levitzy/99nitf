@@ -8,8 +8,7 @@ AutoFuel.autoFuelEnabled = false
 AutoFuel.fuelDelay = 0.5
 AutoFuel.fuelConnection = nil
 AutoFuel.lastFuelTime = 0
-AutoFuel.startTime = 0
-AutoFuel.startDelay = 60
+
 
 function AutoFuel.getPlayerPosition()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -135,28 +134,8 @@ function AutoFuel.teleportItemToMainFire(fuelItem)
     return success
 end
 
-function AutoFuel.getRemainingTime()
-    if not AutoFuel.autoFuelEnabled then
-        return 0
-    end
-    
-    local currentTime = tick()
-    local elapsed = currentTime - AutoFuel.startTime
-    local remaining = AutoFuel.startDelay - elapsed
-    
-    return math.max(0, remaining)
-end
-
-function AutoFuel.isTimerComplete()
-    return AutoFuel.getRemainingTime() <= 0
-end
-
 function AutoFuel.autoFuelLoop()
     if not AutoFuel.autoFuelEnabled then return end
-    
-    if not AutoFuel.isTimerComplete() then
-        return
-    end
     
     local currentTime = tick()
     if currentTime - AutoFuel.lastFuelTime < AutoFuel.fuelDelay then
@@ -181,14 +160,12 @@ function AutoFuel.setEnabled(enabled)
     AutoFuel.autoFuelEnabled = enabled
     
     if enabled then
-        AutoFuel.startTime = tick()
         AutoFuel.fuelConnection = RunService.Heartbeat:Connect(AutoFuel.autoFuelLoop)
     else
         if AutoFuel.fuelConnection then
             AutoFuel.fuelConnection:Disconnect()
             AutoFuel.fuelConnection = nil
         end
-        AutoFuel.startTime = 0
     end
 end
 
@@ -198,12 +175,6 @@ end
 
 function AutoFuel.getStatus()
     if AutoFuel.autoFuelEnabled then
-        local remainingTime = AutoFuel.getRemainingTime()
-        
-        if remainingTime > 0 then
-            return string.format("Status: Starting in %.0f seconds...", remainingTime), 0
-        end
-        
         local fuelItems = AutoFuel.findAllFuelItems()
         local mainFire = AutoFuel.getMainFire()
         
