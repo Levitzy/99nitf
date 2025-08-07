@@ -34,9 +34,14 @@ function AutoPlant.findAllSaplings()
         if item and item.Parent and item.Name == "Sapling" then
             local saplingPos = nil
             
-            local handle = item:FindFirstChild("Handle") or item:FindFirstChildOfClass("Part") or item:FindFirstChildOfClass("MeshPart")
-            if handle and handle.Parent then
-                saplingPos = handle.Position
+            if item:FindFirstChild("Handle") then
+                saplingPos = item.Handle.Position
+            elseif item:FindFirstChildOfClass("Part") then
+                saplingPos = item:FindFirstChildOfClass("Part").Position
+            elseif item:FindFirstChildOfClass("MeshPart") then
+                saplingPos = item:FindFirstChildOfClass("MeshPart").Position
+            elseif item.PrimaryPart then
+                saplingPos = item.PrimaryPart.Position
             end
             
             if saplingPos then
@@ -73,7 +78,7 @@ function AutoPlant.plantSapling(sapling, plantPosition)
     
     local success = pcall(function()
         local args = {
-            Instance.new("Model", nil),
+            sapling,
             plantPosition
         }
         
