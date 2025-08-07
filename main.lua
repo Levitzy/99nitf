@@ -99,24 +99,7 @@ local TreeToggle = TreeTab:CreateToggle({
     end,
 })
 
-local ChopDelayDropdown = TreeTab:CreateDropdown({
-    Name = "Chop Delay",
-    Options = {"0.1s", "0.5s", "1s", "2s", "3s", "5s"},
-    CurrentOption = "1s",
-    Flag = "ChopDelay",
-    Callback = function(Option)
-        local delayMap = {
-            ["0.1s"] = 0.1,
-            ["0.5s"] = 0.5,
-            ["1s"] = 1,
-            ["2s"] = 2,
-            ["3s"] = 3,
-            ["5s"] = 5
-        }
-        local delay = delayMap[Option] or 1
-        TreeChopper.setChopDelay(delay)
-    end,
-})
+
 
 local TreeStatusLabel = TreeTab:CreateLabel("Status: Ready")
 
@@ -172,24 +155,7 @@ local KillToggle = KillTab:CreateToggle({
     end,
 })
 
-local KillDelayDropdown = KillTab:CreateDropdown({
-    Name = "Attack Delay",
-    Options = {"0.1s", "0.5s", "1s", "2s", "3s", "5s"},
-    CurrentOption = "0.1s",
-    Flag = "KillDelay",
-    Callback = function(Option)
-        local delayMap = {
-            ["0.1s"] = 0.1,
-            ["0.5s"] = 0.5,
-            ["1s"] = 1,
-            ["2s"] = 2,
-            ["3s"] = 3,
-            ["5s"] = 5
-        }
-        local delay = delayMap[Option] or 0.1
-        AutoKill.setKillDelay(delay)
-    end,
-})
+
 
 local KillStatusLabel = KillTab:CreateLabel("Status: Ready")
 
