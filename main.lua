@@ -5,147 +5,318 @@ local AutoKill = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levi
 local AutoCook = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autocook.lua'))()
 local AutoPlant = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autoplant.lua'))()
 
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 
-local Window = Library.CreateLib("Forest Automation Suite", "BloodTheme")
+local Window = Fluent:CreateWindow({
+    Title = "Forest Automation Suite v2.0",
+    SubTitle = "Ultimate Forest Management System",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
+})
 
-local FlyTab = Window:NewTab("🚁 Flight")
-local AutomationTab = Window:NewTab("🤖 Automation")  
-local UtilityTab = Window:NewTab("⚙️ Utilities")
+local Tabs = {
+    Flight = Window:AddTab({ Title = "✈️ Flight", Icon = "plane" }),
+    Forest = Window:AddTab({ Title = "🌲 Forest", Icon = "trees" }),
+    Combat = Window:AddTab({ Title = "⚔️ Combat", Icon = "sword" }),
+    Combo = Window:AddTab({ Title = "🚀 Combo", Icon = "zap" }),
+    Settings = Window:AddTab({ Title = "⚙️ Settings", Icon = "settings" })
+}
 
-local FlySection = FlyTab:NewSection("Flight Controls")
-local TreeSection = AutomationTab:NewSection("Tree & Plant Management")
-local CombatSection = AutomationTab:NewSection("Combat & Survival")
-local ComboSection = UtilityTab:NewSection("Combo Controls")
-local StatusSection = UtilityTab:NewSection("Status Monitor")
-
+local Options = Fluent.Options
 local RunService = game:GetService("RunService")
 
-FlySection:NewToggle("Enable Flight", "Toggle flight mode", function(state)
-    local success = Fly.setEnabled(state)
+local FlightToggle = Tabs.Flight:AddToggle("FlightToggle", {
+    Title = "Enable Flight",
+    Description = "Toggle flight mode with WASD controls",
+    Default = false
+})
+
+FlightToggle:OnChanged(function(Value)
+    local success = Fly.setEnabled(Value)
     
-    if state and success then
-        Library:Notify("Flight Enabled", "PC: WASD + Space/Shift | Mobile: Touch controls")
-    elseif state and not success then
-        Library:Notify("Flight Failed", "Character not found!")
+    if Value and success then
+        Fluent:Notify({
+            Title = "Flight System",
+            Content = "Flight enabled! Use WASD + Space/Shift to fly",
+            Duration = 4
+        })
+    elseif Value and not success then
+        Fluent:Notify({
+            Title = "Flight Error",
+            Content = "Could not enable flight - character not found!",
+            Duration = 3
+        })
     else
-        Library:Notify("Flight Disabled", "Landing complete")
+        Fluent:Notify({
+            Title = "Flight System", 
+            Content = "Flight disabled - landing complete",
+            Duration = 2
+        })
     end
 end)
 
-FlySection:NewSlider("Flight Speed", "Adjust your flying speed", 200, 50, function(s)
-    Fly.setSpeed(s)
+local FlightSpeed = Tabs.Flight:AddSlider("FlightSpeed", {
+    Title = "Flight Speed",
+    Description = "Adjust your flying speed",
+    Default = 50,
+    Min = 1,
+    Max = 200,
+    Rounding = 1
+})
+
+FlightSpeed:OnChanged(function(Value)
+    Fly.setSpeed(Value)
 end)
 
-TreeSection:NewToggle("Auto Tree Chopper", "Automatically chop all small trees", function(state)
-    TreeChopper.setEnabled(state)
+local TreeToggle = Tabs.Forest:AddToggle("TreeToggle", {
+    Title = "Auto Tree Chopper",
+    Description = "Automatically chop all small trees on the map",
+    Default = false
+})
+
+TreeToggle:OnChanged(function(Value)
+    TreeChopper.setEnabled(Value)
     
-    if state then
-        Library:Notify("Tree Chopper Active", "Chopping all small trees on the map!")
+    if Value then
+        Fluent:Notify({
+            Title = "Tree Chopper",
+            Content = "Started chopping all small trees!",
+            Duration = 3
+        })
     else
-        Library:Notify("Tree Chopper Stopped", "Tree chopping disabled")
+        Fluent:Notify({
+            Title = "Tree Chopper",
+            Content = "Tree chopping stopped",
+            Duration = 2
+        })
     end
 end)
 
-TreeSection:NewToggle("Auto Plant Saplings", "Automatically plant saplings at their locations", function(state)
-    AutoPlant.setEnabled(state)
+local PlantToggle = Tabs.Forest:AddToggle("PlantToggle", {
+    Title = "Auto Plant Saplings", 
+    Description = "Plant saplings at their current locations",
+    Default = false
+})
+
+PlantToggle:OnChanged(function(Value)
+    AutoPlant.setEnabled(Value)
     
-    if state then
-        Library:Notify("Auto Plant Active", "Planting saplings for forest regeneration!")
+    if Value then
+        Fluent:Notify({
+            Title = "Auto Plant",
+            Content = "Planting saplings for forest regeneration!",
+            Duration = 3
+        })
     else
-        Library:Notify("Auto Plant Stopped", "Sapling planting disabled")
+        Fluent:Notify({
+            Title = "Auto Plant",
+            Content = "Sapling planting stopped",
+            Duration = 2
+        })
     end
 end)
 
-TreeSection:NewToggle("Auto Fuel System", "Teleport fuel items to MainFire position", function(state)
-    AutoFuel.setEnabled(state)
+local FuelToggle = Tabs.Forest:AddToggle("FuelToggle", {
+    Title = "Auto Fuel System",
+    Description = "Teleport fuel items to MainFire at (0,4,-3)",
+    Default = false
+})
+
+FuelToggle:OnChanged(function(Value)
+    AutoFuel.setEnabled(Value)
     
-    if state then
-        Library:Notify("Auto Fuel Active", "Fuel management system online!")
+    if Value then
+        Fluent:Notify({
+            Title = "Auto Fuel",
+            Content = "Fuel management system active!",
+            Duration = 3
+        })
     else
-        Library:Notify("Auto Fuel Stopped", "Fuel automation disabled")
+        Fluent:Notify({
+            Title = "Auto Fuel",
+            Content = "Fuel automation stopped",
+            Duration = 2
+        })
     end
 end)
 
-CombatSection:NewToggle("Auto Combat System", "Attack all hostile creatures", function(state)
-    AutoKill.setEnabled(state)
+local KillToggle = Tabs.Combat:AddToggle("KillToggle", {
+    Title = "Auto Combat System",
+    Description = "Attack all hostile creatures (Bunny, Wolf, Cultist, etc.)",
+    Default = false
+})
+
+KillToggle:OnChanged(function(Value)
+    AutoKill.setEnabled(Value)
     
-    if state then
-        Library:Notify("Combat System Active", "Engaging all hostile targets!")
+    if Value then
+        Fluent:Notify({
+            Title = "Combat System",
+            Content = "Engaging all hostile targets!",
+            Duration = 3
+        })
     else
-        Library:Notify("Combat System Stopped", "Combat automation disabled")
+        Fluent:Notify({
+            Title = "Combat System",
+            Content = "Combat automation stopped",
+            Duration = 2
+        })
     end
 end)
 
-CombatSection:NewToggle("Auto Cooking System", "Cook all raw meat automatically", function(state)
-    AutoCook.setEnabled(state)
+local CookToggle = Tabs.Combat:AddToggle("CookToggle", {
+    Title = "Auto Cooking System",
+    Description = "Cook all raw meat (Morsel & Steak) automatically",
+    Default = false
+})
+
+CookToggle:OnChanged(function(Value)
+    AutoCook.setEnabled(Value)
     
-    if state then
-        Library:Notify("Cooking System Active", "Auto-cooking all raw meat!")
+    if Value then
+        Fluent:Notify({
+            Title = "Cooking System",
+            Content = "Auto-cooking all raw meat!",
+            Duration = 3
+        })
     else
-        Library:Notify("Cooking System Stopped", "Cooking automation disabled")
+        Fluent:Notify({
+            Title = "Cooking System", 
+            Content = "Cooking automation stopped",
+            Duration = 2
+        })
     end
 end)
 
-ComboSection:NewToggle("🌲 Forest Combo", "Tree Chopper + Auto Fuel + Auto Plant", function(state)
-    TreeChopper.setEnabled(state)
-    AutoFuel.setEnabled(state)
-    AutoPlant.setEnabled(state)
+local ForestCombo = Tabs.Combo:AddToggle("ForestCombo", {
+    Title = "🌲 Forest Management Combo",
+    Description = "Tree Chopper + Auto Fuel + Auto Plant",
+    Default = false
+})
+
+ForestCombo:OnChanged(function(Value)
+    TreeChopper.setEnabled(Value)
+    AutoFuel.setEnabled(Value)
+    AutoPlant.setEnabled(Value)
     
-    if state then
-        Library:Notify("Forest Combo Active", "Complete forest management enabled!")
+    if Value then
+        Fluent:Notify({
+            Title = "Forest Combo",
+            Content = "Complete forest management enabled!",
+            Duration = 4
+        })
     else
-        Library:Notify("Forest Combo Stopped", "Forest automation disabled")
+        Fluent:Notify({
+            Title = "Forest Combo",
+            Content = "Forest automation stopped",
+            Duration = 2
+        })
     end
 end)
 
-ComboSection:NewToggle("⚔️ Survival Combo", "Combat + Cooking Systems", function(state)
-    AutoKill.setEnabled(state)
-    AutoCook.setEnabled(state)
+local SurvivalCombo = Tabs.Combo:AddToggle("SurvivalCombo", {
+    Title = "⚔️ Survival Combo",
+    Description = "Combat System + Cooking System",
+    Default = false
+})
+
+SurvivalCombo:OnChanged(function(Value)
+    AutoKill.setEnabled(Value)
+    AutoCook.setEnabled(Value)
     
-    if state then
-        Library:Notify("Survival Combo Active", "Combat and cooking systems online!")
+    if Value then
+        Fluent:Notify({
+            Title = "Survival Combo",
+            Content = "Combat and cooking systems online!",
+            Duration = 4
+        })
     else
-        Library:Notify("Survival Combo Stopped", "Survival automation disabled")
+        Fluent:Notify({
+            Title = "Survival Combo",
+            Content = "Survival automation stopped",
+            Duration = 2
+        })
     end
 end)
 
-ComboSection:NewToggle("🚀 ULTIMATE MODE", "Enable ALL automation systems", function(state)
-    TreeChopper.setEnabled(state)
-    AutoFuel.setEnabled(state)
-    AutoKill.setEnabled(state)
-    AutoCook.setEnabled(state)
-    AutoPlant.setEnabled(state)
+local UltimateCombo = Tabs.Combo:AddToggle("UltimateCombo", {
+    Title = "🚀 ULTIMATE MODE",
+    Description = "Enable ALL 5 automation systems for complete AFK mode",
+    Default = false
+})
+
+UltimateCombo:OnChanged(function(Value)
+    TreeChopper.setEnabled(Value)
+    AutoFuel.setEnabled(Value)
+    AutoKill.setEnabled(Value)
+    AutoCook.setEnabled(Value)
+    AutoPlant.setEnabled(Value)
     
-    if state then
-        Library:Notify("ULTIMATE MODE ACTIVE", "All 5 automation systems engaged! AFK mode ready!")
+    if Value then
+        Fluent:Notify({
+            Title = "🚀 ULTIMATE MODE",
+            Content = "All 5 systems active! Complete AFK automation ready!",
+            Duration = 5
+        })
     else
-        Library:Notify("Ultimate Mode Stopped", "All automation systems disabled")
+        Fluent:Notify({
+            Title = "Ultimate Mode",
+            Content = "All automation systems stopped",
+            Duration = 3
+        })
     end
 end)
 
-local TreeStatusLabel = StatusSection:NewLabel("Tree Status: Ready")
-local FuelStatusLabel = StatusSection:NewLabel("Fuel Status: Ready") 
-local KillStatusLabel = StatusSection:NewLabel("Combat Status: Ready")
-local CookStatusLabel = StatusSection:NewLabel("Cook Status: Ready")
-local PlantStatusLabel = StatusSection:NewLabel("Plant Status: Ready")
-local ComboStatusLabel = StatusSection:NewLabel("System Status: All bots offline")
+local TreeStatus = Tabs.Settings:AddParagraph({
+    Title = "🌲 Tree Status",
+    Content = "Ready"
+})
+
+local FuelStatus = Tabs.Settings:AddParagraph({
+    Title = "⛽ Fuel Status", 
+    Content = "Ready"
+})
+
+local CombatStatus = Tabs.Settings:AddParagraph({
+    Title = "⚔️ Combat Status",
+    Content = "Ready"
+})
+
+local CookStatus = Tabs.Settings:AddParagraph({
+    Title = "🍖 Cook Status",
+    Content = "Ready"
+})
+
+local PlantStatus = Tabs.Settings:AddParagraph({
+    Title = "🌱 Plant Status",
+    Content = "Ready"
+})
+
+local SystemStatus = Tabs.Settings:AddParagraph({
+    Title = "🚀 System Overview",
+    Content = "All systems offline"
+})
 
 RunService.Heartbeat:Connect(function()
-    local treeStatus, treeCount, closestDistance = TreeChopper.getStatus()
-    TreeStatusLabel:UpdateLabel("Trees: " .. treeStatus)
+    local treeStatusText, treeCount, closestDistance = TreeChopper.getStatus()
+    TreeStatus:SetDesc(treeStatusText)
     
-    local fuelStatus, distance = AutoFuel.getStatus()
-    FuelStatusLabel:UpdateLabel("Fuel: " .. fuelStatus)
+    local fuelStatusText, distance = AutoFuel.getStatus()
+    FuelStatus:SetDesc(fuelStatusText)
     
-    local killStatus, targetCount, closestTargetDistance = AutoKill.getStatus()
-    KillStatusLabel:UpdateLabel("Combat: " .. killStatus)
+    local killStatusText, targetCount, closestTargetDistance = AutoKill.getStatus()
+    CombatStatus:SetDesc("Targets: " .. killStatusText)
     
-    local cookStatus, meatCount = AutoCook.getStatus()
-    CookStatusLabel:UpdateLabel("Cook: " .. cookStatus)
+    local cookStatusText, meatCount = AutoCook.getStatus()
+    CookStatus:SetDesc(cookStatusText)
     
-    local plantStatus, saplingCount = AutoPlant.getStatus()
-    PlantStatusLabel:UpdateLabel("Plant: " .. plantStatus)
+    local plantStatusText, saplingCount = AutoPlant.getStatus()
+    PlantStatus:SetDesc(plantStatusText)
     
     local chopEnabled = TreeChopper.autoChopEnabled
     local fuelEnabled = AutoFuel.autoFuelEnabled
@@ -178,16 +349,33 @@ RunService.Heartbeat:Connect(function()
     end
     
     if activeCount == 5 then
-        ComboStatusLabel:UpdateLabel("🚀 ULTIMATE MODE: All 5 systems active!")
+        SystemStatus:SetDesc("🚀 ULTIMATE MODE: All 5 systems running perfectly!")
     elseif activeCount >= 3 then
-        ComboStatusLabel:UpdateLabel("🔥 Multi-System: " .. activeCount .. "/5 active (" .. table.concat(activeSystems, ", ") .. ")")
+        SystemStatus:SetDesc("🔥 Multi-System Active: " .. activeCount .. "/5 systems (" .. table.concat(activeSystems, ", ") .. ")")
     elseif activeCount == 2 then
-        ComboStatusLabel:UpdateLabel("⚡ Dual-System: " .. table.concat(activeSystems, " + "))
+        SystemStatus:SetDesc("⚡ Dual-System Mode: " .. table.concat(activeSystems, " + ") .. " active")
     elseif activeCount == 1 then
-        ComboStatusLabel:UpdateLabel("📍 Single System: " .. activeSystems[1] .. " active")
+        SystemStatus:SetDesc("📍 Single System: " .. activeSystems[1] .. " running")
     else
-        ComboStatusLabel:UpdateLabel("💤 All systems offline")
+        SystemStatus:SetDesc("💤 All automation systems offline - Ready to start!")
     end
 end)
 
-Library:Notify("Forest Automation Suite", "Complete automation system loaded! 5 bots ready for ultimate forest management.")
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
+
+SaveManager:IgnoreThemeSettings() 
+SaveManager:SetIgnoreIndexes({}) 
+InterfaceManager:SetFolder("ForestAutomationSuite")
+SaveManager:SetFolder("ForestAutomationSuite/configs")
+
+InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+SaveManager:BuildConfigSection(Tabs.Settings)
+
+Window:SelectTab(1)
+
+Fluent:Notify({
+    Title = "Forest Automation Suite v2.0",
+    Content = "Ultimate forest management system loaded! 5 advanced automation bots ready.",
+    Duration = 6
+})
