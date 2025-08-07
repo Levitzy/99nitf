@@ -19,6 +19,102 @@ local Window = Fluent:CreateWindow({
     MinimizeKey = Enum.KeyCode.LeftControl
 })
 
+local function createMobileToggle()
+    local ScreenGui = Instance.new("ScreenGui")
+    local ToggleButton = Instance.new("TextButton")
+    local UICorner = Instance.new("UICorner")
+    local UIStroke = Instance.new("UIStroke")
+    
+    ScreenGui.Name = "ForestToggle"
+    ScreenGui.Parent = game:GetService("CoreGui")
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    ScreenGui.ResetOnSpawn = false
+    
+    ToggleButton.Parent = ScreenGui
+    ToggleButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    ToggleButton.BorderSizePixel = 0
+    ToggleButton.Position = UDim2.new(0, 20, 0, 100)
+    ToggleButton.Size = UDim2.new(0, 60, 0, 60)
+    ToggleButton.Font = Enum.Font.GothamBold
+    ToggleButton.Text = "🌲"
+    ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleButton.TextSize = 28
+    ToggleButton.ZIndex = 1000
+    
+    UICorner.Parent = ToggleButton
+    UICorner.CornerRadius = UDim.new(0, 12)
+    
+    UIStroke.Parent = ToggleButton
+    UIStroke.Color = Color3.fromRGB(76, 175, 80)
+    UIStroke.Thickness = 2
+    
+    local isVisible = true
+    
+    ToggleButton.MouseButton1Click:Connect(function()
+        isVisible = not isVisible
+        
+        if isVisible then
+            Window.Root.Visible = true
+            ToggleButton.Text = "🌲"
+            UIStroke.Color = Color3.fromRGB(76, 175, 80)
+            ToggleButton.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+        else
+            Window.Root.Visible = false
+            ToggleButton.Text = "❌"
+            UIStroke.Color = Color3.fromRGB(244, 67, 54)
+            ToggleButton.BackgroundColor3 = Color3.fromRGB(40, 25, 25)
+        end
+        
+        local Tween = game:GetService("TweenService"):Create(
+            ToggleButton,
+            TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {Size = UDim2.new(0, 70, 0, 70)}
+        )
+        Tween:Play()
+        
+        Tween.Completed:Connect(function()
+            local TweenBack = game:GetService("TweenService"):Create(
+                ToggleButton,
+                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {Size = UDim2.new(0, 60, 0, 60)}
+            )
+            TweenBack:Play()
+        end)
+    end)
+    
+    local UserInputService = game:GetService("UserInputService")
+    local dragging = false
+    local dragStart = nil
+    local startPos = nil
+    
+    ToggleButton.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = ToggleButton.Position
+        end
+    end)
+    
+    ToggleButton.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            if dragging then
+                local delta = input.Position - dragStart
+                ToggleButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            end
+        end
+    end)
+    
+    ToggleButton.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+    
+    return ToggleButton
+end
+
+local MobileToggle = createMobileToggle()
+
 local Tabs = {
     Flight = Window:AddTab({ Title = "✈️ Flight", Icon = "plane" }),
     Forest = Window:AddTab({ Title = "🌲 Forest", Icon = "trees" }),
