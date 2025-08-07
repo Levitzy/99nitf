@@ -29,7 +29,7 @@ function AutoKill.findAllTargets()
     local playerPos = AutoKill.getPlayerPosition()
     
     for _, target in pairs(charactersFolder:GetChildren()) do
-        if (target.Name == "Bunny" or target.Name == "Wolf" or target.Name == "Alpha Wolf" or target.Name == "Cultist") and target:FindFirstChild("HumanoidRootPart") then
+        if (target.Name == "Bunny" or target.Name == "Wolf" or target.Name == "Alpha Wolf" or target.Name == "Cultist" or target.Name == "Crossbow Cultist") and target:FindFirstChild("HumanoidRootPart") then
             local distance = 0
             if playerPos then
                 distance = AutoKill.getDistance(playerPos, target.HumanoidRootPart.Position)
@@ -162,6 +162,7 @@ function AutoKill.getStatus()
             local wolfCount = 0
             local alphaWolfCount = 0
             local cultistCount = 0
+            local crossbowCultistCount = 0
             
             for _, targetData in pairs(allTargets) do
                 if targetData.type == "Bunny" then
@@ -172,11 +173,13 @@ function AutoKill.getStatus()
                     alphaWolfCount = alphaWolfCount + 1
                 elseif targetData.type == "Cultist" then
                     cultistCount = cultistCount + 1
+                elseif targetData.type == "Crossbow Cultist" then
+                    crossbowCultistCount = crossbowCultistCount + 1
                 end
             end
             
-            return string.format("Status: Attacking B:%d W:%d AW:%d C:%d - Fast Mode!", 
-                   bunnyCount, wolfCount, alphaWolfCount, cultistCount), #allTargets, closestDistance
+            return string.format("Status: Attacking B:%d W:%d AW:%d C:%d CC:%d - Fast Mode!", 
+                   bunnyCount, wolfCount, alphaWolfCount, cultistCount, crossbowCultistCount), #allTargets, closestDistance
         else
             return "Status: No targets found", 0, 0
         end
