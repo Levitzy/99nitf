@@ -178,7 +178,7 @@ function AutoKill.getStatus()
                 end
             end
             
-            return string.format("Status: Attacking B:%d W:%d AW:%d C:%d CC:%d - Fast Mode!", 
+            return string.format("B:%d W:%d AW:%d C:%d CC:%d", 
                    bunnyCount, wolfCount, alphaWolfCount, cultistCount, crossbowCultistCount), #allTargets, closestDistance
         else
             return "Status: No targets found", 0, 0

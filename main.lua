@@ -2,6 +2,7 @@ local TreeChopper = loadstring(game:HttpGet('https://raw.githubusercontent.com/L
 local AutoFuel = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autofuel.lua'))()
 local Fly = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/fly.lua'))()
 local AutoKill = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autokill.lua'))()
+local AutoCook = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autocook.lua'))()
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
@@ -26,6 +27,7 @@ local FlyTab = Window:CreateTab("Fly", 4483362458)
 local TreeTab = Window:CreateTab("Tree Chopper", 4483362458)
 local FuelTab = Window:CreateTab("Auto Fuel", 4335489011)
 local KillTab = Window:CreateTab("Auto Kill", 4370317008)
+local CookTab = Window:CreateTab("Auto Cook", 4335489011)
 local UtilityTab = Window:CreateTab("Utilities", 4370317008)
 
 local RunService = game:GetService("RunService")
@@ -159,6 +161,33 @@ local KillToggle = KillTab:CreateToggle({
 
 local KillStatusLabel = KillTab:CreateLabel("Status: Ready")
 
+local CookToggle = CookTab:CreateToggle({
+    Name = "Auto Cook Raw Meat",
+    CurrentValue = false,
+    Flag = "AutoCookToggle",
+    Callback = function(Value)
+        AutoCook.setEnabled(Value)
+        
+        if Value then
+            Rayfield:Notify({
+                Title = "Auto Cook Enabled",
+                Content = "Started cooking all raw meat at MainFire!",
+                Duration = 3,
+                Image = 4335489011
+            })
+        else
+            Rayfield:Notify({
+                Title = "Auto Cook Disabled",
+                Content = "Stopped cooking meat.",
+                Duration = 3,
+                Image = 4335489011
+            })
+        end
+    end,
+})
+
+local CookStatusLabel = CookTab:CreateLabel("Status: Ready")
+
 local ComboToggle = UtilityTab:CreateToggle({
     Name = "Tree + Fuel Combo",
     CurrentValue = false,
@@ -193,11 +222,12 @@ local UltimateComboToggle = UtilityTab:CreateToggle({
         TreeChopper.setEnabled(Value)
         AutoFuel.setEnabled(Value)
         AutoKill.setEnabled(Value)
+        AutoCook.setEnabled(Value)
         
         if Value then
             Rayfield:Notify({
                 Title = "Ultimate Combo Enabled",
-                Content = "All bots active! Trees, Fuel, and Bunnies!",
+                Content = "All bots active! Trees, Fuel, Kill, and Cook!",
                 Duration = 4,
                 Image = 4370317008
             })
@@ -222,26 +252,46 @@ RunService.Heartbeat:Connect(function()
     FuelStatusLabel:Set(fuelStatus)
     
     local killStatus, bunnyCount, closestBunnyDistance = AutoKill.getStatus()
-    KillStatusLabel:Set(killStatus)
+    KillStatusLabel:Set("Targets: " .. killStatus)
+    
+    local cookStatus, meatCount = AutoCook.getStatus()
+    CookStatusLabel:Set(cookStatus)
     
     local chopEnabled = TreeChopper.autoChopEnabled
     local fuelEnabled = AutoFuel.autoFuelEnabled
     local killEnabled = AutoKill.autoKillEnabled
+    local cookEnabled = AutoCook.autoCookEnabled
     
-    if chopEnabled and fuelEnabled and killEnabled then
+    if chopEnabled and fuelEnabled and killEnabled and cookEnabled then
         ComboStatusLabel:Set("Combo Status: ALL BOTS ACTIVE - Ultimate Mode!")
+    elseif chopEnabled and fuelEnabled and killEnabled then
+        ComboStatusLabel:Set("Combo Status: Tree + Fuel + Kill active")
+    elseif chopEnabled and fuelEnabled and cookEnabled then
+        ComboStatusLabel:Set("Combo Status: Tree + Fuel + Cook active")
+    elseif chopEnabled and killEnabled and cookEnabled then
+        ComboStatusLabel:Set("Combo Status: Tree + Kill + Cook active")
+    elseif fuelEnabled and killEnabled and cookEnabled then
+        ComboStatusLabel:Set("Combo Status: Fuel + Kill + Cook active")
     elseif chopEnabled and fuelEnabled then
         ComboStatusLabel:Set("Combo Status: Tree + Fuel active")
     elseif chopEnabled and killEnabled then
         ComboStatusLabel:Set("Combo Status: Tree + Kill active")
+    elseif chopEnabled and cookEnabled then
+        ComboStatusLabel:Set("Combo Status: Tree + Cook active")
     elseif fuelEnabled and killEnabled then
         ComboStatusLabel:Set("Combo Status: Fuel + Kill active")
+    elseif fuelEnabled and cookEnabled then
+        ComboStatusLabel:Set("Combo Status: Fuel + Cook active")
+    elseif killEnabled and cookEnabled then
+        ComboStatusLabel:Set("Combo Status: Kill + Cook active")
     elseif chopEnabled then
         ComboStatusLabel:Set("Combo Status: Only Tree Chopper active")
     elseif fuelEnabled then
         ComboStatusLabel:Set("Combo Status: Only Auto Fuel active")
     elseif killEnabled then
         ComboStatusLabel:Set("Combo Status: Only Auto Kill active")
+    elseif cookEnabled then
+        ComboStatusLabel:Set("Combo Status: Only Auto Cook active")
     else
         ComboStatusLabel:Set("Combo Status: All bots disabled")
     end
@@ -249,7 +299,7 @@ end)
 
 Rayfield:Notify({
     Title = "Multi-Tool Bot Suite Load",
-    Content = "Clean interface loaded with Auto Kill! Fly tab is focused and clutter-free.",
+    Content = "Clean interface loaded with Auto Cook! Complete survival automation.",
     Duration = 6,
     Image = 4483362458
 })
