@@ -9,7 +9,7 @@ AutoFuel.fuelDelay = 0.5
 AutoFuel.fuelConnection = nil
 AutoFuel.lastFuelTime = 0
 AutoFuel.startTime = 0
-AutoFuel.startDelay = 30
+AutoFuel.startDelay = 70
 
 function AutoFuel.getPlayerPosition()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
