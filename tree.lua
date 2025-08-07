@@ -6,7 +6,7 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
 TreeChopper.autoChopEnabled = false
-TreeChopper.chopDelay = 1
+TreeChopper.chopDelay = 0.1
 TreeChopper.chopConnection = nil
 TreeChopper.lastChopTime = 0
 
@@ -79,7 +79,7 @@ function TreeChopper.chopTree(tree)
     local lookDirection = (treePos - playerPos).Unit
     local cframe = CFrame.lookAt(playerPos, treePos)
     
-    for i = 1, 5 do
+    for i = 1, 8 do
         local args = {
             tree,
             oldAxe,
@@ -92,16 +92,16 @@ function TreeChopper.chopTree(tree)
         end)
         
         if not success then
-            wait(0.05)
+            wait(0.01)
         else
-            wait(0.02)
+            wait(0.005)
         end
     end
     
     return true
 end
 
-function TreeChopper.chopBatchTrees(treesData)
+function TreeChopper.chopAllTrees(treesData)
     if not TreeChopper.hasOldAxe() then
         return false
     end
@@ -112,21 +112,20 @@ function TreeChopper.chopBatchTrees(treesData)
     end
     
     local choppedCount = 0
-    local maxBatch = math.min(5, #treesData)
     
-    for i = 1, maxBatch do
-        local treeData = treesData[i]
+    for _, treeData in pairs(treesData) do
         if treeData.tree and treeData.tree.Parent then
-            local success = TreeChopper.chopTree(treeData.tree)
-            if success then
-                choppedCount = choppedCount + 1
-            end
-            wait(0.1)
+            spawn(function()
+                local success = TreeChopper.chopTree(treeData.tree)
+                if success then
+                    choppedCount = choppedCount + 1
+                end
+            end)
         end
     end
     
     TreeChopper.lastChopTime = currentTime
-    return choppedCount > 0
+    return true
 end
 
 function TreeChopper.autoChopLoop()
@@ -135,7 +134,7 @@ function TreeChopper.autoChopLoop()
     local allTrees = TreeChopper.findAllSmallTrees()
     
     if #allTrees > 0 then
-        TreeChopper.chopBatchTrees(allTrees)
+        TreeChopper.chopAllTrees(allTrees)
     end
 end
 
@@ -176,8 +175,8 @@ function TreeChopper.getStatus()
                 end
             end
             
-            return string.format("Status: Processing %d trees (F:%d L:%d) - Batch: 5/cycle - Delay: %.1fs", 
-                   #allTrees, foliageCount, landmarkCount, TreeChopper.chopDelay), #allTrees, closestDistance
+            return string.format("Status: Chopping ALL %d trees (F:%d L:%d) - Fast Mode 0.1s!", 
+                   #allTrees, foliageCount, landmarkCount), #allTrees, closestDistance
         else
             return "Status: No small trees found", 0, 0
         end

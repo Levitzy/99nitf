@@ -5,7 +5,7 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
 AutoFuel.autoFuelEnabled = false
-AutoFuel.fuelDelay = 1
+AutoFuel.fuelDelay = 0.5
 AutoFuel.fuelConnection = nil
 AutoFuel.lastFuelTime = 0
 
@@ -26,27 +26,16 @@ function AutoFuel.getMainFire()
     local campground = map:WaitForChild("Campground")
     local mainFire = campground:WaitForChild("MainFire")
     
-    return mainFire, mainFire
+    return mainFire
 end
 
-function AutoFuel.findLogItems()
+function AutoFuel.findAllFuelItems()
     local workspace = game:GetService("Workspace")
     local fuelItems = {}
     
-    for _, item in pairs(workspace:GetChildren()) do
-        if item.Name == "Log" and item:FindFirstChild("Meshes/log_Cylinder") then
-            table.insert(fuelItems, item)
-        elseif item.Name == "Coal" and item:FindFirstChild("Coal") then
-            table.insert(fuelItems, item)
-        elseif item.Name == "Fuel Canister" and (item:FindFirstChild("Handle") or item:FindFirstChildOfClass("Part")) then
-            table.insert(fuelItems, item)
-        end
-    end
-    
-    local itemsFolder = workspace:FindFirstChild("Items")
-    if itemsFolder then
-        for _, item in pairs(itemsFolder:GetChildren()) do
-            if item.Name == "Log" and (item:FindFirstChild("Handle") or item:FindFirstChild("Meshes/log_Cylinder")) then
+    local function scanArea(container)
+        for _, item in pairs(container:GetChildren()) do
+            if item.Name == "Log" and item:FindFirstChild("Meshes/log_Cylinder") then
                 table.insert(fuelItems, item)
             elseif item.Name == "Coal" and item:FindFirstChild("Coal") then
                 table.insert(fuelItems, item)
@@ -56,11 +45,27 @@ function AutoFuel.findLogItems()
         end
     end
     
+    scanArea(workspace)
+    
+    local itemsFolder = workspace:FindFirstChild("Items")
+    if itemsFolder then
+        scanArea(itemsFolder)
+    end
+    
+    local mapFolder = workspace:FindFirstChild("Map")
+    if mapFolder then
+        for _, subfolder in pairs(mapFolder:GetChildren()) do
+            if subfolder:IsA("Folder") then
+                scanArea(subfolder)
+            end
+        end
+    end
+    
     return fuelItems
 end
 
-function AutoFuel.moveItemToMainFire(fuelItem)
-    local mainFire, _ = AutoFuel.getMainFire()
+function AutoFuel.teleportItemToMainFire(fuelItem)
+    local mainFire = AutoFuel.getMainFire()
     if not mainFire or not fuelItem or not fuelItem.Parent then
         return false
     end
@@ -81,14 +86,13 @@ function AutoFuel.moveItemToMainFire(fuelItem)
         end
         
         if fuelHandle then
-            local mainFireCFrame = mainFire:GetBoundingBox()
-            local dropPosition = mainFireCFrame * CFrame.new(
-                math.random(-5, 5),
-                math.random(20, 30),
-                math.random(-5, 5)
-            )
+            local targetPosition = Vector3.new(0, 4, -3)
             
-            fuelHandle.CFrame = dropPosition
+            fuelHandle.CFrame = CFrame.new(targetPosition + Vector3.new(
+                math.random(-2, 2),
+                math.random(15, 25),
+                math.random(-2, 2)
+            ))
             
             if fuelHandle:FindFirstChild("BodyVelocity") then
                 fuelHandle.BodyVelocity:Destroy()
@@ -97,30 +101,30 @@ function AutoFuel.moveItemToMainFire(fuelItem)
                 fuelHandle.BodyAngularVelocity:Destroy()
             end
             
-            local dropSpeed = math.random(-8, -3)
             fuelHandle.Velocity = Vector3.new(
-                math.random(-3, 3),
-                dropSpeed,
-                math.random(-3, 3)
+                math.random(-1, 1),
+                math.random(-20, -15),
+                math.random(-1, 1)
             )
+            
             fuelHandle.AngularVelocity = Vector3.new(
-                math.random(-8, 8),
-                math.random(-8, 8),
-                math.random(-8, 8)
+                math.random(-10, 10),
+                math.random(-10, 10),
+                math.random(-10, 10)
             )
             
             if fuelHandle:FindFirstChild("AssemblyLinearVelocity") then
                 fuelHandle.AssemblyLinearVelocity = Vector3.new(
-                    math.random(-3, 3),
-                    dropSpeed,
-                    math.random(-3, 3)
+                    math.random(-1, 1),
+                    math.random(-20, -15),
+                    math.random(-1, 1)
                 )
             end
             if fuelHandle:FindFirstChild("AssemblyAngularVelocity") then
                 fuelHandle.AssemblyAngularVelocity = Vector3.new(
-                    math.random(-8, 8),
-                    math.random(-8, 8),
-                    math.random(-8, 8)
+                    math.random(-10, 10),
+                    math.random(-10, 10),
+                    math.random(-10, 10)
                 )
             end
         end
@@ -137,14 +141,14 @@ function AutoFuel.autoFuelLoop()
         return
     end
     
-    local fuelItems = AutoFuel.findLogItems()
+    local fuelItems = AutoFuel.findAllFuelItems()
     
     if #fuelItems > 0 then
-        for i = 1, math.min(#fuelItems, 2) do
+        for i = 1, math.min(#fuelItems, 3) do
             local fuelItem = fuelItems[i]
             if fuelItem and fuelItem.Parent then
-                AutoFuel.moveItemToMainFire(fuelItem)
-                wait(0.2)
+                AutoFuel.teleportItemToMainFire(fuelItem)
+                wait(0.1)
             end
         end
         AutoFuel.lastFuelTime = currentTime
@@ -170,15 +174,14 @@ end
 
 function AutoFuel.getStatus()
     if AutoFuel.autoFuelEnabled then
-        local fuelItems = AutoFuel.findLogItems()
-        local mainFire, _ = AutoFuel.getMainFire()
+        local fuelItems = AutoFuel.findAllFuelItems()
+        local mainFire = AutoFuel.getMainFire()
         
         if not mainFire then
             return "Status: MainFire not found!", 0
         elseif #fuelItems > 0 then
             local playerPos = AutoFuel.getPlayerPosition()
-            local mainFireCFrame = mainFire:GetBoundingBox()
-            local mainFirePos = mainFireCFrame.Position
+            local mainFirePos = Vector3.new(0, 4, -3)
             local distance = playerPos and AutoFuel.getDistance(playerPos, mainFirePos) or 0
             
             local logCount = 0
@@ -195,8 +198,8 @@ function AutoFuel.getStatus()
                 end
             end
             
-            return string.format("Status: Fueling MainFire - Logs:%d Coal:%d Canisters:%d - Delay:%.1fs", 
-                   logCount, coalCount, canisterCount, AutoFuel.fuelDelay), distance
+            return string.format("Status: Teleporting to (0,4,-3) - Logs:%d Coal:%d Canisters:%d - Fast Drop!", 
+                   logCount, coalCount, canisterCount), distance
         else
             return "Status: No fuel items found", 0
         end
