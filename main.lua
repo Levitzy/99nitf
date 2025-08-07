@@ -133,7 +133,7 @@ local FuelToggle = FuelTab:CreateToggle({
 local FuelStatusLabel = FuelTab:CreateLabel("Status: Ready")
 
 local KillToggle = KillTab:CreateToggle({
-    Name = "Auto Kill All Bunnies",
+    Name = "Auto Kill",
     CurrentValue = false,
     Flag = "AutoKillToggle",
     Callback = function(Value)
