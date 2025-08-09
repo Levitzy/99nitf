@@ -86,7 +86,7 @@ end
 
 function Webhook.getHungerPercentage()
     local attempts = {
-        -- Method 1: Direct path based on screenshot
+        -- Method 1: Direct path (this one worked!)
         function()
             local playerGui = game:GetService("Players").LocalPlayer.PlayerGui
             local interface = playerGui.Interface
@@ -138,20 +138,6 @@ function Webhook.getHungerPercentage()
                 return math.floor(scale * 100)
             end
             return nil
-        end,
-        
-        -- Method 4: Try different bar names
-        function()
-            local path = game:GetService("Players").LocalPlayer.PlayerGui.Interface.StatBars.HungerBar
-            
-            for _, barName in pairs({"Bar", "Fill", "Progress", "Amount", "Level"}) do
-                local bar = path:FindFirstChild(barName)
-                if bar and bar.Size and bar.Size.X then
-                    local scale = bar.Size.X.Scale
-                    return math.floor(scale * 100)
-                end
-            end
-            return nil
         end
     }
     
@@ -159,27 +145,9 @@ function Webhook.getHungerPercentage()
     for i, method in pairs(attempts) do
         local success, result = pcall(method)
         if success and result and result > 0 then
-            print("Hunger method " .. i .. " worked: " .. result .. "%")
             return math.max(0, math.min(100, result))
         end
     end
-    
-    -- If all methods fail, try to debug what's available
-    pcall(function()
-        local playerGui = game:GetService("Players").LocalPlayer.PlayerGui
-        local interface = playerGui.Interface
-        local statBars = interface.StatBars
-        local hungerBar = statBars.HungerBar
-        
-        print("HungerBar children:")
-        for _, child in pairs(hungerBar:GetChildren()) do
-            print(" - " .. child.Name .. " (" .. child.ClassName .. ")")
-            if child.Name == "Bar" and child.Size then
-                print("   Bar Size: " .. tostring(child.Size))
-                print("   Bar Size.X.Scale: " .. tostring(child.Size.X.Scale))
-            end
-        end
-    end)
     
     return 0
 end
@@ -415,21 +383,6 @@ function Webhook.sendTestMessage()
     local hungerPercentage = Webhook.getHungerPercentage()
     local hungerStatus = Webhook.getHungerStatus(hungerPercentage)
     
-    -- Force debug the hunger bar structure
-    print("=== HUNGER BAR DEBUG ===")
-    local debugInfo = ""
-    pcall(function()
-        local path = game:GetService("Players").LocalPlayer.PlayerGui.Interface.StatBars.HungerBar
-        debugInfo = "HungerBar found! Children: "
-        for _, child in pairs(path:GetChildren()) do
-            debugInfo = debugInfo .. child.Name .. "(" .. child.ClassName .. ") "
-            if child.Name == "Bar" then
-                debugInfo = debugInfo .. "[Size:" .. tostring(child.Size) .. "] "
-            end
-        end
-        print(debugInfo)
-    end)
-    
     local fields = {
         {
             ["name"] = "📅 Current Day",
@@ -465,33 +418,18 @@ function Webhook.sendTestMessage()
             ["value"] = hungerStatus .. " (" .. hungerPercentage .. "%)",
             ["inline"] = true
         })
-    else
-        table.insert(fields, 2, {
-            ["name"] = "🍖 Hunger Status",
-            ["value"] = "❌ Could not read hunger bar",
-            ["inline"] = true
-        })
-        
-        -- Add debug info to Discord
-        if debugInfo ~= "" then
-            table.insert(fields, {
-                ["name"] = "🔍 Debug Info",
-                ["value"] = debugInfo,
-                ["inline"] = false
-            })
-        end
     end
     
     local data = {
         ["content"] = "@everyone",
         ["embeds"] = {
             {
-                ["title"] = "🧪 Test Message with Force Debug",
-                ["description"] = "Testing hunger bar detection with aggressive debugging!",
+                ["title"] = "🧪 Test Message",
+                ["description"] = "This is a test message from Forest Automation Suite with hunger tracking!",
                 ["color"] = 16776960,
                 ["fields"] = fields,
                 ["footer"] = {
-                    ["text"] = "Forest Automation Suite - Force Test Message"
+                    ["text"] = "Forest Automation Suite - Test Message"
                 }
             }
         }
@@ -507,8 +445,7 @@ function Webhook.sendTestMessage()
         Headers = headers,
         Body = body
     })
-    print("Force test message sent - Hunger: " .. hungerPercentage .. "%")
-    print("Debug complete!")
+    print("Test message sent with hunger: " .. hungerPercentage .. "%")
 end
 
 return Webhook
