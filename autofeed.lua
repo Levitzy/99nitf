@@ -7,9 +7,11 @@ local LocalPlayer = Players.LocalPlayer
 
 AutoFeed.autoFeedEnabled = false
 AutoFeed.feedThreshold = 80
-AutoFeed.feedDelay = 0.5
+AutoFeed.feedDelay = 2.0
 AutoFeed.feedConnection = nil
 AutoFeed.lastFeedTime = 0
+AutoFeed.lastHungerCheck = 0
+AutoFeed.previousHunger = 0
 
 function AutoFeed.getHungerPercentage()
     local attempts = {
@@ -112,17 +114,60 @@ function AutoFeed.consumeItem(item)
         return false
     end
     
-    local success = pcall(function()
-        local args = {
-            item
-        }
-        
-        print("AutoFeed Debug - Calling RequestConsumeItem for: " .. item.Name)
-        ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):InvokeServer(unpack(args))
-    end)
+    print("AutoFeed Debug - Item details: Name=" .. item.Name .. ", ClassName=" .. item.ClassName)
+    
+    -- Try multiple methods to consume the item
+    local success = false
+    
+    -- Method 1: Try common variations of consume events
+    local remoteEvents = {
+        "RequestConsumeItem",
+        "ConsumeItem", 
+        "EatItem",
+        "RequestEatItem",
+        "UseItem",
+        "RequestUseItem"
+    }
+    
+    for i, eventName in pairs(remoteEvents) do
+        local eventExists = ReplicatedStorage:WaitForChild("RemoteEvents"):FindFirstChild(eventName)
+        if eventExists then
+            print("AutoFeed Debug - Found event: " .. eventName)
+            
+            -- Try InvokeServer first
+            local invokeSuccess = pcall(function()
+                print("AutoFeed Debug - Trying InvokeServer on " .. eventName)
+                local result = eventExists:InvokeServer(item)
+                print("AutoFeed Debug - InvokeServer result:", result)
+                success = true
+            end)
+            
+            if not invokeSuccess then
+                -- Try FireServer
+                local fireSuccess = pcall(function()
+                    print("AutoFeed Debug - Trying FireServer on " .. eventName)
+                    eventExists:FireServer(item)
+                    success = true
+                end)
+                
+                if fireSuccess then
+                    print("AutoFeed Debug - FireServer succeeded on " .. eventName)
+                else
+                    print("AutoFeed Debug - Both methods failed on " .. eventName)
+                end
+            else
+                print("AutoFeed Debug - InvokeServer succeeded on " .. eventName)
+                break
+            end
+            
+            if success then break end
+        else
+            print("AutoFeed Debug - Event not found: " .. eventName)
+        end
+    end
     
     if not success then
-        print("AutoFeed Debug - Failed to invoke RequestConsumeItem")
+        print("AutoFeed Debug - All consumption methods failed")
     end
     
     return success
@@ -154,6 +199,17 @@ function AutoFeed.autoFeedLoop()
     if not AutoFeed.autoFeedEnabled then return end
     
     local currentTime = tick()
+    local currentHunger = AutoFeed.getHungerPercentage()
+    
+    -- Track hunger changes
+    if currentTime - AutoFeed.lastHungerCheck >= 1.0 then
+        if AutoFeed.previousHunger > 0 and currentHunger ~= AutoFeed.previousHunger then
+            print("AutoFeed Debug - Hunger changed from " .. AutoFeed.previousHunger .. "% to " .. currentHunger .. "%")
+        end
+        AutoFeed.previousHunger = currentHunger
+        AutoFeed.lastHungerCheck = currentTime
+    end
+    
     if currentTime - AutoFeed.lastFeedTime < AutoFeed.feedDelay then
         return
     end
@@ -169,10 +225,22 @@ function AutoFeed.autoFeedLoop()
         local foodToEat = cookedFood[1]
         if foodToEat and foodToEat.Parent then
             print("AutoFeed Debug - Attempting to eat: " .. foodToEat.Name)
+            local preHunger = AutoFeed.getHungerPercentage()
+            
             local success = AutoFeed.consumeItem(foodToEat)
+            
+            -- Wait a moment and check if hunger increased
+            wait(0.5)
+            local postHunger = AutoFeed.getHungerPercentage()
+            
             if success then
-                print("AutoFeed Debug - Successfully consumed " .. foodToEat.Name)
-                AutoFeed.lastFeedTime = currentTime
+                print("AutoFeed Debug - Consumption call succeeded")
+                if postHunger > preHunger then
+                    print("AutoFeed Debug - Hunger increased from " .. preHunger .. "% to " .. postHunger .. "%")
+                    AutoFeed.lastFeedTime = currentTime
+                else
+                    print("AutoFeed Debug - WARNING: Hunger did not increase! Still at " .. postHunger .. "%")
+                end
             else
                 print("AutoFeed Debug - Failed to consume " .. foodToEat.Name)
             end
