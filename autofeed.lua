@@ -7,7 +7,7 @@ local LocalPlayer = Players.LocalPlayer
 
 AutoFeed.autoFeedEnabled = false
 AutoFeed.feedThreshold = 80
-AutoFeed.feedDelay = 1.0
+AutoFeed.feedDelay = 0.5
 AutoFeed.feedConnection = nil
 AutoFeed.lastFeedTime = 0
 
@@ -75,25 +75,40 @@ function AutoFeed.getHungerPercentage()
     return 0
 end
 
-function AutoFeed.findCookedMorsels()
+function AutoFeed.findCookedFood()
     local workspace = game:GetService("Workspace")
     local itemsFolder = workspace:FindFirstChild("Items")
     
     if not itemsFolder then return {} end
     
+    local cookedSteaks = {}
     local cookedMorsels = {}
     
     for _, item in pairs(itemsFolder:GetChildren()) do
-        if item and item.Parent and item.Name == "Cooked Morsel" then
-            table.insert(cookedMorsels, item)
+        if item and item.Parent then
+            if item.Name == "Cooked Steak" then
+                table.insert(cookedSteaks, item)
+            elseif item.Name == "Cooked Morsel" then
+                table.insert(cookedMorsels, item)
+            end
         end
     end
     
-    return cookedMorsels
+    -- Prioritize steaks over morsels (steaks likely give more hunger)
+    local allFood = {}
+    for _, steak in pairs(cookedSteaks) do
+        table.insert(allFood, steak)
+    end
+    for _, morsel in pairs(cookedMorsels) do
+        table.insert(allFood, morsel)
+    end
+    
+    return allFood
 end
 
 function AutoFeed.consumeItem(item)
     if not item or not item.Parent then
+        print("AutoFeed Debug - Invalid item or item has no parent")
         return false
     end
     
@@ -102,8 +117,13 @@ function AutoFeed.consumeItem(item)
             item
         }
         
+        print("AutoFeed Debug - Calling RequestConsumeItem for: " .. item.Name)
         ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):InvokeServer(unpack(args))
     end)
+    
+    if not success then
+        print("AutoFeed Debug - Failed to invoke RequestConsumeItem")
+    end
     
     return success
 end
@@ -111,14 +131,22 @@ end
 function AutoFeed.shouldFeed()
     local currentHunger = AutoFeed.getHungerPercentage()
     
+    -- Debug: print current hunger and threshold
+    print("AutoFeed Debug - Current Hunger: " .. currentHunger .. "%, Threshold: " .. AutoFeed.feedThreshold .. "%")
+    
+    -- Don't feed if already full
     if currentHunger >= 100 then
+        print("AutoFeed Debug - Already full, not feeding")
         return false
     end
     
+    -- Feed if hunger is at or below threshold
     if currentHunger <= AutoFeed.feedThreshold then
+        print("AutoFeed Debug - Should feed! Hunger " .. currentHunger .. "% <= " .. AutoFeed.feedThreshold .. "%")
         return true
     end
     
+    print("AutoFeed Debug - No need to feed yet")
     return false
 end
 
@@ -134,16 +162,23 @@ function AutoFeed.autoFeedLoop()
         return
     end
     
-    local cookedMorsels = AutoFeed.findCookedMorsels()
+    local cookedFood = AutoFeed.findCookedFood()
+    print("AutoFeed Debug - Found " .. #cookedFood .. " cooked food items")
     
-    if #cookedMorsels > 0 then
-        local morselToEat = cookedMorsels[1]
-        if morselToEat and morselToEat.Parent then
-            local success = AutoFeed.consumeItem(morselToEat)
+    if #cookedFood > 0 then
+        local foodToEat = cookedFood[1]
+        if foodToEat and foodToEat.Parent then
+            print("AutoFeed Debug - Attempting to eat: " .. foodToEat.Name)
+            local success = AutoFeed.consumeItem(foodToEat)
             if success then
+                print("AutoFeed Debug - Successfully consumed " .. foodToEat.Name)
                 AutoFeed.lastFeedTime = currentTime
+            else
+                print("AutoFeed Debug - Failed to consume " .. foodToEat.Name)
             end
         end
+    else
+        print("AutoFeed Debug - No cooked food available!")
     end
 end
 
@@ -170,7 +205,18 @@ end
 
 function AutoFeed.getStatus()
     local currentHunger = AutoFeed.getHungerPercentage()
-    local cookedMorsels = AutoFeed.findCookedMorsels()
+    local cookedFood = AutoFeed.findCookedFood()
+    
+    -- Count different types of food
+    local morselCount = 0
+    local steakCount = 0
+    for _, food in pairs(cookedFood) do
+        if food.Name == "Cooked Morsel" then
+            morselCount = morselCount + 1
+        elseif food.Name == "Cooked Steak" then
+            steakCount = steakCount + 1
+        end
+    end
     
     if AutoFeed.autoFeedEnabled then
         local hungerStatus = ""
@@ -184,16 +230,16 @@ function AutoFeed.getStatus()
             hungerStatus = "🔴 Hungry"
         end
         
-        if #cookedMorsels > 0 then
-            return string.format("Status: %s (%d%%) - %d Cooked Morsels - Threshold: %d%%", 
-                   hungerStatus, currentHunger, #cookedMorsels, AutoFeed.feedThreshold), currentHunger
+        if #cookedFood > 0 then
+            return string.format("Status: %s (%d%%) - M:%d S:%d - Threshold: %d%%", 
+                   hungerStatus, currentHunger, morselCount, steakCount, AutoFeed.feedThreshold), currentHunger
         else
-            return string.format("Status: %s (%d%%) - No Cooked Morsels found!", 
+            return string.format("Status: %s (%d%%) - No Cooked Food found!", 
                    hungerStatus, currentHunger), currentHunger
         end
     else
-        return string.format("Status: Auto feed disabled - Hunger: %d%% - %d Cooked Morsels available", 
-               currentHunger, #cookedMorsels), currentHunger
+        return string.format("Status: Auto feed disabled - Hunger: %d%% - M:%d S:%d available", 
+               currentHunger, morselCount, steakCount), currentHunger
     end
 end
 
