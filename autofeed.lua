@@ -7,7 +7,7 @@ local LocalPlayer = Players.LocalPlayer
 
 AutoFeed.autoFeedEnabled = false
 AutoFeed.feedThreshold = 80
-AutoFeed.feedDelay = 1.0
+AutoFeed.feedDelay = 5.0
 AutoFeed.feedConnection = nil
 AutoFeed.lastFeedTime = 0
 
@@ -106,6 +106,19 @@ function AutoFeed.findCookedFood()
     return allFood
 end
 
+function AutoFeed.listAllRemoteEvents()
+    print("AutoFeed Debug - ========== LISTING ALL REMOTE EVENTS ==========")
+    local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
+    
+    for _, child in pairs(remoteEvents:GetChildren()) do
+        if child:IsA("RemoteEvent") or child:IsA("RemoteFunction") then
+            print("AutoFeed Debug - Found " .. child.ClassName .. ": " .. child.Name)
+        end
+    end
+    
+    print("AutoFeed Debug - ========== END REMOTE EVENTS LIST ==========")
+end
+
 function AutoFeed.consumeItem(item)
     if not item or not item.Parent then
         return false
@@ -113,7 +126,7 @@ function AutoFeed.consumeItem(item)
     
     local preHunger = AutoFeed.getHungerPercentage()
     
-    -- METHOD 2: Direct item reference (this works!)
+    -- Use the working method (Method 2: Direct item reference)
     local success = pcall(function()
         ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):InvokeServer(item)
     end)
@@ -122,7 +135,7 @@ function AutoFeed.consumeItem(item)
         wait(0.3)
         local postHunger = AutoFeed.getHungerPercentage()
         if postHunger > preHunger then
-            print("AutoFeed: Successfully ate " .. item.Name .. " (" .. preHunger .. "% -> " .. postHunger .. "%)")
+            print("AutoFeed: Successfully consumed " .. item.Name .. " | Hunger: " .. preHunger .. "% -> " .. postHunger .. "%")
             return true
         end
     end
@@ -133,12 +146,10 @@ end
 function AutoFeed.shouldFeed()
     local currentHunger = AutoFeed.getHungerPercentage()
     
-    -- Don't feed if already full
     if currentHunger >= 100 then
         return false
     end
     
-    -- Feed if hunger is at or below threshold
     if currentHunger <= AutoFeed.feedThreshold then
         return true
     end
@@ -164,7 +175,6 @@ function AutoFeed.autoFeedLoop()
         local foodToEat = cookedFood[1]
         if foodToEat and foodToEat.Parent then
             local success = AutoFeed.consumeItem(foodToEat)
-            
             if success then
                 AutoFeed.lastFeedTime = currentTime
             end
