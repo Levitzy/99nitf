@@ -12,47 +12,51 @@ Webhook.lastNotifiedDay = 0
 Webhook.url = "https://discord.com/api/webhooks/1383438355278336151/626zQx9Ob68IqsjEqomxRmaET282U2X1S1TL4D_8Q8yKjz5dc3kVlQissMVD5OGGXzDL"
 
 function Webhook.SendMessage(url, message)
-    local headers = {
-        ["Content-Type"] = "application/json"
-    }
-    local data = {
-        ["content"] = message
-    }
-    local body = HttpService:JSONEncode(data)
-    local response = request({
-        Url = url,
-        Method = "POST",
-        Headers = headers,
-        Body = body
-    })
-    print("Message sent to Discord")
+    pcall(function()
+        local headers = {
+            ["Content-Type"] = "application/json"
+        }
+        local data = {
+            ["content"] = message
+        }
+        local body = HttpService:JSONEncode(data)
+        local response = request({
+            Url = url,
+            Method = "POST",
+            Headers = headers,
+            Body = body
+        })
+        print("Message sent to Discord")
+    end)
 end
 
 function Webhook.SendMessageEMBED(url, embed)
-    local headers = {
-        ["Content-Type"] = "application/json"
-    }
-    local data = {
-        ["embeds"] = {
-            {
-                ["title"] = embed.title,
-                ["description"] = embed.description,
-                ["color"] = embed.color,
-                ["fields"] = embed.fields,
-                ["footer"] = {
-                    ["text"] = embed.footer.text
+    pcall(function()
+        local headers = {
+            ["Content-Type"] = "application/json"
+        }
+        local data = {
+            ["embeds"] = {
+                {
+                    ["title"] = embed.title,
+                    ["description"] = embed.description,
+                    ["color"] = embed.color,
+                    ["fields"] = embed.fields,
+                    ["footer"] = {
+                        ["text"] = embed.footer.text
+                    }
                 }
             }
         }
-    }
-    local body = HttpService:JSONEncode(data)
-    local response = request({
-        Url = url,
-        Method = "POST",
-        Headers = headers,
-        Body = body
-    })
-    print("Embed sent to Discord")
+        local body = HttpService:JSONEncode(data)
+        local response = request({
+            Url = url,
+            Method = "POST",
+            Headers = headers,
+            Body = body
+        })
+        print("Embed sent to Discord")
+    end)
 end
 
 function Webhook.getHungerStatus()

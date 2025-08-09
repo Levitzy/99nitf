@@ -4,7 +4,19 @@ local Fly = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/9
 local AutoKill = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autokill.lua'))()
 local AutoCook = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autocook.lua'))()
 local AutoPlant = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autoplant.lua'))()
-local Webhook = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/webhook.lua'))()
+
+local Webhook
+pcall(function()
+    Webhook = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/webhook.lua'))()
+end)
+
+if not Webhook then
+    Webhook = {
+        setEnabled = function() end,
+        getStatus = function() return "Webhook: Failed to load" end,
+        sendTestMessage = function() print("Webhook not available") end
+    }
+end
 
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
@@ -360,33 +372,37 @@ local DayTrackerToggle = Tabs.Discord:AddToggle("DayTrackerToggle", {
 })
 
 DayTrackerToggle:OnChanged(function(Value)
-    Webhook.setEnabled(Value)
-    
-    if Value then
-        Fluent:Notify({
-            Title = "Day Tracker",
-            Content = "Discord notifications enabled for day changes!",
-            Duration = 3
-        })
-    else
-        Fluent:Notify({
-            Title = "Day Tracker",
-            Content = "Discord notifications disabled",
-            Duration = 2
-        })
-    end
+    pcall(function()
+        Webhook.setEnabled(Value)
+        
+        if Value then
+            Fluent:Notify({
+                Title = "Day Tracker",
+                Content = "Discord notifications enabled for day changes!",
+                Duration = 3
+            })
+        else
+            Fluent:Notify({
+                Title = "Day Tracker",
+                Content = "Discord notifications disabled",
+                Duration = 2
+            })
+        end
+    end)
 end)
 
 local TestMessageButton = Tabs.Discord:AddButton({
     Title = "Send Test Message",
     Description = "Send a test message to Discord to verify webhook works",
     Callback = function()
-        Webhook.sendTestMessage()
-        Fluent:Notify({
-            Title = "Test Message",
-            Content = "Test message sent to Discord!",
-            Duration = 2
-        })
+        pcall(function()
+            Webhook.sendTestMessage()
+            Fluent:Notify({
+                Title = "Test Message",
+                Content = "Test message sent to Discord!",
+                Duration = 2
+            })
+        end)
     end
 })
 
@@ -426,23 +442,35 @@ local SystemStatus = Tabs.Settings:AddParagraph({
 })
 
 RunService.Heartbeat:Connect(function()
-    local treeStatusText, treeCount, closestDistance = TreeChopper.getStatus()
-    TreeStatus:SetDesc(treeStatusText)
+    pcall(function()
+        local treeStatusText, treeCount, closestDistance = TreeChopper.getStatus()
+        TreeStatus:SetDesc(treeStatusText)
+    end)
     
-    local fuelStatusText, distance = AutoFuel.getStatus()
-    FuelStatus:SetDesc(fuelStatusText)
+    pcall(function()
+        local fuelStatusText, distance = AutoFuel.getStatus()
+        FuelStatus:SetDesc(fuelStatusText)
+    end)
     
-    local killStatusText, targetCount, closestTargetDistance = AutoKill.getStatus()
-    CombatStatus:SetDesc("Targets: " .. killStatusText)
+    pcall(function()
+        local killStatusText, targetCount, closestTargetDistance = AutoKill.getStatus()
+        CombatStatus:SetDesc("Targets: " .. killStatusText)
+    end)
     
-    local cookStatusText, meatCount = AutoCook.getStatus()
-    CookStatus:SetDesc(cookStatusText)
+    pcall(function()
+        local cookStatusText, meatCount = AutoCook.getStatus()
+        CookStatus:SetDesc(cookStatusText)
+    end)
     
-    local plantStatusText, saplingCount = AutoPlant.getStatus()
-    PlantStatus:SetDesc(plantStatusText)
+    pcall(function()
+        local plantStatusText, saplingCount = AutoPlant.getStatus()
+        PlantStatus:SetDesc(plantStatusText)
+    end)
     
-    local discordStatusText = Webhook.getStatus()
-    DiscordStatus:SetDesc(discordStatusText)
+    pcall(function()
+        local discordStatusText = Webhook.getStatus()
+        DiscordStatus:SetDesc(discordStatusText)
+    end)
     
     local chopEnabled = TreeChopper.autoChopEnabled
     local fuelEnabled = AutoFuel.autoFuelEnabled
