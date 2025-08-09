@@ -4,7 +4,6 @@ local Fly = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/9
 local AutoKill = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autokill.lua'))()
 local AutoCook = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autocook.lua'))()
 local AutoPlant = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autoplant.lua'))()
-local AutoFlower = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autoflower.lua'))()
 
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
@@ -276,30 +275,6 @@ PlantToggle:OnChanged(function(Value)
     end
 end)
 
-local FlowerToggle = Tabs.Forest:AddToggle("FlowerToggle", {
-    Title = "Auto Flower Picker",
-    Description = "Automatically pick all flowers from landmarks",
-    Default = false
-})
-
-FlowerToggle:OnChanged(function(Value)
-    AutoFlower.setEnabled(Value)
-    
-    if Value then
-        Fluent:Notify({
-            Title = "Flower Picker",
-            Content = "Started collecting all flowers from landmarks!",
-            Duration = 3
-        })
-    else
-        Fluent:Notify({
-            Title = "Flower Picker",
-            Content = "Flower collection stopped",
-            Duration = 2
-        })
-    end
-end)
-
 local FuelToggle = Tabs.Forest:AddToggle("FuelToggle", {
     Title = "Auto Fuel System",
     Description = "Teleport fuel items to MainFire at (0,4,-3)",
@@ -374,7 +349,7 @@ end)
 
 local ForestCombo = Tabs.Combo:AddToggle("ForestCombo", {
     Title = "🌲 Forest Management Combo",
-    Description = "Tree Chopper + Auto Fuel + Auto Plant + Flower Picker",
+    Description = "Tree Chopper + Auto Fuel + Auto Plant",
     Default = false
 })
 
@@ -382,12 +357,11 @@ ForestCombo:OnChanged(function(Value)
     TreeChopper.setEnabled(Value)
     AutoFuel.setEnabled(Value)
     AutoPlant.setEnabled(Value)
-    AutoFlower.setEnabled(Value)
     
     if Value then
         Fluent:Notify({
             Title = "Forest Combo",
-            Content = "Complete forest management enabled including flower collection!",
+            Content = "Complete forest management enabled!",
             Duration = 4
         })
     else
@@ -426,7 +400,7 @@ end)
 
 local UltimateCombo = Tabs.Combo:AddToggle("UltimateCombo", {
     Title = "🚀 ULTIMATE MODE",
-    Description = "Enable ALL 6 automation systems for complete AFK mode",
+    Description = "Enable ALL 5 automation systems for complete AFK mode",
     Default = false
 })
 
@@ -436,12 +410,11 @@ UltimateCombo:OnChanged(function(Value)
     AutoKill.setEnabled(Value)
     AutoCook.setEnabled(Value)
     AutoPlant.setEnabled(Value)
-    AutoFlower.setEnabled(Value)
     
     if Value then
         Fluent:Notify({
             Title = "🚀 ULTIMATE MODE",
-            Content = "All 6 systems active! Complete AFK automation ready!",
+            Content = "All 5 systems active! Complete AFK automation ready!",
             Duration = 5
         })
     else
@@ -478,11 +451,6 @@ local PlantStatus = Tabs.Settings:AddParagraph({
     Content = "Ready"
 })
 
-local FlowerStatus = Tabs.Settings:AddParagraph({
-    Title = "🌸 Flower Status",
-    Content = "Ready"
-})
-
 local SystemStatus = Tabs.Settings:AddParagraph({
     Title = "🚀 System Overview",
     Content = "All systems offline"
@@ -504,15 +472,11 @@ RunService.Heartbeat:Connect(function()
     local plantStatusText, saplingCount = AutoPlant.getStatus()
     PlantStatus:SetDesc(plantStatusText)
     
-    local flowerStatusText, flowerCount = AutoFlower.getStatus()
-    FlowerStatus:SetDesc(flowerStatusText)
-    
     local chopEnabled = TreeChopper.autoChopEnabled
     local fuelEnabled = AutoFuel.autoFuelEnabled
     local killEnabled = AutoKill.autoKillEnabled
     local cookEnabled = AutoCook.autoCookEnabled
     local plantEnabled = AutoPlant.autoPlantEnabled
-    local flowerEnabled = AutoFlower.autoFlowerEnabled
     
     local activeCount = 0
     local activeSystems = {}
@@ -537,17 +501,11 @@ RunService.Heartbeat:Connect(function()
         activeCount = activeCount + 1 
         table.insert(activeSystems, "Plant")
     end
-    if flowerEnabled then 
-        activeCount = activeCount + 1 
-        table.insert(activeSystems, "Flower")
-    end
     
-    if activeCount == 6 then
-        SystemStatus:SetDesc("🚀 ULTIMATE MODE: All 6 systems running perfectly!")
-    elseif activeCount >= 4 then
-        SystemStatus:SetDesc("🔥 Multi-System Active: " .. activeCount .. "/6 systems (" .. table.concat(activeSystems, ", ") .. ")")
-    elseif activeCount == 3 then
-        SystemStatus:SetDesc("⚡ Triple-System Mode: " .. table.concat(activeSystems, " + ") .. " active")
+    if activeCount == 5 then
+        SystemStatus:SetDesc("🚀 ULTIMATE MODE: All 5 systems running perfectly!")
+    elseif activeCount >= 3 then
+        SystemStatus:SetDesc("🔥 Multi-System Active: " .. activeCount .. "/5 systems (" .. table.concat(activeSystems, ", ") .. ")")
     elseif activeCount == 2 then
         SystemStatus:SetDesc("⚡ Dual-System Mode: " .. table.concat(activeSystems, " + ") .. " active")
     elseif activeCount == 1 then
@@ -572,6 +530,6 @@ Window:SelectTab(1)
 
 Fluent:Notify({
     Title = "Forest Automation Suite v2.1",
-    Content = "Ultimate forest management system loaded! 6 advanced automation bots ready including flower picker.",
+    Content = "Ultimate forest management system loaded! 5 advanced automation bots ready.",
     Duration = 6
 })
