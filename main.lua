@@ -6,16 +6,27 @@ local AutoCook = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levi
 local AutoPlant = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autoplant.lua'))()
 
 local Webhook
-pcall(function()
+local webhookLoadSuccess = pcall(function()
     Webhook = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/webhook.lua'))()
 end)
 
-if not Webhook then
+if not webhookLoadSuccess or not Webhook then
+    print("Failed to load webhook module, creating fallback...")
     Webhook = {
-        setEnabled = function() end,
-        getStatus = function() return "Webhook: Failed to load" end,
-        sendTestMessage = function() print("Webhook not available") end
+        setEnabled = function(enabled) 
+            if enabled then
+                print("Webhook: Discord notifications would be enabled (module failed to load)")
+            else
+                print("Webhook: Discord notifications would be disabled (module failed to load)")
+            end
+        end,
+        getStatus = function() return "Webhook: Module failed to load" end,
+        sendTestMessage = function() 
+            print("Webhook: Cannot send test message - module failed to load") 
+        end
     }
+else
+    print("Webhook module loaded successfully!")
 end
 
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
