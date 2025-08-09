@@ -4,6 +4,7 @@ local Fly = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/9
 local AutoKill = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autokill.lua'))()
 local AutoCook = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autocook.lua'))()
 local AutoPlant = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autoplant.lua'))()
+local Webhook = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/webhook.lua'))()
 
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
@@ -178,6 +179,7 @@ local Tabs = {
     Forest = Window:AddTab({ Title = "🌲 Forest", Icon = "trees" }),
     Combat = Window:AddTab({ Title = "⚔️ Combat", Icon = "sword" }),
     Combo = Window:AddTab({ Title = "🚀 Combo", Icon = "zap" }),
+    Discord = Window:AddTab({ Title = "📢 Discord", Icon = "message-circle" }),
     Settings = Window:AddTab({ Title = "⚙️ Settings", Icon = "settings" })
 }
 
@@ -347,6 +349,43 @@ CookToggle:OnChanged(function(Value)
     end
 end)
 
+local DayTrackerToggle = Tabs.Discord:AddToggle("DayTrackerToggle", {
+    Title = "Day Tracker",
+    Description = "Get Discord notifications when a new day starts",
+    Default = false
+})
+
+DayTrackerToggle:OnChanged(function(Value)
+    Webhook.setEnabled(Value)
+    
+    if Value then
+        Fluent:Notify({
+            Title = "Day Tracker",
+            Content = "Discord notifications enabled for day changes!",
+            Duration = 3
+        })
+    else
+        Fluent:Notify({
+            Title = "Day Tracker",
+            Content = "Discord notifications disabled",
+            Duration = 2
+        })
+    end
+end)
+
+local TestMessageButton = Tabs.Discord:AddButton({
+    Title = "Send Test Message",
+    Description = "Send a test message to Discord to verify webhook works",
+    Callback = function()
+        Webhook.sendTestMessage()
+        Fluent:Notify({
+            Title = "Test Message",
+            Content = "Test message sent to Discord!",
+            Duration = 2
+        })
+    end
+})
+
 local ForestCombo = Tabs.Combo:AddToggle("ForestCombo", {
     Title = "🌲 Forest Management Combo",
     Description = "Tree Chopper + Auto Fuel + Auto Plant",
@@ -451,6 +490,11 @@ local PlantStatus = Tabs.Settings:AddParagraph({
     Content = "Ready"
 })
 
+local DiscordStatus = Tabs.Settings:AddParagraph({
+    Title = "📢 Discord Status",
+    Content = "Ready"
+})
+
 local SystemStatus = Tabs.Settings:AddParagraph({
     Title = "🚀 System Overview",
     Content = "All systems offline"
@@ -471,6 +515,9 @@ RunService.Heartbeat:Connect(function()
     
     local plantStatusText, saplingCount = AutoPlant.getStatus()
     PlantStatus:SetDesc(plantStatusText)
+    
+    local discordStatusText = Webhook.getStatus()
+    DiscordStatus:SetDesc(discordStatusText)
     
     local chopEnabled = TreeChopper.autoChopEnabled
     local fuelEnabled = AutoFuel.autoFuelEnabled
@@ -530,6 +577,6 @@ Window:SelectTab(1)
 
 Fluent:Notify({
     Title = "Forest Automation Suite v2.1",
-    Content = "Ultimate forest management system loaded! 5 advanced automation bots ready.",
+    Content = "Ultimate forest management system loaded! 5 advanced automation bots + Discord notifications ready.",
     Duration = 6
 })
