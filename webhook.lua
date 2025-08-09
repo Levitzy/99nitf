@@ -81,39 +81,54 @@ function Webhook.checkDayChange()
     
     local currentDay = Webhook.getCurrentDay()
     
-    if currentDay > Webhook.lastDay and currentDay > 0 then
-        local embed = {
-            ["title"] = "🌅 New Day Started!",
-            ["description"] = "A new day has begun in the forest survival game.",
-            ["color"] = 3447003,
-            ["fields"] = {
+    if currentDay > Webhook.lastDay and currentDay > 0 and Webhook.lastDay > 0 then
+        local data = {
+            ["content"] = "@everyone",
+            ["embeds"] = {
                 {
-                    ["name"] = "📅 Current Day",
-                    ["value"] = "Day " .. currentDay,
-                    ["inline"] = true
-                },
-                {
-                    ["name"] = "📈 Previous Day",
-                    ["value"] = "Day " .. Webhook.lastDay,
-                    ["inline"] = true
-                },
-                {
-                    ["name"] = "⏰ Time",
-                    ["value"] = os.date("%H:%M:%S"),
-                    ["inline"] = true
+                    ["title"] = "🌅 New Day Started!",
+                    ["description"] = "A new day has begun in the forest survival game.",
+                    ["color"] = 3447003,
+                    ["fields"] = {
+                        {
+                            ["name"] = "📅 Current Day",
+                            ["value"] = "Day " .. currentDay,
+                            ["inline"] = true
+                        },
+                        {
+                            ["name"] = "📈 Previous Day",
+                            ["value"] = "Day " .. Webhook.lastDay,
+                            ["inline"] = true
+                        },
+                        {
+                            ["name"] = "⏰ Time",
+                            ["value"] = os.date("%H:%M:%S"),
+                            ["inline"] = true
+                        }
+                    },
+                    ["footer"] = {
+                        ["text"] = "Forest Automation Suite - Day Tracker"
+                    }
                 }
-            },
-            ["footer"] = {
-                ["text"] = "Forest Automation Suite - Day Tracker"
             }
         }
         
-        Webhook.SendMessageEMBED(Webhook.url, embed)
+        local headers = {
+            ["Content-Type"] = "application/json"
+        }
+        local body = HttpService:JSONEncode(data)
+        local response = request({
+            Url = Webhook.url,
+            Method = "POST",
+            Headers = headers,
+            Body = body
+        })
         
         Webhook.lastDay = currentDay
         print("Day changed notification sent: Day " .. currentDay)
-    elseif currentDay > 0 then
+    elseif currentDay > 0 and Webhook.lastDay == 0 then
         Webhook.lastDay = currentDay
+        print("Initial day set to: Day " .. currentDay)
     end
 end
 
@@ -192,28 +207,42 @@ function Webhook.getStatus()
 end
 
 function Webhook.sendTestMessage()
-    local testEmbed = {
-        ["title"] = "🧪 Test Message",
-        ["description"] = "This is a test message from Forest Automation Suite!",
-        ["color"] = 16776960,
-        ["fields"] = {
+    local data = {
+        ["content"] = "@everyone",
+        ["embeds"] = {
             {
-                ["name"] = "📅 Current Day",
-                ["value"] = "Day " .. Webhook.getCurrentDay(),
-                ["inline"] = true
-            },
-            {
-                ["name"] = "⏰ Time",
-                ["value"] = os.date("%H:%M:%S"),
-                ["inline"] = true
+                ["title"] = "🧪 Test Message",
+                ["description"] = "This is a test message from Forest Automation Suite!",
+                ["color"] = 16776960,
+                ["fields"] = {
+                    {
+                        ["name"] = "📅 Current Day",
+                        ["value"] = "Day " .. Webhook.getCurrentDay(),
+                        ["inline"] = true
+                    },
+                    {
+                        ["name"] = "⏰ Time",
+                        ["value"] = os.date("%H:%M:%S"),
+                        ["inline"] = true
+                    }
+                },
+                ["footer"] = {
+                    ["text"] = "Forest Automation Suite - Test Message"
+                }
             }
-        },
-        ["footer"] = {
-            ["text"] = "Forest Automation Suite - Test Message"
         }
     }
     
-    Webhook.SendMessageEMBED(Webhook.url, testEmbed)
+    local headers = {
+        ["Content-Type"] = "application/json"
+    }
+    local body = HttpService:JSONEncode(data)
+    local response = request({
+        Url = Webhook.url,
+        Method = "POST",
+        Headers = headers,
+        Body = body
+    })
     print("Test message sent")
 end
 
