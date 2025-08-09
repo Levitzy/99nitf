@@ -139,9 +139,7 @@ function AutoFeed.consumeItem(item)
     local preHunger = AutoFeed.getHungerPercentage()
     
     local success = pcall(function()
-        local modelWrapper = Instance.new("Model", nil)
-        item.Parent = modelWrapper
-        local result = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):InvokeServer(modelWrapper)
+        local result = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):InvokeServer(item)
         return result
     end)
     
