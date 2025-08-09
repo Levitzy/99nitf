@@ -137,47 +137,93 @@ function AutoFeed.consumeItem(item)
     end
     
     local preHunger = AutoFeed.getHungerPercentage()
+    print("AutoFeed - Attempting to consume " .. item.Name .. " (Current hunger: " .. preHunger .. "%)")
     
-    -- METHOD 1: Model wrapper approach
-    local success1 = pcall(function()
-        local modelWrapper = Instance.new("Model", nil)
+    -- Store original parent to restore if needed
+    local originalParent = item.Parent
+    
+    -- METHOD 1: Model wrapper with item inside
+    print("AutoFeed - Trying Method 1: Model wrapper...")
+    local success1, result1 = pcall(function()
+        local modelWrapper = Instance.new("Model")
+        modelWrapper.Name = "FoodContainer"
         item.Parent = modelWrapper
         local result = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):InvokeServer(modelWrapper)
         return result
     end)
     
-    if success1 then
-        wait(0.5)
-        local newHunger = AutoFeed.getHungerPercentage()
-        if newHunger > preHunger then
-            print("AutoFeed - Successfully consumed " .. item.Name .. " using Method 1 (Hunger: " .. preHunger .. "% -> " .. newHunger .. "%)")
-            return true
-        end
-        print("AutoFeed - Method 1 failed, trying Method 2...")
+    wait(0.3)
+    local hunger1 = AutoFeed.getHungerPercentage()
+    if hunger1 > preHunger then
+        print("AutoFeed - ✅ Method 1 SUCCESS! Hunger: " .. preHunger .. "% -> " .. hunger1 .. "%")
+        return true
     end
     
-    -- Only try Method 2 if Method 1 failed and item still exists
-    if not item or not item.Parent then
-        print("AutoFeed - Item no longer exists, skipping Method 2")
-        return false
+    -- Restore item to original location if Method 1 didn't work
+    if item and item.Parent then
+        item.Parent = originalParent
     end
     
     -- METHOD 2: Direct item reference
-    local success2 = pcall(function()
+    if not item or not item.Parent then
+        print("AutoFeed - Item destroyed, cannot try Method 2")
+        return false
+    end
+    
+    print("AutoFeed - Trying Method 2: Direct item...")
+    local success2, result2 = pcall(function()
         local result = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):InvokeServer(item)
         return result
     end)
     
-    if success2 then
-        wait(0.5)
-        local newHunger = AutoFeed.getHungerPercentage()
-        if newHunger > preHunger then
-            print("AutoFeed - Successfully consumed " .. item.Name .. " using Method 2 (Hunger: " .. preHunger .. "% -> " .. newHunger .. "%)")
-            return true
-        end
+    wait(0.3)
+    local hunger2 = AutoFeed.getHungerPercentage()
+    if hunger2 > preHunger then
+        print("AutoFeed - ✅ Method 2 SUCCESS! Hunger: " .. preHunger .. "% -> " .. hunger2 .. "%")
+        return true
     end
     
-    print("AutoFeed - Both methods failed for " .. item.Name)
+    -- METHOD 3: Try FireServer instead of InvokeServer
+    if not item or not item.Parent then
+        print("AutoFeed - Item destroyed, cannot try Method 3")
+        return false
+    end
+    
+    print("AutoFeed - Trying Method 3: FireServer...")
+    local success3 = pcall(function()
+        ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):FireServer(item)
+    end)
+    
+    wait(0.3)
+    local hunger3 = AutoFeed.getHungerPercentage()
+    if hunger3 > preHunger then
+        print("AutoFeed - ✅ Method 3 SUCCESS! Hunger: " .. preHunger .. "% -> " .. hunger3 .. "%")
+        return true
+    end
+    
+    -- METHOD 4: Try with player character as second parameter
+    if not item or not item.Parent then
+        print("AutoFeed - Item destroyed, cannot try Method 4")
+        return false
+    end
+    
+    print("AutoFeed - Trying Method 4: With player character...")
+    local success4 = pcall(function()
+        local player = Players.LocalPlayer
+        if player.Character then
+            local result = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):InvokeServer(item, player.Character)
+            return result
+        end
+    end)
+    
+    wait(0.3)
+    local hunger4 = AutoFeed.getHungerPercentage()
+    if hunger4 > preHunger then
+        print("AutoFeed - ✅ Method 4 SUCCESS! Hunger: " .. preHunger .. "% -> " .. hunger4 .. "%")
+        return true
+    end
+    
+    print("AutoFeed - ❌ ALL METHODS FAILED for " .. item.Name)
     return false
 end
 
