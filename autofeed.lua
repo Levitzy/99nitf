@@ -147,12 +147,19 @@ function AutoFeed.consumeItem(item)
     end)
     
     if success1 then
-        wait(0.3)
+        wait(0.5)
         local newHunger = AutoFeed.getHungerPercentage()
         if newHunger > preHunger then
             print("AutoFeed - Successfully consumed " .. item.Name .. " using Method 1 (Hunger: " .. preHunger .. "% -> " .. newHunger .. "%)")
             return true
         end
+        print("AutoFeed - Method 1 failed, trying Method 2...")
+    end
+    
+    -- Only try Method 2 if Method 1 failed and item still exists
+    if not item or not item.Parent then
+        print("AutoFeed - Item no longer exists, skipping Method 2")
+        return false
     end
     
     -- METHOD 2: Direct item reference
@@ -162,7 +169,7 @@ function AutoFeed.consumeItem(item)
     end)
     
     if success2 then
-        wait(0.3)
+        wait(0.5)
         local newHunger = AutoFeed.getHungerPercentage()
         if newHunger > preHunger then
             print("AutoFeed - Successfully consumed " .. item.Name .. " using Method 2 (Hunger: " .. preHunger .. "% -> " .. newHunger .. "%)")
@@ -170,6 +177,7 @@ function AutoFeed.consumeItem(item)
         end
     end
     
+    print("AutoFeed - Both methods failed for " .. item.Name)
     return false
 end
 
