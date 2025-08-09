@@ -138,16 +138,34 @@ function AutoFeed.consumeItem(item)
     
     local preHunger = AutoFeed.getHungerPercentage()
     
-    local success = pcall(function()
+    -- METHOD 1: Model wrapper approach
+    local success1 = pcall(function()
+        local modelWrapper = Instance.new("Model", nil)
+        item.Parent = modelWrapper
+        local result = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):InvokeServer(modelWrapper)
+        return result
+    end)
+    
+    if success1 then
+        wait(0.3)
+        local newHunger = AutoFeed.getHungerPercentage()
+        if newHunger > preHunger then
+            print("AutoFeed - Successfully consumed " .. item.Name .. " using Method 1 (Hunger: " .. preHunger .. "% -> " .. newHunger .. "%)")
+            return true
+        end
+    end
+    
+    -- METHOD 2: Direct item reference
+    local success2 = pcall(function()
         local result = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):InvokeServer(item)
         return result
     end)
     
-    if success then
+    if success2 then
         wait(0.3)
         local newHunger = AutoFeed.getHungerPercentage()
         if newHunger > preHunger then
-            print("AutoFeed - Successfully consumed " .. item.Name .. " (Hunger: " .. preHunger .. "% -> " .. newHunger .. "%)")
+            print("AutoFeed - Successfully consumed " .. item.Name .. " using Method 2 (Hunger: " .. preHunger .. "% -> " .. newHunger .. "%)")
             return true
         end
     end
