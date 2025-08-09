@@ -169,11 +169,6 @@ local function createMobileToggle()
         end
     end)
     
-    Window.Root:GetPropertyChangedSignal("Visible"):Connect(function()
-        isVisible = Window.Root.Visible
-        updateVisualState()
-    end)
-    
     return ToggleButton
 end
 
