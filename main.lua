@@ -468,7 +468,17 @@ local SystemStatus = Tabs.Settings:AddParagraph({
     Content = "All systems offline"
 })
 
+local lastUIUpdate = 0
+local UIUpdateInterval = 0.5  -- Update UI every 0.5 seconds instead of every frame
+
 RunService.Heartbeat:Connect(function()
+    local currentTime = tick()
+    
+    -- Only update UI every 0.5 seconds to reduce lag
+    if currentTime - lastUIUpdate < UIUpdateInterval then
+        return
+    end
+    lastUIUpdate = currentTime
     local treeStatusText, treeCount, closestDistance = TreeChopper.getStatus()
     TreeStatus:SetDesc(treeStatusText)
     
