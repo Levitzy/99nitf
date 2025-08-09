@@ -4,6 +4,7 @@ local Fly = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/9
 local AutoKill = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autokill.lua'))()
 local AutoCook = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autocook.lua'))()
 local AutoPlant = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autoplant.lua'))()
+local AutoFeed = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autofeed.lua'))()
 local Webhook = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/webhook.lua'))()
 
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
@@ -11,7 +12,7 @@ local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/d
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 
 local Window = Fluent:CreateWindow({
-    Title = "Forest Automation Suite v2.1",
+    Title = "Forest Automation Suite v2.2",
     SubTitle = "Ultimate Forest Management System",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
@@ -348,6 +349,48 @@ CookToggle:OnChanged(function(Value)
     end
 end)
 
+local FeedToggle = Tabs.Combat:AddToggle("FeedToggle", {
+    Title = "Auto Feed System",
+    Description = "Automatically eat Cooked Morsels when hungry",
+    Default = false
+})
+
+FeedToggle:OnChanged(function(Value)
+    AutoFeed.setEnabled(Value)
+    
+    if Value then
+        Fluent:Notify({
+            Title = "Auto Feed",
+            Content = "Auto-feeding system activated!",
+            Duration = 3
+        })
+    else
+        Fluent:Notify({
+            Title = "Auto Feed", 
+            Content = "Auto-feeding stopped",
+            Duration = 2
+        })
+    end
+end)
+
+local FeedThreshold = Tabs.Combat:AddDropdown("FeedThreshold", {
+    Title = "Feed Threshold",
+    Description = "Start feeding when hunger drops to this level",
+    Values = {"25%", "50%", "75%", "80%"},
+    Default = "80%"
+})
+
+FeedThreshold:OnChanged(function(Value)
+    local threshold = tonumber(string.match(Value, "%d+"))
+    AutoFeed.setFeedThreshold(threshold)
+    
+    Fluent:Notify({
+        Title = "Feed Threshold",
+        Content = "Feed threshold set to " .. threshold .. "%",
+        Duration = 2
+    })
+end)
+
 local DayTrackerToggle = Tabs.Discord:AddToggle("DayTrackerToggle", {
     Title = "Day Tracker",
     Description = "Get Discord notifications when a new day starts",
@@ -405,6 +448,11 @@ local CookStatus = Tabs.Settings:AddParagraph({
     Content = "Ready"
 })
 
+local FeedStatus = Tabs.Settings:AddParagraph({
+    Title = "🍽️ Feed Status",
+    Content = "Ready"
+})
+
 local PlantStatus = Tabs.Settings:AddParagraph({
     Title = "🌱 Plant Status",
     Content = "Ready"
@@ -433,6 +481,9 @@ RunService.Heartbeat:Connect(function()
     local cookStatusText, meatCount = AutoCook.getStatus()
     CookStatus:SetDesc(cookStatusText)
     
+    local feedStatusText, hungerPercent = AutoFeed.getStatus()
+    FeedStatus:SetDesc(feedStatusText)
+    
     local plantStatusText, saplingCount = AutoPlant.getStatus()
     PlantStatus:SetDesc(plantStatusText)
     
@@ -443,6 +494,7 @@ RunService.Heartbeat:Connect(function()
     local fuelEnabled = AutoFuel.autoFuelEnabled
     local killEnabled = AutoKill.autoKillEnabled
     local cookEnabled = AutoCook.autoCookEnabled
+    local feedEnabled = AutoFeed.autoFeedEnabled
     local plantEnabled = AutoPlant.autoPlantEnabled
     
     local activeCount = 0
@@ -464,17 +516,21 @@ RunService.Heartbeat:Connect(function()
         activeCount = activeCount + 1 
         table.insert(activeSystems, "Cook")
     end
+    if feedEnabled then 
+        activeCount = activeCount + 1 
+        table.insert(activeSystems, "Feed")
+    end
     if plantEnabled then 
         activeCount = activeCount + 1 
         table.insert(activeSystems, "Plant")
     end
     
-    if activeCount == 5 then
-        SystemStatus:SetDesc("🚀 All 5 systems running perfectly!")
-    elseif activeCount >= 3 then
-        SystemStatus:SetDesc("🔥 Multi-System Active: " .. activeCount .. "/5 systems (" .. table.concat(activeSystems, ", ") .. ")")
-    elseif activeCount == 2 then
-        SystemStatus:SetDesc("⚡ Dual-System Mode: " .. table.concat(activeSystems, " + ") .. " active")
+    if activeCount == 6 then
+        SystemStatus:SetDesc("🚀 All 6 systems running perfectly!")
+    elseif activeCount >= 4 then
+        SystemStatus:SetDesc("🔥 Multi-System Active: " .. activeCount .. "/6 systems (" .. table.concat(activeSystems, ", ") .. ")")
+    elseif activeCount >= 2 then
+        SystemStatus:SetDesc("⚡ Multi-Mode: " .. table.concat(activeSystems, " + ") .. " active")
     elseif activeCount == 1 then
         SystemStatus:SetDesc("📍 Single System: " .. activeSystems[1] .. " running")
     else
@@ -496,7 +552,7 @@ SaveManager:BuildConfigSection(Tabs.Settings)
 Window:SelectTab(1)
 
 Fluent:Notify({
-    Title = "Forest Automation Suite v2.1",
-    Content = "Ultimate forest management system loaded! 5 advanced automation bots + Discord notifications ready.",
+    Title = "Forest Automation Suite v2.2",
+    Content = "Ultimate forest management system loaded! 6 advanced automation bots + Discord notifications ready.",
     Duration = 6
 })
