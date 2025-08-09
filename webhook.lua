@@ -8,7 +8,6 @@ local LocalPlayer = Players.LocalPlayer
 Webhook.webhookEnabled = false
 Webhook.webhookConnection = nil
 Webhook.lastDay = 0
-Webhook.lastNotifiedDay = 0
 Webhook.url = "https://discord.com/api/webhooks/1383438355278336151/626zQx9Ob68IqsjEqomxRmaET282U2X1S1TL4D_8Q8yKjz5dc3kVlQissMVD5OGGXzDL"
 
 function Webhook.SendMessage(url, message)
@@ -55,46 +54,7 @@ function Webhook.SendMessageEMBED(url, embed)
     print("Embed sent to Discord")
 end
 
-function Webhook.getHungerStatus()
-    local success, result = pcall(function()
-        local playerGui = LocalPlayer:WaitForChild("PlayerGui", 5)
-        local interface = playerGui:WaitForChild("Interface", 5)
-        local statBars = interface:WaitForChild("StatBars", 5)
-        local hungerBar = statBars:WaitForChild("HungerBar", 5)
-        
-        if hungerBar:FindFirstChild("Fill") then
-            local fillSize = hungerBar.Fill.Size.X.Scale
-            local percentage = math.floor(fillSize * 100)
-            return percentage
-        elseif hungerBar:FindFirstChild("Bar") and hungerBar.Bar:FindFirstChild("Fill") then
-            local fillSize = hungerBar.Bar.Fill.Size.X.Scale
-            local percentage = math.floor(fillSize * 100)
-            return percentage
-        end
-        
-        return 0
-    end)
-    
-    if success then
-        return result
-    else
-        return 0
-    end
-end
-
-function Webhook.getHungerStatusText(percentage)
-    if percentage >= 80 then
-        return "🟢 Well Fed (" .. percentage .. "%)"
-    elseif percentage >= 60 then
-        return "🟡 Satisfied (" .. percentage .. "%)"
-    elseif percentage >= 40 then
-        return "🟠 Peckish (" .. percentage .. "%)"
-    elseif percentage >= 20 then
-        return "🔴 Hungry (" .. percentage .. "%)"
-    else
-        return "🟥 Starving (" .. percentage .. "%)"
-    end
-end
+function Webhook.getCurrentDay()
     local success, result = pcall(function()
         local playerGui = LocalPlayer:WaitForChild("PlayerGui", 5)
         local interface = playerGui:WaitForChild("Interface", 5)
@@ -177,7 +137,6 @@ function Webhook.setEnabled(enabled)
     
     if enabled then
         Webhook.lastDay = Webhook.getCurrentDay()
-        Webhook.lastNotifiedDay = Webhook.lastDay
         
         Webhook.webhookConnection = RunService.Heartbeat:Connect(function()
             Webhook.checkDayChange()
@@ -248,9 +207,6 @@ function Webhook.getStatus()
 end
 
 function Webhook.sendTestMessage()
-    local hungerPercentage = Webhook.getHungerStatus()
-    local hungerStatus = Webhook.getHungerStatusText(hungerPercentage)
-    
     local data = {
         ["content"] = "@everyone",
         ["embeds"] = {
@@ -262,11 +218,6 @@ function Webhook.sendTestMessage()
                     {
                         ["name"] = "📅 Current Day",
                         ["value"] = "Day " .. Webhook.getCurrentDay(),
-                        ["inline"] = true
-                    },
-                    {
-                        ["name"] = "🍖 Hunger Status",
-                        ["value"] = hungerStatus,
                         ["inline"] = true
                     },
                     {
