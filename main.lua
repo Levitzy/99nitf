@@ -178,7 +178,6 @@ local Tabs = {
     Flight = Window:AddTab({ Title = "✈️ Flight", Icon = "plane" }),
     Forest = Window:AddTab({ Title = "🌲 Forest", Icon = "trees" }),
     Combat = Window:AddTab({ Title = "⚔️ Combat", Icon = "sword" }),
-    Combo = Window:AddTab({ Title = "🚀 Combo", Icon = "zap" }),
     Discord = Window:AddTab({ Title = "📢 Discord", Icon = "message-circle" }),
     Settings = Window:AddTab({ Title = "⚙️ Settings", Icon = "settings" })
 }
@@ -386,85 +385,6 @@ local TestMessageButton = Tabs.Discord:AddButton({
     end
 })
 
-local ForestCombo = Tabs.Combo:AddToggle("ForestCombo", {
-    Title = "🌲 Forest Management Combo",
-    Description = "Tree Chopper + Auto Fuel + Auto Plant",
-    Default = false
-})
-
-ForestCombo:OnChanged(function(Value)
-    TreeChopper.setEnabled(Value)
-    AutoFuel.setEnabled(Value)
-    AutoPlant.setEnabled(Value)
-    
-    if Value then
-        Fluent:Notify({
-            Title = "Forest Combo",
-            Content = "Complete forest management enabled!",
-            Duration = 4
-        })
-    else
-        Fluent:Notify({
-            Title = "Forest Combo",
-            Content = "Forest automation stopped",
-            Duration = 2
-        })
-    end
-end)
-
-local SurvivalCombo = Tabs.Combo:AddToggle("SurvivalCombo", {
-    Title = "⚔️ Survival Combo",
-    Description = "Combat System + Cooking System",
-    Default = false
-})
-
-SurvivalCombo:OnChanged(function(Value)
-    AutoKill.setEnabled(Value)
-    AutoCook.setEnabled(Value)
-    
-    if Value then
-        Fluent:Notify({
-            Title = "Survival Combo",
-            Content = "Combat and cooking systems online!",
-            Duration = 4
-        })
-    else
-        Fluent:Notify({
-            Title = "Survival Combo",
-            Content = "Survival automation stopped",
-            Duration = 2
-        })
-    end
-end)
-
-local UltimateCombo = Tabs.Combo:AddToggle("UltimateCombo", {
-    Title = "🚀 ULTIMATE MODE",
-    Description = "Enable ALL 5 automation systems for complete AFK mode",
-    Default = false
-})
-
-UltimateCombo:OnChanged(function(Value)
-    TreeChopper.setEnabled(Value)
-    AutoFuel.setEnabled(Value)
-    AutoKill.setEnabled(Value)
-    AutoCook.setEnabled(Value)
-    AutoPlant.setEnabled(Value)
-    
-    if Value then
-        Fluent:Notify({
-            Title = "🚀 ULTIMATE MODE",
-            Content = "All 5 systems active! Complete AFK automation ready!",
-            Duration = 5
-        })
-    else
-        Fluent:Notify({
-            Title = "Ultimate Mode",
-            Content = "All automation systems stopped",
-            Duration = 3
-        })
-    end
-end)
-
 local TreeStatus = Tabs.Settings:AddParagraph({
     Title = "🌲 Tree Status",
     Content = "Ready"
@@ -550,7 +470,7 @@ RunService.Heartbeat:Connect(function()
     end
     
     if activeCount == 5 then
-        SystemStatus:SetDesc("🚀 ULTIMATE MODE: All 5 systems running perfectly!")
+        SystemStatus:SetDesc("🚀 All 5 systems running perfectly!")
     elseif activeCount >= 3 then
         SystemStatus:SetDesc("🔥 Multi-System Active: " .. activeCount .. "/5 systems (" .. table.concat(activeSystems, ", ") .. ")")
     elseif activeCount == 2 then
