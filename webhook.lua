@@ -59,9 +59,14 @@ end
 
 function Webhook.getCurrentDay()
     local success, result = pcall(function()
-        local playerGui = LocalPlayer:WaitForChild("PlayerGui", 5)
-        local interface = playerGui:WaitForChild("Interface", 5)
-        local dayCounter = interface:WaitForChild("DayCounter", 5)
+        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+        if not playerGui then return 0 end
+        
+        local interface = playerGui:FindFirstChild("Interface")
+        if not interface then return 0 end
+        
+        local dayCounter = interface:FindFirstChild("DayCounter")
+        if not dayCounter then return 0 end
         
         if dayCounter.Text then
             local dayText = dayCounter.Text
@@ -72,7 +77,7 @@ function Webhook.getCurrentDay()
         return 0
     end)
     
-    if success then
+    if success and result then
         return result
     else
         return 0
@@ -81,22 +86,33 @@ end
 
 function Webhook.getHungerPercentage()
     local success, result = pcall(function()
-        local playerGui = LocalPlayer:WaitForChild("PlayerGui", 5)
-        local interface = playerGui:WaitForChild("Interface", 5)
-        local statBars = interface:WaitForChild("StatBars", 5)
-        local hungerBar = statBars:WaitForChild("HungerBar", 5)
+        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+        if not playerGui then return 0 end
         
-        if hungerBar and hungerBar:FindFirstChild("Bar") then
-            local bar = hungerBar.Bar
+        local interface = playerGui:FindFirstChild("Interface")
+        if not interface then return 0 end
+        
+        local statBars = interface:FindFirstChild("StatBars")
+        if not statBars then return 0 end
+        
+        local hungerBar = statBars:FindFirstChild("HungerBar")
+        if not hungerBar then return 0 end
+        
+        -- Try multiple possible bar structures
+        local bar = hungerBar:FindFirstChild("Bar") or hungerBar:FindFirstChild("Frame") or hungerBar:FindFirstChildOfClass("Frame")
+        if not bar then return 0 end
+        
+        -- Check if bar has Size property
+        if bar.Size and bar.Size.X and bar.Size.X.Scale then
             local currentSize = bar.Size.X.Scale
             local percentage = math.floor(currentSize * 100)
-            return percentage
+            return math.max(0, math.min(100, percentage))
         end
         
         return 0
     end)
     
-    if success then
+    if success and result then
         return result
     else
         return 0
@@ -127,12 +143,51 @@ function Webhook.checkDayChange()
     Webhook.lastCheckTime = currentTime
     
     local currentDay = Webhook.getCurrentDay()
+    if currentDay == 0 then return end -- Skip if can't get day
     
-    if currentDay > Webhook.lastDay and currentDay > 0 and Webhook.lastDay > 0 and not Webhook.dayNotificationSent then
+    if currentDay > Webhook.lastDay and Webhook.lastDay > 0 and not Webhook.dayNotificationSent then
         Webhook.dayNotificationSent = true
         
         local hungerPercentage = Webhook.getHungerPercentage()
         local hungerStatus = Webhook.getHungerStatus(hungerPercentage)
+        
+        -- Only include hunger info if we can get it
+        local fields = {
+            {
+                ["name"] = "📅 Current Day",
+                ["value"] = "Day " .. currentDay,
+                ["inline"] = true
+            },
+            {
+                ["name"] = "📈 Previous Day",
+                ["value"] = "Day " .. Webhook.lastDay,
+                ["inline"] = true
+            },
+            {
+                ["name"] = "⏰ Time",
+                ["value"] = os.date("%H:%M:%S"),
+                ["inline"] = true
+            },
+            {
+                ["name"] = "👤 Player",
+                ["value"] = LocalPlayer.Name,
+                ["inline"] = true
+            },
+            {
+                ["name"] = "🎮 Game Status",
+                ["value"] = "Surviving Day " .. currentDay,
+                ["inline"] = true
+            }
+        }
+        
+        -- Only add hunger field if we successfully got the percentage
+        if hungerPercentage > 0 then
+            table.insert(fields, 3, {
+                ["name"] = "🍖 Hunger Status",
+                ["value"] = hungerStatus .. " (" .. hungerPercentage .. "%)",
+                ["inline"] = true
+            })
+        end
         
         local data = {
             ["content"] = "@everyone",
@@ -141,38 +196,7 @@ function Webhook.checkDayChange()
                     ["title"] = "🌅 New Day Started!",
                     ["description"] = "A new day has begun in the forest survival game.",
                     ["color"] = 3447003,
-                    ["fields"] = {
-                        {
-                            ["name"] = "📅 Current Day",
-                            ["value"] = "Day " .. currentDay,
-                            ["inline"] = true
-                        },
-                        {
-                            ["name"] = "📈 Previous Day",
-                            ["value"] = "Day " .. Webhook.lastDay,
-                            ["inline"] = true
-                        },
-                        {
-                            ["name"] = "🍖 Hunger Status",
-                            ["value"] = hungerStatus .. " (" .. hungerPercentage .. "%)",
-                            ["inline"] = true
-                        },
-                        {
-                            ["name"] = "⏰ Time",
-                            ["value"] = os.date("%H:%M:%S"),
-                            ["inline"] = true
-                        },
-                        {
-                            ["name"] = "👤 Player",
-                            ["value"] = LocalPlayer.Name,
-                            ["inline"] = true
-                        },
-                        {
-                            ["name"] = "🎮 Game Status",
-                            ["value"] = "Surviving Day " .. currentDay,
-                            ["inline"] = true
-                        }
-                    },
+                    ["fields"] = fields,
                     ["footer"] = {
                         ["text"] = "Forest Automation Suite - Day Tracker v2.0"
                     }
@@ -192,7 +216,7 @@ function Webhook.checkDayChange()
         })
         
         Webhook.lastDay = currentDay
-        print("Day changed notification sent: Day " .. currentDay .. " with " .. hungerPercentage .. "% hunger")
+        print("Day changed notification sent: Day " .. currentDay)
         
         spawn(function()
             wait(5)
