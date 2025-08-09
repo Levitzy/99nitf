@@ -7,25 +7,9 @@ local LocalPlayer = Players.LocalPlayer
 
 AutoFeed.autoFeedEnabled = false
 AutoFeed.feedThreshold = 80
-AutoFeed.feedDelay = 5.0
+AutoFeed.feedDelay = 1.0
 AutoFeed.feedConnection = nil
 AutoFeed.lastFeedTime = 0
-AutoFeed.lastCheckTime = 0
-AutoFeed.checkInterval = 2.0
-AutoFeed.cachedHunger = 0
-AutoFeed.hungerCacheTime = 0
-
-function AutoFeed.getCachedHungerPercentage()
-    local currentTime = tick()
-    
-    -- Only update hunger cache every 1 second to reduce lag
-    if currentTime - AutoFeed.hungerCacheTime > 1.0 then
-        AutoFeed.cachedHunger = AutoFeed.getHungerPercentage()
-        AutoFeed.hungerCacheTime = currentTime
-    end
-    
-    return AutoFeed.cachedHunger
-end
 
 function AutoFeed.getHungerPercentage()
     local attempts = {
@@ -122,42 +106,39 @@ function AutoFeed.findCookedFood()
     return allFood
 end
 
-function AutoFeed.listAllRemoteEvents()
-    print("AutoFeed Debug - ========== LISTING ALL REMOTE EVENTS ==========")
-    local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
-    
-    for _, child in pairs(remoteEvents:GetChildren()) do
-        if child:IsA("RemoteEvent") or child:IsA("RemoteFunction") then
-            print("AutoFeed Debug - Found " .. child.ClassName .. ": " .. child.Name)
-        end
-    end
-    
-    print("AutoFeed Debug - ========== END REMOTE EVENTS LIST ==========")
-end
-
 function AutoFeed.consumeItem(item)
     if not item or not item.Parent then
         return false
     end
     
+    local preHunger = AutoFeed.getHungerPercentage()
+    
+    -- METHOD 2: Direct item reference (this works!)
     local success = pcall(function()
         ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):InvokeServer(item)
     end)
     
     if success then
-        print("AutoFeed: Ate " .. item.Name)
+        wait(0.3)
+        local postHunger = AutoFeed.getHungerPercentage()
+        if postHunger > preHunger then
+            print("AutoFeed: Successfully ate " .. item.Name .. " (" .. preHunger .. "% -> " .. postHunger .. "%)")
+            return true
+        end
     end
     
-    return success
+    return false
 end
 
 function AutoFeed.shouldFeed()
     local currentHunger = AutoFeed.getHungerPercentage()
     
+    -- Don't feed if already full
     if currentHunger >= 100 then
         return false
     end
     
+    -- Feed if hunger is at or below threshold
     if currentHunger <= AutoFeed.feedThreshold then
         return true
     end
@@ -169,20 +150,11 @@ function AutoFeed.autoFeedLoop()
     if not AutoFeed.autoFeedEnabled then return end
     
     local currentTime = tick()
-    
-    -- Only check every 2 seconds to reduce lag
-    if currentTime - AutoFeed.lastCheckTime < AutoFeed.checkInterval then
-        return
-    end
-    AutoFeed.lastCheckTime = currentTime
-    
-    -- Only feed if enough time has passed since last feeding
     if currentTime - AutoFeed.lastFeedTime < AutoFeed.feedDelay then
         return
     end
     
-    local currentHunger = AutoFeed.getCachedHungerPercentage()
-    if currentHunger >= 100 or currentHunger > AutoFeed.feedThreshold then
+    if not AutoFeed.shouldFeed() then
         return
     end
     
@@ -192,10 +164,9 @@ function AutoFeed.autoFeedLoop()
         local foodToEat = cookedFood[1]
         if foodToEat and foodToEat.Parent then
             local success = AutoFeed.consumeItem(foodToEat)
+            
             if success then
                 AutoFeed.lastFeedTime = currentTime
-                -- Reset hunger cache to get updated value
-                AutoFeed.hungerCacheTime = 0
             end
         end
     end
@@ -223,23 +194,42 @@ function AutoFeed.setFeedDelay(delay)
 end
 
 function AutoFeed.getStatus()
-    local currentHunger = AutoFeed.getCachedHungerPercentage()
+    local currentHunger = AutoFeed.getHungerPercentage()
+    local cookedFood = AutoFeed.findCookedFood()
+    
+    -- Count different types of food
+    local morselCount = 0
+    local steakCount = 0
+    for _, food in pairs(cookedFood) do
+        if food.Name == "Cooked Morsel" then
+            morselCount = morselCount + 1
+        elseif food.Name == "Cooked Steak" then
+            steakCount = steakCount + 1
+        end
+    end
     
     if AutoFeed.autoFeedEnabled then
         local hungerStatus = ""
         if currentHunger >= 100 then
             hungerStatus = "🟢 Full"
+        elseif currentHunger >= 90 then
+            hungerStatus = "🟢 Almost Full"
         elseif currentHunger >= AutoFeed.feedThreshold then
             hungerStatus = "🟡 Satisfied"
         else
             hungerStatus = "🔴 Hungry"
         end
         
-        return string.format("Status: %s (%d%%) - Threshold: %d%%", 
-               hungerStatus, currentHunger, AutoFeed.feedThreshold), currentHunger
+        if #cookedFood > 0 then
+            return string.format("Status: %s (%d%%) - M:%d S:%d - Threshold: %d%%", 
+                   hungerStatus, currentHunger, morselCount, steakCount, AutoFeed.feedThreshold), currentHunger
+        else
+            return string.format("Status: %s (%d%%) - No Cooked Food found!", 
+                   hungerStatus, currentHunger), currentHunger
+        end
     else
-        return string.format("Status: Auto feed disabled - Hunger: %d%%", 
-               currentHunger), currentHunger
+        return string.format("Status: Auto feed disabled - Hunger: %d%% - M:%d S:%d available", 
+               currentHunger, morselCount, steakCount), currentHunger
     end
 end
 
