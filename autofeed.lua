@@ -137,56 +137,20 @@ function AutoFeed.consumeItem(item)
     end
     
     local preHunger = AutoFeed.getHungerPercentage()
-    local consumptionMethods = {
-        function()
-            local modelWrapper = Instance.new("Model", nil)
-            item.Parent = modelWrapper
-            local result = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):InvokeServer(modelWrapper)
-            return result
-        end,
-        
-        function()
-            local result = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):InvokeServer(item)
-            return result
-        end,
-        
-        function()
-            local emptyModel = Instance.new("Model", nil)
-            local result = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):InvokeServer(emptyModel, item)
-            return result
-        end,
-        
-        function()
-            ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):FireServer(item)
-            return true
-        end,
-        
-        function()
-            local player = game:GetService("Players").LocalPlayer
-            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                local rootPart = player.Character.HumanoidRootPart
-                if item:FindFirstChildOfClass("Part") then
-                    local itemPart = item:FindFirstChildOfClass("Part")
-                    itemPart.CFrame = rootPart.CFrame
-                    itemPart.Velocity = Vector3.new(0, 0, 0)
-                end
-                wait(0.1)
-                local result = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):InvokeServer(item)
-                return result
-            end
-            return false
-        end
-    }
     
-    for i, method in pairs(consumptionMethods) do
-        local success = pcall(method)
-        if success then
-            wait(0.2)
-            local newHunger = AutoFeed.getHungerPercentage()
-            if newHunger > preHunger then
-                print("AutoFeed - Successfully consumed " .. item.Name .. " using method " .. i .. " (Hunger: " .. preHunger .. "% -> " .. newHunger .. "%)")
-                return true
-            end
+    local success = pcall(function()
+        local modelWrapper = Instance.new("Model", nil)
+        item.Parent = modelWrapper
+        local result = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):InvokeServer(modelWrapper)
+        return result
+    end)
+    
+    if success then
+        wait(0.3)
+        local newHunger = AutoFeed.getHungerPercentage()
+        if newHunger > preHunger then
+            print("AutoFeed - Successfully consumed " .. item.Name .. " (Hunger: " .. preHunger .. "% -> " .. newHunger .. "%)")
+            return true
         end
     end
     
