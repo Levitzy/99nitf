@@ -85,38 +85,103 @@ function Webhook.getCurrentDay()
 end
 
 function Webhook.getHungerPercentage()
-    local success, result = pcall(function()
-        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-        if not playerGui then return 0 end
+    local attempts = {
+        -- Method 1: Direct path based on screenshot
+        function()
+            local playerGui = game:GetService("Players").LocalPlayer.PlayerGui
+            local interface = playerGui.Interface
+            local statBars = interface.StatBars
+            local hungerBar = statBars.HungerBar
+            local bar = hungerBar.Bar
+            
+            if bar and bar.Size and bar.Size.X then
+                local scale = bar.Size.X.Scale
+                return math.floor(scale * 100)
+            end
+            return nil
+        end,
         
-        local interface = playerGui:FindFirstChild("Interface")
-        if not interface then return 0 end
+        -- Method 2: Wait for children approach
+        function()
+            local playerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+            local interface = playerGui:WaitForChild("Interface")
+            local statBars = interface:WaitForChild("StatBars")
+            local hungerBar = statBars:WaitForChild("HungerBar")
+            local bar = hungerBar:WaitForChild("Bar")
+            
+            if bar and bar.Size and bar.Size.X then
+                local scale = bar.Size.X.Scale
+                return math.floor(scale * 100)
+            end
+            return nil
+        end,
         
-        local statBars = interface:FindFirstChild("StatBars")
-        if not statBars then return 0 end
+        -- Method 3: FindFirstChild approach
+        function()
+            local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+            if not playerGui then return nil end
+            
+            local interface = playerGui:FindFirstChild("Interface")
+            if not interface then return nil end
+            
+            local statBars = interface:FindFirstChild("StatBars")
+            if not statBars then return nil end
+            
+            local hungerBar = statBars:FindFirstChild("HungerBar")
+            if not hungerBar then return nil end
+            
+            local bar = hungerBar:FindFirstChild("Bar")
+            if not bar then return nil end
+            
+            if bar.Size and bar.Size.X then
+                local scale = bar.Size.X.Scale
+                return math.floor(scale * 100)
+            end
+            return nil
+        end,
         
-        local hungerBar = statBars:FindFirstChild("HungerBar")
-        if not hungerBar then return 0 end
-        
-        -- Try multiple possible bar structures
-        local bar = hungerBar:FindFirstChild("Bar") or hungerBar:FindFirstChild("Frame") or hungerBar:FindFirstChildOfClass("Frame")
-        if not bar then return 0 end
-        
-        -- Check if bar has Size property
-        if bar.Size and bar.Size.X and bar.Size.X.Scale then
-            local currentSize = bar.Size.X.Scale
-            local percentage = math.floor(currentSize * 100)
-            return math.max(0, math.min(100, percentage))
+        -- Method 4: Try different bar names
+        function()
+            local path = game:GetService("Players").LocalPlayer.PlayerGui.Interface.StatBars.HungerBar
+            
+            for _, barName in pairs({"Bar", "Fill", "Progress", "Amount", "Level"}) do
+                local bar = path:FindFirstChild(barName)
+                if bar and bar.Size and bar.Size.X then
+                    local scale = bar.Size.X.Scale
+                    return math.floor(scale * 100)
+                end
+            end
+            return nil
         end
+    }
+    
+    -- Try each method until one works
+    for i, method in pairs(attempts) do
+        local success, result = pcall(method)
+        if success and result and result > 0 then
+            print("Hunger method " .. i .. " worked: " .. result .. "%")
+            return math.max(0, math.min(100, result))
+        end
+    end
+    
+    -- If all methods fail, try to debug what's available
+    pcall(function()
+        local playerGui = game:GetService("Players").LocalPlayer.PlayerGui
+        local interface = playerGui.Interface
+        local statBars = interface.StatBars
+        local hungerBar = statBars.HungerBar
         
-        return 0
+        print("HungerBar children:")
+        for _, child in pairs(hungerBar:GetChildren()) do
+            print(" - " .. child.Name .. " (" .. child.ClassName .. ")")
+            if child.Name == "Bar" and child.Size then
+                print("   Bar Size: " .. tostring(child.Size))
+                print("   Bar Size.X.Scale: " .. tostring(child.Size.X.Scale))
+            end
+        end
     end)
     
-    if success and result then
-        return result
-    else
-        return 0
-    end
+    return 0
 end
 
 function Webhook.getHungerStatus(percentage)
@@ -350,47 +415,83 @@ function Webhook.sendTestMessage()
     local hungerPercentage = Webhook.getHungerPercentage()
     local hungerStatus = Webhook.getHungerStatus(hungerPercentage)
     
+    -- Force debug the hunger bar structure
+    print("=== HUNGER BAR DEBUG ===")
+    local debugInfo = ""
+    pcall(function()
+        local path = game:GetService("Players").LocalPlayer.PlayerGui.Interface.StatBars.HungerBar
+        debugInfo = "HungerBar found! Children: "
+        for _, child in pairs(path:GetChildren()) do
+            debugInfo = debugInfo .. child.Name .. "(" .. child.ClassName .. ") "
+            if child.Name == "Bar" then
+                debugInfo = debugInfo .. "[Size:" .. tostring(child.Size) .. "] "
+            end
+        end
+        print(debugInfo)
+    end)
+    
+    local fields = {
+        {
+            ["name"] = "📅 Current Day",
+            ["value"] = "Day " .. Webhook.getCurrentDay(),
+            ["inline"] = true
+        },
+        {
+            ["name"] = "⏰ Time",
+            ["value"] = os.date("%H:%M:%S"),
+            ["inline"] = true
+        },
+        {
+            ["name"] = "👤 Player",
+            ["value"] = LocalPlayer.Name,
+            ["inline"] = true
+        },
+        {
+            ["name"] = "🎮 Test Status",
+            ["value"] = "All systems operational",
+            ["inline"] = true
+        },
+        {
+            ["name"] = "🔧 Version",
+            ["value"] = "Day Tracker v2.0",
+            ["inline"] = true
+        }
+    }
+    
+    -- Add hunger info if available
+    if hungerPercentage > 0 then
+        table.insert(fields, 2, {
+            ["name"] = "🍖 Hunger Status",
+            ["value"] = hungerStatus .. " (" .. hungerPercentage .. "%)",
+            ["inline"] = true
+        })
+    else
+        table.insert(fields, 2, {
+            ["name"] = "🍖 Hunger Status",
+            ["value"] = "❌ Could not read hunger bar",
+            ["inline"] = true
+        })
+        
+        -- Add debug info to Discord
+        if debugInfo ~= "" then
+            table.insert(fields, {
+                ["name"] = "🔍 Debug Info",
+                ["value"] = debugInfo,
+                ["inline"] = false
+            })
+        end
+    end
+    
     local data = {
         ["content"] = "@everyone",
         ["embeds"] = {
             {
-                ["title"] = "🧪 Test Message",
-                ["description"] = "This is a test message from Forest Automation Suite with hunger tracking!",
+                ["title"] = "🧪 Test Message with Force Debug",
+                ["description"] = "Testing hunger bar detection with aggressive debugging!",
                 ["color"] = 16776960,
-                ["fields"] = {
-                    {
-                        ["name"] = "📅 Current Day",
-                        ["value"] = "Day " .. Webhook.getCurrentDay(),
-                        ["inline"] = true
-                    },
-                    {
-                        ["name"] = "🍖 Hunger Status",
-                        ["value"] = hungerStatus .. " (" .. hungerPercentage .. "%)",
-                        ["inline"] = true
-                    },
-                    {
-                        ["name"] = "⏰ Time",
-                        ["value"] = os.date("%H:%M:%S"),
-                        ["inline"] = true
-                    },
-                    {
-                        ["name"] = "👤 Player",
-                        ["value"] = LocalPlayer.Name,
-                        ["inline"] = true
-                    },
-                    {
-                        ["name"] = "🎮 Test Status",
-                        ["value"] = "All systems operational",
-                        ["inline"] = true
-                    },
-                    {
-                        ["name"] = "🔧 Version",
-                        ["value"] = "Day Tracker v2.0",
-                        ["inline"] = true
-                    }
-                ],
+                ["fields"] = fields,
                 ["footer"] = {
-                    ["text"] = "Forest Automation Suite - Test Message"
+                    ["text"] = "Forest Automation Suite - Force Test Message"
                 }
             }
         }
@@ -406,7 +507,8 @@ function Webhook.sendTestMessage()
         Headers = headers,
         Body = body
     })
-    print("Test message sent with hunger: " .. hungerPercentage .. "%")
+    print("Force test message sent - Hunger: " .. hungerPercentage .. "%")
+    print("Debug complete!")
 end
 
 return Webhook
