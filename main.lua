@@ -1,40 +1,11 @@
-local function safeCall(module, methodName, ...)
-    if module and module[methodName] then
-        local success, result = pcall(module[methodName], ...)
-        if not success then
-            print("Error calling " .. methodName .. ": " .. tostring(result))
-            return false, result
-        end
-        return true, result
-    else
-        local moduleName = module and "unknown module" or "nil module"
-        print("Module or method not found: " .. moduleName .. "." .. methodName)
-        return false, "Module not loaded"
-    end
-end
-
-local function safeLoadModule(url, name)
-    local success, result = pcall(function()
-        return loadstring(game:HttpGet(url))()
-    end)
-    
-    if success and result then
-        print("✅ Successfully loaded: " .. name)
-        return result
-    else
-        print("❌ Failed to load: " .. name .. " - Error: " .. tostring(result))
-        return nil
-    end
-end
-
-local TreeChopper = safeLoadModule('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/tree.lua', 'TreeChopper')
-local AutoFuel = safeLoadModule('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autofuel.lua', 'AutoFuel')
-local Fly = safeLoadModule('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/fly.lua', 'Fly')
-local AutoKill = safeLoadModule('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autokill.lua', 'AutoKill')
-local AutoCook = safeLoadModule('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autocook.lua', 'AutoCook')
-local AutoPlant = safeLoadModule('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autoplant.lua', 'AutoPlant')
-local AutoFeed = safeLoadModule('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autofeed.lua', 'AutoFeed')
-local Webhook = safeLoadModule('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/webhook.lua', 'Webhook')
+local TreeChopper = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/tree.lua'))()
+local AutoFuel = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autofuel.lua'))()
+local Fly = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/fly.lua'))()
+local AutoKill = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autokill.lua'))()
+local AutoCook = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autocook.lua'))()
+local AutoPlant = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autoplant.lua'))()
+local AutoFeed = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autofeed.lua'))()
+local Webhook = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/webhook.lua'))()
 
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
@@ -222,7 +193,7 @@ local FlightToggle = Tabs.Flight:AddToggle("FlightToggle", {
 })
 
 FlightToggle:OnChanged(function(Value)
-    local success, result = safeCall(Fly, "setEnabled", Value)
+    local success = Fly.setEnabled(Value)
     
     if Value and success then
         Fluent:Notify({
@@ -233,7 +204,7 @@ FlightToggle:OnChanged(function(Value)
     elseif Value and not success then
         Fluent:Notify({
             Title = "Flight Error",
-            Content = "Could not enable flight - " .. tostring(result),
+            Content = "Could not enable flight - character not found!",
             Duration = 3
         })
     else
@@ -255,7 +226,7 @@ local FlightSpeed = Tabs.Flight:AddSlider("FlightSpeed", {
 })
 
 FlightSpeed:OnChanged(function(Value)
-    safeCall(Fly, "setSpeed", Value)
+    Fly.setSpeed(Value)
 end)
 
 local TreeToggle = Tabs.Forest:AddToggle("TreeToggle", {
@@ -265,18 +236,12 @@ local TreeToggle = Tabs.Forest:AddToggle("TreeToggle", {
 })
 
 TreeToggle:OnChanged(function(Value)
-    local success = safeCall(TreeChopper, "setEnabled", Value)
+    TreeChopper.setEnabled(Value)
     
-    if Value and success then
+    if Value then
         Fluent:Notify({
             Title = "Tree Chopper",
             Content = "Started chopping all small trees!",
-            Duration = 3
-        })
-    elseif Value and not success then
-        Fluent:Notify({
-            Title = "Tree Chopper Error",
-            Content = "Could not start tree chopper - module not loaded!",
             Duration = 3
         })
     else
@@ -295,18 +260,12 @@ local PlantToggle = Tabs.Forest:AddToggle("PlantToggle", {
 })
 
 PlantToggle:OnChanged(function(Value)
-    local success = safeCall(AutoPlant, "setEnabled", Value)
+    AutoPlant.setEnabled(Value)
     
-    if Value and success then
+    if Value then
         Fluent:Notify({
             Title = "Auto Plant",
             Content = "Planting saplings for forest regeneration!",
-            Duration = 3
-        })
-    elseif Value and not success then
-        Fluent:Notify({
-            Title = "Auto Plant Error",
-            Content = "Could not start auto plant - module not loaded!",
             Duration = 3
         })
     else
@@ -325,18 +284,12 @@ local FuelToggle = Tabs.Forest:AddToggle("FuelToggle", {
 })
 
 FuelToggle:OnChanged(function(Value)
-    local success = safeCall(AutoFuel, "setEnabled", Value)
+    AutoFuel.setEnabled(Value)
     
-    if Value and success then
+    if Value then
         Fluent:Notify({
             Title = "Auto Fuel",
             Content = "Fuel management system active!",
-            Duration = 3
-        })
-    elseif Value and not success then
-        Fluent:Notify({
-            Title = "Auto Fuel Error",
-            Content = "Could not start auto fuel - module not loaded!",
             Duration = 3
         })
     else
@@ -355,18 +308,12 @@ local KillToggle = Tabs.Combat:AddToggle("KillToggle", {
 })
 
 KillToggle:OnChanged(function(Value)
-    local success = safeCall(AutoKill, "setEnabled", Value)
+    AutoKill.setEnabled(Value)
     
-    if Value and success then
+    if Value then
         Fluent:Notify({
             Title = "Combat System",
             Content = "Engaging all hostile targets!",
-            Duration = 3
-        })
-    elseif Value and not success then
-        Fluent:Notify({
-            Title = "Combat System Error",
-            Content = "Could not start combat system - module not loaded!",
             Duration = 3
         })
     else
@@ -385,18 +332,12 @@ local CookToggle = Tabs.Combat:AddToggle("CookToggle", {
 })
 
 CookToggle:OnChanged(function(Value)
-    local success = safeCall(AutoCook, "setEnabled", Value)
+    AutoCook.setEnabled(Value)
     
-    if Value and success then
+    if Value then
         Fluent:Notify({
             Title = "Cooking System",
             Content = "Auto-cooking all raw meat!",
-            Duration = 3
-        })
-    elseif Value and not success then
-        Fluent:Notify({
-            Title = "Cooking System Error",
-            Content = "Could not start cooking system - module not loaded!",
             Duration = 3
         })
     else
@@ -415,18 +356,12 @@ local FeedToggle = Tabs.Combat:AddToggle("FeedToggle", {
 })
 
 FeedToggle:OnChanged(function(Value)
-    local success = safeCall(AutoFeed, "setEnabled", Value)
+    AutoFeed.setEnabled(Value)
     
-    if Value and success then
+    if Value then
         Fluent:Notify({
             Title = "Auto Feed",
             Content = "Auto-feeding system activated!",
-            Duration = 3
-        })
-    elseif Value and not success then
-        Fluent:Notify({
-            Title = "Auto Feed Error",
-            Content = "Could not start auto feed - module not loaded!",
             Duration = 3
         })
     else
@@ -447,7 +382,7 @@ local FeedThreshold = Tabs.Combat:AddDropdown("FeedThreshold", {
 
 FeedThreshold:OnChanged(function(Value)
     local threshold = tonumber(string.match(Value, "%d+"))
-    safeCall(AutoFeed, "setFeedThreshold", threshold)
+    AutoFeed.setFeedThreshold(threshold)
     
     Fluent:Notify({
         Title = "Feed Threshold",
@@ -463,18 +398,12 @@ local DayTrackerToggle = Tabs.Discord:AddToggle("DayTrackerToggle", {
 })
 
 DayTrackerToggle:OnChanged(function(Value)
-    local success = safeCall(Webhook, "setEnabled", Value)
+    Webhook.setEnabled(Value)
     
-    if Value and success then
+    if Value then
         Fluent:Notify({
             Title = "Day Tracker",
             Content = "Discord notifications enabled for day changes!",
-            Duration = 3
-        })
-    elseif Value and not success then
-        Fluent:Notify({
-            Title = "Day Tracker Error",
-            Content = "Could not start day tracker - module not loaded!",
             Duration = 3
         })
     else
@@ -490,20 +419,12 @@ local TestMessageButton = Tabs.Discord:AddButton({
     Title = "Send Test Message",
     Description = "Send a test message to Discord to verify webhook works",
     Callback = function()
-        local success = safeCall(Webhook, "sendTestMessage")
-        if success then
-            Fluent:Notify({
-                Title = "Test Message",
-                Content = "Test message sent to Discord!",
-                Duration = 2
-            })
-        else
-            Fluent:Notify({
-                Title = "Test Message Error",
-                Content = "Could not send test message - webhook not loaded!",
-                Duration = 3
-            })
-        end
+        Webhook.sendTestMessage()
+        Fluent:Notify({
+            Title = "Test Message",
+            Content = "Test message sent to Discord!",
+            Duration = 2
+        })
     end
 })
 
@@ -548,54 +469,33 @@ local SystemStatus = Tabs.Settings:AddParagraph({
 })
 
 RunService.Heartbeat:Connect(function()
-    local treeStatusText, treeCount, closestDistance = "Module not loaded", 0, 0
-    if TreeChopper and TreeChopper.getStatus then
-        treeStatusText, treeCount, closestDistance = TreeChopper.getStatus()
-    end
+    local treeStatusText, treeCount, closestDistance = TreeChopper.getStatus()
     TreeStatus:SetDesc(treeStatusText)
     
-    local fuelStatusText, distance = "Module not loaded", 0
-    if AutoFuel and AutoFuel.getStatus then
-        fuelStatusText, distance = AutoFuel.getStatus()
-    end
+    local fuelStatusText, distance = AutoFuel.getStatus()
     FuelStatus:SetDesc(fuelStatusText)
     
-    local killStatusText, targetCount, closestTargetDistance = "Module not loaded", 0, 0
-    if AutoKill and AutoKill.getStatus then
-        killStatusText, targetCount, closestTargetDistance = AutoKill.getStatus()
-    end
+    local killStatusText, targetCount, closestTargetDistance = AutoKill.getStatus()
     CombatStatus:SetDesc("Targets: " .. killStatusText)
     
-    local cookStatusText, meatCount = "Module not loaded", 0
-    if AutoCook and AutoCook.getStatus then
-        cookStatusText, meatCount = AutoCook.getStatus()
-    end
+    local cookStatusText, meatCount = AutoCook.getStatus()
     CookStatus:SetDesc(cookStatusText)
     
-    local feedStatusText, hungerPercent = "Module not loaded", 0
-    if AutoFeed and AutoFeed.getStatus then
-        feedStatusText, hungerPercent = AutoFeed.getStatus()
-    end
+    local feedStatusText, hungerPercent = AutoFeed.getStatus()
     FeedStatus:SetDesc(feedStatusText)
     
-    local plantStatusText, saplingCount = "Module not loaded", 0
-    if AutoPlant and AutoPlant.getStatus then
-        plantStatusText, saplingCount = AutoPlant.getStatus()
-    end
+    local plantStatusText, saplingCount = AutoPlant.getStatus()
     PlantStatus:SetDesc(plantStatusText)
     
-    local discordStatusText = "Module not loaded"
-    if Webhook and Webhook.getStatus then
-        discordStatusText = Webhook.getStatus()
-    end
+    local discordStatusText = Webhook.getStatus()
     DiscordStatus:SetDesc(discordStatusText)
     
-    local chopEnabled = TreeChopper and TreeChopper.autoChopEnabled or false
-    local fuelEnabled = AutoFuel and AutoFuel.autoFuelEnabled or false
-    local killEnabled = AutoKill and AutoKill.autoKillEnabled or false
-    local cookEnabled = AutoCook and AutoCook.autoCookEnabled or false
-    local feedEnabled = AutoFeed and AutoFeed.autoFeedEnabled or false
-    local plantEnabled = AutoPlant and AutoPlant.autoPlantEnabled or false
+    local chopEnabled = TreeChopper.autoChopEnabled
+    local fuelEnabled = AutoFuel.autoFuelEnabled
+    local killEnabled = AutoKill.autoKillEnabled
+    local cookEnabled = AutoCook.autoCookEnabled
+    local feedEnabled = AutoFeed.autoFeedEnabled
+    local plantEnabled = AutoPlant.autoPlantEnabled
     
     local activeCount = 0
     local activeSystems = {}

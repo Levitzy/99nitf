@@ -7,7 +7,7 @@ local LocalPlayer = Players.LocalPlayer
 
 AutoFeed.autoFeedEnabled = false
 AutoFeed.feedThreshold = 80
-AutoFeed.feedDelay = 3.0
+AutoFeed.feedDelay = 5.0
 AutoFeed.feedConnection = nil
 AutoFeed.lastFeedTime = 0
 AutoFeed.lastHungerCheck = 0
@@ -77,127 +77,48 @@ function AutoFeed.getHungerPercentage()
     return 0
 end
 
-function AutoFeed.findInventoryFood()
-    local inventory = LocalPlayer:FindFirstChild("Inventory")
-    if not inventory then return {} end
-    
-    local inventoryFood = {}
-    
-    for _, item in pairs(inventory:GetChildren()) do
-        if item and item.Parent and (item.Name == "Cooked Morsel" or item.Name == "Cooked Steak") then
-            table.insert(inventoryFood, item)
-        end
-    end
-    
-    print("AutoFeed Debug - Found " .. #inventoryFood .. " food items in inventory")
-    return inventoryFood
-end
-
-function AutoFeed.collectFoodToInventory()
+function AutoFeed.findCookedFood()
     local workspace = game:GetService("Workspace")
     local itemsFolder = workspace:FindFirstChild("Items")
     
-    if not itemsFolder then return false end
+    if not itemsFolder then return {} end
     
-    -- Find closest cooked food
-    local playerPos = nil
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        playerPos = LocalPlayer.Character.HumanoidRootPart.Position
-    end
-    
-    local closestFood = nil
-    local closestDistance = math.huge
+    local cookedSteaks = {}
+    local cookedMorsels = {}
     
     for _, item in pairs(itemsFolder:GetChildren()) do
-        if item and item.Parent and (item.Name == "Cooked Morsel" or item.Name == "Cooked Steak") then
-            if playerPos then
-                local itemPos = item.PrimaryPart and item.PrimaryPart.Position or item:FindFirstChildOfClass("Part").Position
-                local distance = (playerPos - itemPos).Magnitude
-                if distance < closestDistance then
-                    closestDistance = distance
-                    closestFood = item
-                end
-            else
-                closestFood = item
-                break
+        if item and item.Parent then
+            if item.Name == "Cooked Steak" then
+                table.insert(cookedSteaks, item)
+            elseif item.Name == "Cooked Morsel" then
+                table.insert(cookedMorsels, item)
             end
         end
     end
     
-    if closestFood then
-        print("AutoFeed Debug - Attempting to collect: " .. closestFood.Name .. " at distance: " .. closestDistance)
-        
-        -- Try to collect/pickup the item
-        local collectSuccess = pcall(function()
-            local collectEvents = {
-                "RequestPickupItem",
-                "PickupItem",
-                "CollectItem", 
-                "RequestCollectItem",
-                "GrabItem",
-                "RequestGrabItem"
-            }
-            
-            for _, eventName in pairs(collectEvents) do
-                local event = ReplicatedStorage:WaitForChild("RemoteEvents"):FindFirstChild(eventName)
-                if event then
-                    print("AutoFeed Debug - Trying to collect with: " .. eventName)
-                    
-                    -- Try different methods
-                    pcall(function() event:InvokeServer(closestFood) end)
-                    pcall(function() event:FireServer(closestFood) end)
-                    pcall(function() event:InvokeServer(closestFood, LocalPlayer.Character) end)
-                    
-                    wait(0.1)
-                end
-            end
-        end)
-        
-        return collectSuccess
+    -- Prioritize steaks over morsels (steaks likely give more hunger)
+    local allFood = {}
+    for _, steak in pairs(cookedSteaks) do
+        table.insert(allFood, steak)
+    end
+    for _, morsel in pairs(cookedMorsels) do
+        table.insert(allFood, morsel)
     end
     
-    return false
+    return allFood
 end
 
-function AutoFeed.consumeInventoryItem(item)
-    if not item or not item.Parent then
-        print("AutoFeed Debug - Invalid inventory item")
-        return false
-    end
+function AutoFeed.listAllRemoteEvents()
+    print("AutoFeed Debug - ========== LISTING ALL REMOTE EVENTS ==========")
+    local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents")
     
-    print("AutoFeed Debug - Consuming inventory item: " .. item.Name)
-    
-    -- Method 1: Try consuming from inventory
-    local success = pcall(function()
-        local result = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):InvokeServer(item)
-        print("AutoFeed Debug - Inventory consume result:", result)
-    end)
-    
-    if success then
-        return true
-    end
-    
-    -- Method 2: Try equipping then consuming
-    local equipSuccess = pcall(function()
-        -- Try to equip the item first
-        local equipEvents = {"RequestEquipItem", "EquipItem", "RequestUseItem", "UseItem"}
-        
-        for _, eventName in pairs(equipEvents) do
-            local event = ReplicatedStorage:WaitForChild("RemoteEvents"):FindFirstChild(eventName)
-            if event then
-                print("AutoFeed Debug - Trying to equip with: " .. eventName)
-                pcall(function() event:InvokeServer(item) end)
-                pcall(function() event:FireServer(item) end)
-                wait(0.1)
-            end
+    for _, child in pairs(remoteEvents:GetChildren()) do
+        if child:IsA("RemoteEvent") or child:IsA("RemoteFunction") then
+            print("AutoFeed Debug - Found " .. child.ClassName .. ": " .. child.Name)
         end
-        
-        -- Then try to consume
-        wait(0.2)
-        ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):InvokeServer(item)
-    end)
+    end
     
-    return equipSuccess
+    print("AutoFeed Debug - ========== END REMOTE EVENTS LIST ==========")
 end
 
 function AutoFeed.consumeItem(item)
@@ -207,14 +128,161 @@ function AutoFeed.consumeItem(item)
     end
     
     print("AutoFeed Debug - Item details: Name=" .. item.Name .. ", ClassName=" .. item.ClassName)
+    if item.Parent then
+        print("AutoFeed Debug - Item parent: " .. item.Parent.Name)
+    end
     
-    -- Simple direct approach for world items
-    local success = pcall(function()
-        print("AutoFeed Debug - Direct consumption attempt")
-        ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):InvokeServer(item)
+    local success = false
+    local preHunger = AutoFeed.getHungerPercentage()
+    
+    -- METHOD 1: Original RequestConsumeItem with Model wrapper
+    print("AutoFeed Debug - METHOD 1: RequestConsumeItem with Model wrapper")
+    local method1Success = pcall(function()
+        local modelWrapper = Instance.new("Model", nil)
+        local args = {modelWrapper}
+        -- Put the item inside the model
+        item.Parent = modelWrapper
+        local result = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):InvokeServer(unpack(args))
+        print("AutoFeed Debug - Method 1 result:", result)
     end)
     
-    return success
+    wait(0.3)
+    local hunger1 = AutoFeed.getHungerPercentage()
+    if hunger1 > preHunger then
+        print("AutoFeed Debug - METHOD 1 SUCCESS! Hunger: " .. preHunger .. "% -> " .. hunger1 .. "%")
+        return true
+    end
+    print("AutoFeed Debug - Method 1 failed, hunger still: " .. hunger1 .. "%")
+    
+    -- METHOD 2: Try direct item reference without wrapper
+    print("AutoFeed Debug - METHOD 2: Direct item reference")
+    local method2Success = pcall(function()
+        local result = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):InvokeServer(item)
+        print("AutoFeed Debug - Method 2 result:", result)
+    end)
+    
+    wait(0.3)
+    local hunger2 = AutoFeed.getHungerPercentage()
+    if hunger2 > preHunger then
+        print("AutoFeed Debug - METHOD 2 SUCCESS! Hunger: " .. preHunger .. "% -> " .. hunger2 .. "%")
+        return true
+    end
+    print("AutoFeed Debug - Method 2 failed, hunger still: " .. hunger2 .. "%")
+    
+    -- METHOD 3: Try with empty model as first argument and item as second
+    print("AutoFeed Debug - METHOD 3: Empty model + item as separate args")
+    local method3Success = pcall(function()
+        local emptyModel = Instance.new("Model", nil)
+        local result = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):InvokeServer(emptyModel, item)
+        print("AutoFeed Debug - Method 3 result:", result)
+    end)
+    
+    wait(0.3)
+    local hunger3 = AutoFeed.getHungerPercentage()
+    if hunger3 > preHunger then
+        print("AutoFeed Debug - METHOD 3 SUCCESS! Hunger: " .. preHunger .. "% -> " .. hunger3 .. "%")
+        return true
+    end
+    print("AutoFeed Debug - Method 3 failed, hunger still: " .. hunger3 .. "%")
+    
+    -- METHOD 4: Try FireServer instead of InvokeServer
+    print("AutoFeed Debug - METHOD 4: FireServer with item")
+    local method4Success = pcall(function()
+        ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):FireServer(item)
+        print("AutoFeed Debug - Method 4 FireServer called")
+    end)
+    
+    wait(0.3)
+    local hunger4 = AutoFeed.getHungerPercentage()
+    if hunger4 > preHunger then
+        print("AutoFeed Debug - METHOD 4 SUCCESS! Hunger: " .. preHunger .. "% -> " .. hunger4 .. "%")
+        return true
+    end
+    print("AutoFeed Debug - Method 4 failed, hunger still: " .. hunger4 .. "%")
+    
+    -- METHOD 5: Try manipulating item position to player (simulate picking up and eating)
+    print("AutoFeed Debug - METHOD 5: Teleport item to player + consume")
+    local method5Success = pcall(function()
+        local player = game:GetService("Players").LocalPlayer
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            -- Teleport item to player
+            local rootPart = player.Character.HumanoidRootPart
+            if item:FindFirstChildOfClass("Part") then
+                local itemPart = item:FindFirstChildOfClass("Part")
+                itemPart.CFrame = rootPart.CFrame
+                itemPart.Velocity = Vector3.new(0, 0, 0)
+            end
+            
+            -- Wait a moment for collision/pickup
+            wait(0.2)
+            
+            -- Now try consuming
+            local result = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):InvokeServer(item)
+            print("AutoFeed Debug - Method 5 result:", result)
+        end
+    end)
+    
+    wait(0.3)
+    local hunger5 = AutoFeed.getHungerPercentage()
+    if hunger5 > preHunger then
+        print("AutoFeed Debug - METHOD 5 SUCCESS! Hunger: " .. preHunger .. "% -> " .. hunger5 .. "%")
+        return true
+    end
+    print("AutoFeed Debug - Method 5 failed, hunger still: " .. hunger5 .. "%")
+    
+    -- BONUS METHOD 6: Try with player's mouse/character interaction simulation
+    print("AutoFeed Debug - METHOD 6: Simulate player interaction")
+    local method6Success = pcall(function()
+        local player = game:GetService("Players").LocalPlayer
+        local mouse = player:GetMouse()
+        
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            -- Try to simulate clicking on the item
+            if item:FindFirstChildOfClass("Part") then
+                local itemPart = item:FindFirstChildOfClass("Part")
+                
+                -- Try different remote event calls that might simulate player interaction
+                local interactionMethods = {
+                    function() 
+                        return ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):InvokeServer(item, player.Character)
+                    end,
+                    function()
+                        return ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):InvokeServer(item, mouse)
+                    end,
+                    function()
+                        return ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):InvokeServer(item, mouse.Hit)
+                    end,
+                    function()
+                        return ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("RequestConsumeItem"):InvokeServer(item, mouse.Target)
+                    end
+                }
+                
+                for i, method in pairs(interactionMethods) do
+                    local subSuccess = pcall(method)
+                    if subSuccess then
+                        print("AutoFeed Debug - Method 6." .. i .. " call succeeded")
+                        wait(0.2)
+                        local testHunger = AutoFeed.getHungerPercentage()
+                        if testHunger > preHunger then
+                            print("AutoFeed Debug - METHOD 6." .. i .. " SUCCESS! Hunger: " .. preHunger .. "% -> " .. testHunger .. "%")
+                            return true
+                        end
+                    end
+                end
+            end
+        end
+    end)
+    
+    wait(0.3)
+    local hunger6 = AutoFeed.getHungerPercentage()
+    if hunger6 > preHunger then
+        print("AutoFeed Debug - METHOD 6 SUCCESS! Hunger: " .. preHunger .. "% -> " .. hunger6 .. "%")
+        return true
+    end
+    print("AutoFeed Debug - Method 6 failed, hunger still: " .. hunger6 .. "%")
+    
+    print("AutoFeed Debug - ALL 6 METHODS FAILED! Hunger unchanged at: " .. hunger6 .. "%")
+    return false
 end
 
 function AutoFeed.shouldFeed()
@@ -262,79 +330,35 @@ function AutoFeed.autoFeedLoop()
         return
     end
     
-    print("AutoFeed Debug - NEW METHOD: Trying inventory-based feeding")
+    local cookedFood = AutoFeed.findCookedFood()
+    print("AutoFeed Debug - Found " .. #cookedFood .. " cooked food items")
     
-    -- Method 1: Try consuming from inventory first
-    local inventoryFood = AutoFeed.findInventoryFood()
-    
-    if #inventoryFood > 0 then
-        print("AutoFeed Debug - Found food in inventory, attempting to consume")
-        local foodToEat = inventoryFood[1]
-        local preHunger = currentHunger
-        
-        local success = AutoFeed.consumeInventoryItem(foodToEat)
-        
-        wait(0.5)
-        local postHunger = AutoFeed.getHungerPercentage()
-        
-        if postHunger > preHunger then
-            print("AutoFeed Debug - SUCCESS! Hunger increased from " .. preHunger .. "% to " .. postHunger .. "%")
-            AutoFeed.lastFeedTime = currentTime
-            return
-        else
-            print("AutoFeed Debug - Inventory method failed, trying collection method")
-        end
-    end
-    
-    -- Method 2: Try collecting food from world then consuming
-    print("AutoFeed Debug - Attempting to collect food from world")
-    local collected = AutoFeed.collectFoodToInventory()
-    
-    if collected then
-        wait(1.0) -- Wait for collection to complete
-        
-        local newInventoryFood = AutoFeed.findInventoryFood()
-        if #newInventoryFood > 0 then
-            print("AutoFeed Debug - Successfully collected food, now consuming")
-            local foodToEat = newInventoryFood[1]
-            local preHunger = AutoFeed.getHungerPercentage()
+    if #cookedFood > 0 then
+        local foodToEat = cookedFood[1]
+        if foodToEat and foodToEat.Parent then
+            print("AutoFeed Debug - ========== STARTING CONSUMPTION ATTEMPT ==========")
+            print("AutoFeed Debug - Attempting to eat: " .. foodToEat.Name)
+            print("AutoFeed Debug - Current hunger before attempt: " .. currentHunger .. "%")
             
-            local success = AutoFeed.consumeInventoryItem(foodToEat)
+            local success = AutoFeed.consumeItem(foodToEat)
             
-            wait(0.5)
-            local postHunger = AutoFeed.getHungerPercentage()
+            -- Check final hunger after all methods
+            local finalHunger = AutoFeed.getHungerPercentage()
+            print("AutoFeed Debug - Final hunger after all methods: " .. finalHunger .. "%")
             
-            if postHunger > preHunger then
-                print("AutoFeed Debug - SUCCESS! Collection method worked. Hunger: " .. preHunger .. "% -> " .. postHunger .. "%")
+            if finalHunger > currentHunger then
+                print("AutoFeed Debug - ✅ SUCCESS! Hunger increased by " .. (finalHunger - currentHunger) .. "%")
                 AutoFeed.lastFeedTime = currentTime
-                return
             else
-                print("AutoFeed Debug - Collection method also failed")
+                print("AutoFeed Debug - ❌ COMPLETE FAILURE - Need to investigate other remote events")
+                -- List all available remote events for investigation
+                AutoFeed.listAllRemoteEvents()
             end
-        end
-    end
-    
-    -- Method 3: Try direct world consumption (fallback)
-    print("AutoFeed Debug - Trying direct world consumption as fallback")
-    local worldFood = AutoFeed.findCookedFood()
-    
-    if #worldFood > 0 then
-        local foodToEat = worldFood[1]
-        local preHunger = AutoFeed.getHungerPercentage()
-        
-        local success = AutoFeed.consumeItem(foodToEat)
-        
-        wait(0.5)
-        local postHunger = AutoFeed.getHungerPercentage()
-        
-        if postHunger > preHunger then
-            print("AutoFeed Debug - SUCCESS! Direct world method worked. Hunger: " .. preHunger .. "% -> " .. postHunger .. "%")
-            AutoFeed.lastFeedTime = currentTime
-        else
-            print("AutoFeed Debug - All methods failed - hunger still at " .. postHunger .. "%")
+            
+            print("AutoFeed Debug - ========== CONSUMPTION ATTEMPT COMPLETE ==========")
         end
     else
-        print("AutoFeed Debug - No food found anywhere!")
+        print("AutoFeed Debug - No cooked food available!")
     end
 end
 
@@ -359,61 +383,18 @@ function AutoFeed.setFeedDelay(delay)
     AutoFeed.feedDelay = delay
 end
 
-function AutoFeed.findCookedFood()
-    local workspace = game:GetService("Workspace")
-    local itemsFolder = workspace:FindFirstChild("Items")
-    
-    if not itemsFolder then return {} end
-    
-    local cookedSteaks = {}
-    local cookedMorsels = {}
-    
-    for _, item in pairs(itemsFolder:GetChildren()) do
-        if item and item.Parent then
-            if item.Name == "Cooked Steak" then
-                table.insert(cookedSteaks, item)
-            elseif item.Name == "Cooked Morsel" then
-                table.insert(cookedMorsels, item)
-            end
-        end
-    end
-    
-    -- Prioritize steaks over morsels (steaks likely give more hunger)
-    local allFood = {}
-    for _, steak in pairs(cookedSteaks) do
-        table.insert(allFood, steak)
-    end
-    for _, morsel in pairs(cookedMorsels) do
-        table.insert(allFood, morsel)
-    end
-    
-    return allFood
-end
-
 function AutoFeed.getStatus()
     local currentHunger = AutoFeed.getHungerPercentage()
     local cookedFood = AutoFeed.findCookedFood()
-    local inventoryFood = AutoFeed.findInventoryFood()
     
     -- Count different types of food
     local morselCount = 0
     local steakCount = 0
-    local invMorselCount = 0
-    local invSteakCount = 0
-    
     for _, food in pairs(cookedFood) do
         if food.Name == "Cooked Morsel" then
             morselCount = morselCount + 1
         elseif food.Name == "Cooked Steak" then
             steakCount = steakCount + 1
-        end
-    end
-    
-    for _, food in pairs(inventoryFood) do
-        if food.Name == "Cooked Morsel" then
-            invMorselCount = invMorselCount + 1
-        elseif food.Name == "Cooked Steak" then
-            invSteakCount = invSteakCount + 1
         end
     end
     
@@ -429,19 +410,17 @@ function AutoFeed.getStatus()
             hungerStatus = "🔴 Hungry"
         end
         
-        local totalFood = #cookedFood + #inventoryFood
-        if totalFood > 0 then
-            return string.format("Status: %s (%d%%) - World M:%d S:%d | Inv M:%d S:%d - T:%d%%", 
-                   hungerStatus, currentHunger, morselCount, steakCount, invMorselCount, invSteakCount, AutoFeed.feedThreshold), currentHunger
+        if #cookedFood > 0 then
+            return string.format("Status: %s (%d%%) - M:%d S:%d - Threshold: %d%%", 
+                   hungerStatus, currentHunger, morselCount, steakCount, AutoFeed.feedThreshold), currentHunger
         else
-            return string.format("Status: %s (%d%%) - No Food Available!", 
+            return string.format("Status: %s (%d%%) - No Cooked Food found!", 
                    hungerStatus, currentHunger), currentHunger
         end
     else
-        local totalFood = #cookedFood + #inventoryFood
-        return string.format("Status: Auto feed disabled - Hunger: %d%% - Total Food: %d", 
-               currentHunger, totalFood), currentHunger
+        return string.format("Status: Auto feed disabled - Hunger: %d%% - M:%d S:%d available", 
+               currentHunger, morselCount, steakCount), currentHunger
     end
 end
 
-return AutoFeedr
+return AutoFeed
