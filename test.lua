@@ -1,5 +1,5 @@
 -- CONFIG: put the raw URL that returns this script's source (raw gist / pastebin raw / raw GitHub)
-local LOADER_RAW_URL = "https://raw.githubusercontent.com/yourusername/yourrepo/main/autofarm.lua" -- <<--- REPLACE THIS
+local LOADER_RAW_URL = "https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/test.lua" -- <<--- REPLACE THIS
 
 -- Attempt to queue loader on teleport (supports common executors)
 local function queue_on_teleport_loader(rawUrl)
