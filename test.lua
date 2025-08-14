@@ -31,6 +31,7 @@ function GUI.new(title)
     self.mainFrame.Size = UDim2.new(0, guiSize[1], 0, guiSize[2])
     self.mainFrame.Position = UDim2.new(0.5, -guiSize[1]/2, 0.5, -guiSize[2]/2)
     self.mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    self.mainFrame.BackgroundTransparency = 0.1
     self.mainFrame.BorderSizePixel = 0
     self.mainFrame.Parent = self.screenGui
     
@@ -76,6 +77,7 @@ function GUI:createTitleBar(title)
     self.titleBar.Size = UDim2.new(1, 0, 0, titleHeight)
     self.titleBar.Position = UDim2.new(0, 0, 0, 0)
     self.titleBar.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    self.titleBar.BackgroundTransparency = 0.05
     self.titleBar.BorderSizePixel = 0
     self.titleBar.Parent = self.mainFrame
     
@@ -90,7 +92,7 @@ function GUI:createTitleBar(title)
     titleLabel.BackgroundTransparency = 1
     titleLabel.Text = title
     titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    titleLabel.TextSize = self.isMobile and 10 or 12
+    titleLabel.TextSize = self.isMobile and 12 or 16
     titleLabel.Font = Enum.Font.GothamBold
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
     titleLabel.Parent = self.titleBar
@@ -125,6 +127,7 @@ function GUI:createSidebar()
     self.sidebar.Size = UDim2.new(0, sidebarWidth, 1, -titleHeight)
     self.sidebar.Position = UDim2.new(0, 0, 0, titleHeight)
     self.sidebar.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    self.sidebar.BackgroundTransparency = 0.1
     self.sidebar.BorderSizePixel = 0
     self.sidebar.Parent = self.mainFrame
     
@@ -168,7 +171,7 @@ function GUI:createSearchBar()
     self.searchBox.PlaceholderText = "Search..."
     self.searchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
     self.searchBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 160)
-    self.searchBox.TextSize = self.isMobile and 8 or 10
+    self.searchBox.TextSize = self.isMobile and 10 or 13
     self.searchBox.Font = Enum.Font.Gotham
     self.searchBox.TextXAlignment = Enum.TextXAlignment.Left
     self.searchBox.Parent = self.searchFrame
@@ -197,6 +200,7 @@ function GUI:createContentArea()
     self.contentArea.Size = UDim2.new(1, -sidebarWidth, 1, -titleHeight)
     self.contentArea.Position = UDim2.new(0, sidebarWidth, 0, titleHeight)
     self.contentArea.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
+    self.contentArea.BackgroundTransparency = 0.15
     self.contentArea.BorderSizePixel = 0
     self.contentArea.Parent = self.mainFrame
     
@@ -244,7 +248,7 @@ function GUI:addSidebarItem(name, callback)
     itemButton.BackgroundTransparency = 1
     itemButton.Text = name
     itemButton.TextColor3 = Color3.fromRGB(200, 200, 210)
-    itemButton.TextSize = self.isMobile and 7 or 9
+    itemButton.TextSize = self.isMobile and 9 or 12
     itemButton.Font = Enum.Font.Gotham
     itemButton.TextXAlignment = Enum.TextXAlignment.Left
     itemButton.Parent = item
@@ -344,7 +348,7 @@ function GUI:addToggle(name, defaultValue, callback)
     toggleLabel.BackgroundTransparency = 1
     toggleLabel.Text = name
     toggleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    toggleLabel.TextSize = self.isMobile and 8 or 10
+    toggleLabel.TextSize = self.isMobile and 10 or 13
     toggleLabel.Font = Enum.Font.Gotham
     toggleLabel.TextXAlignment = Enum.TextXAlignment.Left
     toggleLabel.Parent = toggleFrame
@@ -470,7 +474,7 @@ function GUI:addDropdown(name, options, defaultOption, callback)
     dropdownLabel.BackgroundTransparency = 1
     dropdownLabel.Text = name
     dropdownLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    dropdownLabel.TextSize = self.isMobile and 8 or 10
+    dropdownLabel.TextSize = self.isMobile and 10 or 13
     dropdownLabel.Font = Enum.Font.Gotham
     dropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
     dropdownLabel.Parent = dropdownFrame
@@ -486,7 +490,7 @@ function GUI:addDropdown(name, options, defaultOption, callback)
     dropdownButton.BorderSizePixel = 0
     dropdownButton.Text = defaultOption or options[1] or "Select"
     dropdownButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    dropdownButton.TextSize = self.isMobile and 7 or 9
+    dropdownButton.TextSize = self.isMobile and 9 or 12
     dropdownButton.Font = Enum.Font.Gotham
     dropdownButton.Parent = dropdownFrame
     
@@ -547,7 +551,7 @@ function GUI:createDropdownDialog(title, options, defaultOption, callback, butto
     dialogTitle.BackgroundTransparency = 1
     dialogTitle.Text = "Select " .. title
     dialogTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    dialogTitle.TextSize = self.isMobile and 10 or 12
+    dialogTitle.TextSize = self.isMobile and 12 or 16
     dialogTitle.Font = Enum.Font.GothamBold
     dialogTitle.TextXAlignment = Enum.TextXAlignment.Left
     dialogTitle.Parent = dialog
@@ -740,7 +744,7 @@ function GUI:addButton(name, callback)
     button.BorderSizePixel = 0
     button.Text = name
     button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    button.TextSize = self.isMobile and 8 or 10
+    button.TextSize = self.isMobile and 10 or 13
     button.Font = Enum.Font.GothamBold
     button.Parent = buttonFrame
     
@@ -833,7 +837,7 @@ function GUI:addSlider(name, minValue, maxValue, defaultValue, callback)
     sliderLabel.BackgroundTransparency = 1
     sliderLabel.Text = name
     sliderLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    sliderLabel.TextSize = self.isMobile and 8 or 10
+    sliderLabel.TextSize = self.isMobile and 10 or 13
     sliderLabel.Font = Enum.Font.Gotham
     sliderLabel.TextXAlignment = Enum.TextXAlignment.Left
     sliderLabel.Parent = sliderFrame
@@ -845,7 +849,7 @@ function GUI:addSlider(name, minValue, maxValue, defaultValue, callback)
     valueLabel.BackgroundTransparency = 1
     valueLabel.Text = tostring(defaultValue)
     valueLabel.TextColor3 = Color3.fromRGB(33, 150, 243)
-    valueLabel.TextSize = self.isMobile and 8 or 10
+    valueLabel.TextSize = self.isMobile and 10 or 13
     valueLabel.Font = Enum.Font.GothamBold
     valueLabel.TextXAlignment = Enum.TextXAlignment.Right
     valueLabel.Parent = sliderFrame
@@ -943,55 +947,63 @@ function GUI:addSlider(name, minValue, maxValue, defaultValue, callback)
 end
 
 function GUI:addTextInput(name, placeholder, callback)
-    local inputHeight = self.isMobile and 40 or 48
+    local inputHeight = self.isMobile and 45 or 55
     
     local inputFrame = Instance.new("Frame")
     inputFrame.Name = name .. "Input"
     inputFrame.Size = UDim2.new(1, 0, 0, inputHeight)
     inputFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    inputFrame.BackgroundTransparency = 0.1
     inputFrame.BorderSizePixel = 0
     inputFrame.Parent = self.contentScrolling
     
     local inputCorner = Instance.new("UICorner")
-    inputCorner.CornerRadius = UDim.new(0, 4)
+    inputCorner.CornerRadius = UDim.new(0, 6)
     inputCorner.Parent = inputFrame
     
     local inputContainer = Instance.new("Frame")
     inputContainer.Name = "InputContainer"
-    inputContainer.Size = UDim2.new(1, -16, 0, self.isMobile and 26 or 30)
-    inputContainer.Position = UDim2.new(0, 8, 1, self.isMobile and -32 or -36)
+    inputContainer.Size = UDim2.new(1, -16, 0, self.isMobile and 30 or 36)
+    inputContainer.Position = UDim2.new(0, 8, 1, self.isMobile and -36 or -42)
     inputContainer.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+    inputContainer.BackgroundTransparency = 0.2
     inputContainer.BorderSizePixel = 0
     inputContainer.Parent = inputFrame
     
     local containerCorner = Instance.new("UICorner")
-    containerCorner.CornerRadius = UDim.new(0, 3)
+    containerCorner.CornerRadius = UDim.new(0, 4)
     containerCorner.Parent = inputContainer
     
     local containerStroke = Instance.new("UIStroke")
     containerStroke.Name = "ContainerStroke"
-    containerStroke.Color = Color3.fromRGB(70, 70, 80)
-    containerStroke.Thickness = 1
+    containerStroke.Color = Color3.fromRGB(80, 80, 90)
+    containerStroke.Thickness = 1.5
+    containerStroke.Transparency = 0.3
     containerStroke.Parent = inputContainer
     
     local underline = Instance.new("Frame")
     underline.Name = "Underline"
-    underline.Size = UDim2.new(0, 0, 0, 2)
-    underline.Position = UDim2.new(0, 0, 1, -2)
+    underline.Size = UDim2.new(0, 0, 0, 3)
+    underline.Position = UDim2.new(0.5, 0, 1, -3)
+    underline.AnchorPoint = Vector2.new(0.5, 0)
     underline.BackgroundColor3 = Color3.fromRGB(33, 150, 243)
     underline.BorderSizePixel = 0
     underline.Parent = inputContainer
     
+    local underlineCorner = Instance.new("UICorner")
+    underlineCorner.CornerRadius = UDim.new(0, 1.5)
+    underlineCorner.Parent = underline
+    
     local textBox = Instance.new("TextBox")
     textBox.Name = "TextBox"
-    textBox.Size = UDim2.new(1, -12, 1, 0)
-    textBox.Position = UDim2.new(0, 6, 0, 0)
+    textBox.Size = UDim2.new(1, -16, 1, 0)
+    textBox.Position = UDim2.new(0, 8, 0, 0)
     textBox.BackgroundTransparency = 1
     textBox.Text = ""
     textBox.PlaceholderText = ""
     textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
     textBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 160)
-    textBox.TextSize = self.isMobile and 9 or 11
+    textBox.TextSize = self.isMobile and 12 or 15
     textBox.Font = Enum.Font.Gotham
     textBox.TextXAlignment = Enum.TextXAlignment.Left
     textBox.ClearTextOnFocus = false
@@ -999,64 +1011,111 @@ function GUI:addTextInput(name, placeholder, callback)
     
     local floatingLabel = Instance.new("TextLabel")
     floatingLabel.Name = "FloatingLabel"
-    floatingLabel.Size = UDim2.new(1, -12, 0, 18)
-    floatingLabel.Position = UDim2.new(0, 6, 0, self.isMobile and 8 or 10)
+    floatingLabel.Size = UDim2.new(0, 200, 0, 20)
+    floatingLabel.Position = UDim2.new(0, 8, 0, self.isMobile and 10 or 12)
     floatingLabel.BackgroundTransparency = 1
     floatingLabel.Text = placeholder or name
-    floatingLabel.TextColor3 = Color3.fromRGB(150, 150, 160)
-    floatingLabel.TextSize = self.isMobile and 9 or 11
+    floatingLabel.TextColor3 = Color3.fromRGB(160, 160, 170)
+    floatingLabel.TextSize = self.isMobile and 12 or 15
     floatingLabel.Font = Enum.Font.Gotham
     floatingLabel.TextXAlignment = Enum.TextXAlignment.Left
+    floatingLabel.ZIndex = 3
     floatingLabel.Parent = inputContainer
     
     local labelBackground = Instance.new("Frame")
     labelBackground.Name = "LabelBackground"
-    labelBackground.Size = UDim2.new(0, 0, 0, 2)
-    labelBackground.Position = UDim2.new(0, 6, 0, -1)
+    labelBackground.Size = UDim2.new(0, 0, 0, 4)
+    labelBackground.Position = UDim2.new(0, 8, 0, -2)
     labelBackground.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    labelBackground.BackgroundTransparency = 0.1
     labelBackground.BorderSizePixel = 0
     labelBackground.Visible = false
+    labelBackground.ZIndex = 2
     labelBackground.Parent = inputContainer
     
     local labelName = Instance.new("TextLabel")
     labelName.Name = "LabelName"
-    labelName.Size = UDim2.new(1, -16, 0, 12)
+    labelName.Size = UDim2.new(1, -16, 0, 14)
     labelName.Position = UDim2.new(0, 8, 0, 2)
     labelName.BackgroundTransparency = 1
     labelName.Text = name
     labelName.TextColor3 = Color3.fromRGB(255, 255, 255)
-    labelName.TextSize = self.isMobile and 9 or 11
+    labelName.TextSize = self.isMobile and 11 or 14
     labelName.Font = Enum.Font.GothamMedium
     labelName.TextXAlignment = Enum.TextXAlignment.Left
     labelName.Parent = inputFrame
     
-    local function animateLabel(focused)
+    local rippleFrame = Instance.new("Frame")
+    rippleFrame.Name = "RippleFrame"
+    rippleFrame.Size = UDim2.new(1, 0, 1, 0)
+    rippleFrame.Position = UDim2.new(0, 0, 0, 0)
+    rippleFrame.BackgroundTransparency = 1
+    rippleFrame.ClipsDescendants = true
+    rippleFrame.Parent = inputContainer
+    
+    local rippleCorner2 = Instance.new("UICorner")
+    rippleCorner2.CornerRadius = UDim.new(0, 4)
+    rippleCorner2.Parent = rippleFrame
+    
+    local function createRipple(position)
+        local ripple = Instance.new("Frame")
+        ripple.Name = "Ripple"
+        ripple.Size = UDim2.new(0, 0, 0, 0)
+        ripple.Position = UDim2.new(0, position.X - rippleFrame.AbsolutePosition.X, 0, position.Y - rippleFrame.AbsolutePosition.Y)
+        ripple.AnchorPoint = Vector2.new(0.5, 0.5)
+        ripple.BackgroundColor3 = Color3.fromRGB(33, 150, 243)
+        ripple.BackgroundTransparency = 0.8
+        ripple.BorderSizePixel = 0
+        ripple.ZIndex = 1
+        ripple.Parent = rippleFrame
+        
+        local rippleCorner = Instance.new("UICorner")
+        rippleCorner.CornerRadius = UDim.new(1, 0)
+        rippleCorner.Parent = ripple
+        
+        local rippleExpand = TweenService:Create(ripple, TweenInfo.new(0.6, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 100, 0, 100),
+            BackgroundTransparency = 1
+        })
+        
+        rippleExpand:Play()
+        rippleExpand.Completed:Connect(function()
+            ripple:Destroy()
+        end)
+    end
+    
+    local function animateLabel(focused, clickPosition)
         local isActive = focused or textBox.Text ~= ""
         
+        if focused and clickPosition then
+            createRipple(clickPosition)
+        end
+        
         if isActive then
-            local labelSize = floatingLabel.TextBounds.X + 8
-            local labelTween = TweenService:Create(floatingLabel, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                Position = UDim2.new(0, 6, 0, -9),
-                TextSize = self.isMobile and 7 or 9,
-                TextColor3 = focused and Color3.fromRGB(33, 150, 243) or Color3.fromRGB(180, 180, 190)
+            local labelSize = floatingLabel.TextBounds.X + 12
+            
+            local labelTween = TweenService:Create(floatingLabel, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                Position = UDim2.new(0, 8, 0, -10),
+                TextSize = self.isMobile and 9 or 12,
+                TextColor3 = focused and Color3.fromRGB(33, 150, 243) or Color3.fromRGB(190, 190, 200)
             })
             
-            local backgroundTween = TweenService:Create(labelBackground, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, labelSize, 0, 2)
+            local backgroundTween = TweenService:Create(labelBackground, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, labelSize, 0, 4)
             })
             
             labelBackground.Visible = true
             labelTween:Play()
             backgroundTween:Play()
         else
-            local labelTween = TweenService:Create(floatingLabel, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                Position = UDim2.new(0, 6, 0, self.isMobile and 8 or 10),
-                TextSize = self.isMobile and 9 or 11,
-                TextColor3 = Color3.fromRGB(150, 150, 160)
+            local labelTween = TweenService:Create(floatingLabel, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                Position = UDim2.new(0, 8, 0, self.isMobile and 10 or 12),
+                TextSize = self.isMobile and 12 or 15,
+                TextColor3 = Color3.fromRGB(160, 160, 170)
             })
             
-            local backgroundTween = TweenService:Create(labelBackground, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-                Size = UDim2.new(0, 0, 0, 2)
+            local backgroundTween = TweenService:Create(labelBackground, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, 0, 0, 4)
             })
             
             labelTween:Play()
@@ -1069,17 +1128,19 @@ function GUI:addTextInput(name, placeholder, callback)
             end)
         end
         
-        local strokeTween = TweenService:Create(containerStroke, TweenInfo.new(0.2), {
-            Color = focused and Color3.fromRGB(33, 150, 243) or Color3.fromRGB(70, 70, 80),
-            Thickness = focused and 2 or 1
+        local strokeTween = TweenService:Create(containerStroke, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            Color = focused and Color3.fromRGB(33, 150, 243) or Color3.fromRGB(80, 80, 90),
+            Thickness = focused and 2.5 or 1.5,
+            Transparency = focused and 0 or 0.3
         })
         
-        local underlineTween = TweenService:Create(underline, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-            Size = focused and UDim2.new(1, 0, 0, 2) or UDim2.new(0, 0, 0, 2)
+        local underlineTween = TweenService:Create(underline, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            Size = focused and UDim2.new(1, 0, 0, 3) or UDim2.new(0, 0, 0, 3)
         })
         
-        local containerTween = TweenService:Create(inputContainer, TweenInfo.new(0.2), {
-            BackgroundColor3 = focused and Color3.fromRGB(50, 50, 60) or Color3.fromRGB(45, 45, 55)
+        local containerTween = TweenService:Create(inputContainer, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            BackgroundColor3 = focused and Color3.fromRGB(50, 50, 60) or Color3.fromRGB(45, 45, 55),
+            BackgroundTransparency = focused and 0.1 or 0.2
         })
         
         strokeTween:Play()
@@ -1088,7 +1149,8 @@ function GUI:addTextInput(name, placeholder, callback)
     end
     
     textBox.Focused:Connect(function()
-        animateLabel(true)
+        local mouse = game.Players.LocalPlayer:GetMouse()
+        animateLabel(true, Vector2.new(mouse.X, mouse.Y))
     end)
     
     textBox.FocusLost:Connect(function()
@@ -1106,19 +1168,33 @@ function GUI:addTextInput(name, placeholder, callback)
     
     inputContainer.MouseEnter:Connect(function()
         if not textBox:IsFocused() then
-            local hoverTween = TweenService:Create(inputContainer, TweenInfo.new(0.1), {
-                BackgroundColor3 = Color3.fromRGB(48, 48, 58)
+            local hoverTween = TweenService:Create(inputContainer, TweenInfo.new(0.15, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                BackgroundColor3 = Color3.fromRGB(48, 48, 58),
+                BackgroundTransparency = 0.15
             })
+            
+            local strokeHoverTween = TweenService:Create(containerStroke, TweenInfo.new(0.15), {
+                Transparency = 0.1
+            })
+            
             hoverTween:Play()
+            strokeHoverTween:Play()
         end
     end)
     
     inputContainer.MouseLeave:Connect(function()
         if not textBox:IsFocused() then
-            local hoverTween = TweenService:Create(inputContainer, TweenInfo.new(0.1), {
-                BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+            local hoverTween = TweenService:Create(inputContainer, TweenInfo.new(0.15, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                BackgroundColor3 = Color3.fromRGB(45, 45, 55),
+                BackgroundTransparency = 0.2
             })
+            
+            local strokeHoverTween = TweenService:Create(containerStroke, TweenInfo.new(0.15), {
+                Transparency = 0.3
+            })
+            
             hoverTween:Play()
+            strokeHoverTween:Play()
         end
     end)
     
@@ -1172,7 +1248,7 @@ function GUI:createDialog(title, content, buttons)
     dialogContent.BackgroundTransparency = 1
     dialogContent.Text = content
     dialogContent.TextColor3 = Color3.fromRGB(200, 200, 200)
-    dialogContent.TextSize = self.isMobile and 8 or 10
+    dialogContent.TextSize = self.isMobile and 10 or 13
     dialogContent.Font = Enum.Font.Gotham
     dialogContent.TextXAlignment = Enum.TextXAlignment.Left
     dialogContent.TextYAlignment = Enum.TextYAlignment.Top
@@ -1205,7 +1281,7 @@ function GUI:createDialog(title, content, buttons)
         dialogButton.BorderSizePixel = 0
         dialogButton.Text = buttonName
         dialogButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-        dialogButton.TextSize = self.isMobile and 7 or 9
+        dialogButton.TextSize = self.isMobile and 9 or 12
         dialogButton.Font = Enum.Font.Gotham
         dialogButton.Parent = buttonFrame
         
