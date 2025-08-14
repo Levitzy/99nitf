@@ -21,7 +21,7 @@ function GUI.new(title)
     self.screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     self.screenGui.Parent = PlayerGui
     
-    local guiSize = self.isMobile and {400, 280} or {300, 300}
+    local guiSize = self.isMobile and {300, 280} or {300, 300}
     if self.screenSize.X < 550 then
         guiSize = {self.screenSize.X * 0.9, self.screenSize.Y * 0.7}
     end
