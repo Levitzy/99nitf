@@ -21,9 +21,9 @@ function GUI.new(title)
     self.screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     self.screenGui.Parent = PlayerGui
     
-    local guiSize = self.isMobile and {500, 350} or {650, 450}
-    if self.screenSize.X < 600 then
-        guiSize = {self.screenSize.X * 0.9, self.screenSize.Y * 0.75}
+    local guiSize = self.isMobile and {400, 280} or {500, 350}
+    if self.screenSize.X < 500 then
+        guiSize = {self.screenSize.X * 0.85, self.screenSize.Y * 0.7}
     end
     
     self.mainFrame = Instance.new("Frame")
@@ -35,20 +35,20 @@ function GUI.new(title)
     self.mainFrame.Parent = self.screenGui
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, self.isMobile and 6 or 8)
+    corner.CornerRadius = UDim.new(0, self.isMobile and 4 or 6)
     corner.Parent = self.mainFrame
     
     local shadow = Instance.new("Frame")
     shadow.Name = "Shadow"
-    shadow.Size = UDim2.new(1, 16, 1, 16)
-    shadow.Position = UDim2.new(0, -8, 0, -8)
+    shadow.Size = UDim2.new(1, 12, 1, 12)
+    shadow.Position = UDim2.new(0, -6, 0, -6)
     shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     shadow.BackgroundTransparency = 0.7
     shadow.ZIndex = -1
     shadow.Parent = self.mainFrame
     
     local shadowCorner = Instance.new("UICorner")
-    shadowCorner.CornerRadius = UDim.new(0, self.isMobile and 10 or 12)
+    shadowCorner.CornerRadius = UDim.new(0, self.isMobile and 8 or 10)
     shadowCorner.Parent = shadow
     
     self:createTitleBar(title or "Modern GUI")
@@ -59,6 +59,7 @@ function GUI.new(title)
     self.sidebarItems = {}
     self.selectedItem = nil
     self.dialogs = {}
+    self.dropdownSelections = {}
     
     if not self.isMobile then
         self:makeDraggable()
@@ -68,7 +69,7 @@ function GUI.new(title)
 end
 
 function GUI:createTitleBar(title)
-    local titleHeight = self.isMobile and 30 or 35
+    local titleHeight = self.isMobile and 25 or 30
     
     self.titleBar = Instance.new("Frame")
     self.titleBar.Name = "TitleBar"
@@ -79,35 +80,35 @@ function GUI:createTitleBar(title)
     self.titleBar.Parent = self.mainFrame
     
     local titleCorner = Instance.new("UICorner")
-    titleCorner.CornerRadius = UDim.new(0, self.isMobile and 6 or 8)
+    titleCorner.CornerRadius = UDim.new(0, self.isMobile and 4 or 6)
     titleCorner.Parent = self.titleBar
     
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Name = "TitleLabel"
-    titleLabel.Size = UDim2.new(1, -70, 1, 0)
-    titleLabel.Position = UDim2.new(0, 10, 0, 0)
+    titleLabel.Size = UDim2.new(1, -60, 1, 0)
+    titleLabel.Position = UDim2.new(0, 8, 0, 0)
     titleLabel.BackgroundTransparency = 1
     titleLabel.Text = title
     titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    titleLabel.TextSize = self.isMobile and 12 or 14
+    titleLabel.TextSize = self.isMobile and 10 or 12
     titleLabel.Font = Enum.Font.GothamBold
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
     titleLabel.Parent = self.titleBar
     
     self.closeButton = Instance.new("TextButton")
     self.closeButton.Name = "CloseButton"
-    self.closeButton.Size = UDim2.new(0, self.isMobile and 25 or 30, 0, self.isMobile and 20 or 25)
-    self.closeButton.Position = UDim2.new(1, self.isMobile and -30 or -35, 0, self.isMobile and 5 or 5)
+    self.closeButton.Size = UDim2.new(0, self.isMobile and 20 or 24, 0, self.isMobile and 16 or 20)
+    self.closeButton.Position = UDim2.new(1, self.isMobile and -24 or -28, 0, self.isMobile and 4 or 5)
     self.closeButton.BackgroundColor3 = Color3.fromRGB(255, 95, 87)
     self.closeButton.BorderSizePixel = 0
     self.closeButton.Text = "×"
     self.closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    self.closeButton.TextSize = self.isMobile and 12 or 14
+    self.closeButton.TextSize = self.isMobile and 10 or 12
     self.closeButton.Font = Enum.Font.GothamBold
     self.closeButton.Parent = self.titleBar
     
     local closeCorner = Instance.new("UICorner")
-    closeCorner.CornerRadius = UDim.new(0, 4)
+    closeCorner.CornerRadius = UDim.new(0, 3)
     closeCorner.Parent = self.closeButton
     
     self.closeButton.MouseButton1Click:Connect(function()
@@ -116,8 +117,8 @@ function GUI:createTitleBar(title)
 end
 
 function GUI:createSidebar()
-    local sidebarWidth = self.isMobile and 120 or 150
-    local titleHeight = self.isMobile and 30 or 35
+    local sidebarWidth = self.isMobile and 90 or 110
+    local titleHeight = self.isMobile and 25 or 30
     
     self.sidebar = Instance.new("Frame")
     self.sidebar.Name = "Sidebar"
@@ -129,8 +130,8 @@ function GUI:createSidebar()
     
     self.sidebarScrolling = Instance.new("ScrollingFrame")
     self.sidebarScrolling.Name = "SidebarScrolling"
-    self.sidebarScrolling.Size = UDim2.new(1, 0, 1, self.isMobile and -35 or -40)
-    self.sidebarScrolling.Position = UDim2.new(0, 0, 0, self.isMobile and 35 or 40)
+    self.sidebarScrolling.Size = UDim2.new(1, 0, 1, self.isMobile and -28 or -32)
+    self.sidebarScrolling.Position = UDim2.new(0, 0, 0, self.isMobile and 28 or 32)
     self.sidebarScrolling.BackgroundTransparency = 1
     self.sidebarScrolling.BorderSizePixel = 0
     self.sidebarScrolling.ScrollBarThickness = 2
@@ -139,47 +140,47 @@ function GUI:createSidebar()
     
     local sidebarLayout = Instance.new("UIListLayout")
     sidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    sidebarLayout.Padding = UDim.new(0, 2)
+    sidebarLayout.Padding = UDim.new(0, 1)
     sidebarLayout.Parent = self.sidebarScrolling
 end
 
 function GUI:createSearchBar()
-    local searchHeight = self.isMobile and 25 or 30
+    local searchHeight = self.isMobile and 20 or 24
     
     self.searchFrame = Instance.new("Frame")
     self.searchFrame.Name = "SearchFrame"
-    self.searchFrame.Size = UDim2.new(1, -12, 0, searchHeight)
-    self.searchFrame.Position = UDim2.new(0, 6, 0, 6)
+    self.searchFrame.Size = UDim2.new(1, -8, 0, searchHeight)
+    self.searchFrame.Position = UDim2.new(0, 4, 0, 4)
     self.searchFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
     self.searchFrame.BorderSizePixel = 0
     self.searchFrame.Parent = self.sidebar
     
     local searchCorner = Instance.new("UICorner")
-    searchCorner.CornerRadius = UDim.new(0, 4)
+    searchCorner.CornerRadius = UDim.new(0, 3)
     searchCorner.Parent = self.searchFrame
     
     self.searchBox = Instance.new("TextBox")
     self.searchBox.Name = "SearchBox"
-    self.searchBox.Size = UDim2.new(1, -25, 1, 0)
-    self.searchBox.Position = UDim2.new(0, 6, 0, 0)
+    self.searchBox.Size = UDim2.new(1, -20, 1, 0)
+    self.searchBox.Position = UDim2.new(0, 4, 0, 0)
     self.searchBox.BackgroundTransparency = 1
     self.searchBox.Text = ""
     self.searchBox.PlaceholderText = "Search..."
     self.searchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
     self.searchBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 160)
-    self.searchBox.TextSize = self.isMobile and 10 or 12
+    self.searchBox.TextSize = self.isMobile and 8 or 10
     self.searchBox.Font = Enum.Font.Gotham
     self.searchBox.TextXAlignment = Enum.TextXAlignment.Left
     self.searchBox.Parent = self.searchFrame
     
     local searchIcon = Instance.new("TextLabel")
     searchIcon.Name = "SearchIcon"
-    searchIcon.Size = UDim2.new(0, 12, 0, 12)
-    searchIcon.Position = UDim2.new(1, -18, 0.5, -6)
+    searchIcon.Size = UDim2.new(0, 10, 0, 10)
+    searchIcon.Position = UDim2.new(1, -14, 0.5, -5)
     searchIcon.BackgroundTransparency = 1
     searchIcon.Text = "🔍"
     searchIcon.TextColor3 = Color3.fromRGB(150, 150, 160)
-    searchIcon.TextSize = self.isMobile and 8 or 10
+    searchIcon.TextSize = self.isMobile and 6 or 8
     searchIcon.Parent = self.searchFrame
     
     self.searchBox.Changed:Connect(function()
@@ -188,8 +189,8 @@ function GUI:createSearchBar()
 end
 
 function GUI:createContentArea()
-    local sidebarWidth = self.isMobile and 120 or 150
-    local titleHeight = self.isMobile and 30 or 35
+    local sidebarWidth = self.isMobile and 90 or 110
+    local titleHeight = self.isMobile and 25 or 30
     
     self.contentArea = Instance.new("Frame")
     self.contentArea.Name = "ContentArea"
@@ -205,35 +206,35 @@ function GUI:createContentArea()
     self.contentScrolling.Position = UDim2.new(0, 0, 0, 0)
     self.contentScrolling.BackgroundTransparency = 1
     self.contentScrolling.BorderSizePixel = 0
-    self.contentScrolling.ScrollBarThickness = self.isMobile and 2 or 4
+    self.contentScrolling.ScrollBarThickness = self.isMobile and 2 or 3
     self.contentScrolling.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 120)
     self.contentScrolling.Parent = self.contentArea
     
     local contentLayout = Instance.new("UIListLayout")
     contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    contentLayout.Padding = UDim.new(0, self.isMobile and 4 or 6)
+    contentLayout.Padding = UDim.new(0, self.isMobile and 3 or 4)
     contentLayout.Parent = self.contentScrolling
     
     local contentPadding = Instance.new("UIPadding")
-    contentPadding.PaddingTop = UDim.new(0, self.isMobile and 8 or 12)
-    contentPadding.PaddingBottom = UDim.new(0, self.isMobile and 8 or 12)
-    contentPadding.PaddingLeft = UDim.new(0, self.isMobile and 8 or 12)
-    contentPadding.PaddingRight = UDim.new(0, self.isMobile and 8 or 12)
+    contentPadding.PaddingTop = UDim.new(0, self.isMobile and 6 or 8)
+    contentPadding.PaddingBottom = UDim.new(0, self.isMobile and 6 or 8)
+    contentPadding.PaddingLeft = UDim.new(0, self.isMobile and 6 or 8)
+    contentPadding.PaddingRight = UDim.new(0, self.isMobile and 6 or 8)
     contentPadding.Parent = self.contentScrolling
 end
 
 function GUI:addSidebarItem(name, callback)
-    local itemHeight = self.isMobile and 28 or 35
+    local itemHeight = self.isMobile and 22 or 26
     
     local item = Instance.new("Frame")
     item.Name = name
-    item.Size = UDim2.new(1, -12, 0, itemHeight)
+    item.Size = UDim2.new(1, -8, 0, itemHeight)
     item.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
     item.BorderSizePixel = 0
     item.Parent = self.sidebarScrolling
     
     local itemCorner = Instance.new("UICorner")
-    itemCorner.CornerRadius = UDim.new(0, 4)
+    itemCorner.CornerRadius = UDim.new(0, 3)
     itemCorner.Parent = item
     
     local itemButton = Instance.new("TextButton")
@@ -243,13 +244,13 @@ function GUI:addSidebarItem(name, callback)
     itemButton.BackgroundTransparency = 1
     itemButton.Text = name
     itemButton.TextColor3 = Color3.fromRGB(200, 200, 210)
-    itemButton.TextSize = self.isMobile and 9 or 11
+    itemButton.TextSize = self.isMobile and 7 or 9
     itemButton.Font = Enum.Font.Gotham
     itemButton.TextXAlignment = Enum.TextXAlignment.Left
     itemButton.Parent = item
     
     local itemPadding = Instance.new("UIPadding")
-    itemPadding.PaddingLeft = UDim.new(0, self.isMobile and 6 or 8)
+    itemPadding.PaddingLeft = UDim.new(0, self.isMobile and 4 or 6)
     itemPadding.Parent = itemButton
     
     local highlight = Instance.new("Frame")
@@ -323,7 +324,7 @@ function GUI:clearContent()
 end
 
 function GUI:addToggle(name, defaultValue, callback)
-    local toggleHeight = self.isMobile and 35 or 42
+    local toggleHeight = self.isMobile and 28 or 32
     
     local toggleFrame = Instance.new("Frame")
     toggleFrame.Name = name .. "Toggle"
@@ -333,28 +334,28 @@ function GUI:addToggle(name, defaultValue, callback)
     toggleFrame.Parent = self.contentScrolling
     
     local toggleCorner = Instance.new("UICorner")
-    toggleCorner.CornerRadius = UDim.new(0, 6)
+    toggleCorner.CornerRadius = UDim.new(0, 4)
     toggleCorner.Parent = toggleFrame
     
     local toggleLabel = Instance.new("TextLabel")
     toggleLabel.Name = "ToggleLabel"
-    toggleLabel.Size = UDim2.new(1, -60, 1, 0)
-    toggleLabel.Position = UDim2.new(0, self.isMobile and 8 or 12, 0, 0)
+    toggleLabel.Size = UDim2.new(1, -50, 1, 0)
+    toggleLabel.Position = UDim2.new(0, self.isMobile and 6 or 8, 0, 0)
     toggleLabel.BackgroundTransparency = 1
     toggleLabel.Text = name
     toggleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    toggleLabel.TextSize = self.isMobile and 10 or 12
+    toggleLabel.TextSize = self.isMobile and 8 or 10
     toggleLabel.Font = Enum.Font.Gotham
     toggleLabel.TextXAlignment = Enum.TextXAlignment.Left
     toggleLabel.Parent = toggleFrame
     
-    local switchSize = self.isMobile and {34, 18} or {40, 22}
-    local knobSize = self.isMobile and 14 or 16
+    local switchSize = self.isMobile and {28, 16} or {34, 18}
+    local knobSize = self.isMobile and 12 or 14
     
     local toggleTrack = Instance.new("Frame")
     toggleTrack.Name = "ToggleTrack"
     toggleTrack.Size = UDim2.new(0, switchSize[1], 0, switchSize[2])
-    toggleTrack.Position = UDim2.new(1, -switchSize[1] - (self.isMobile and 8 or 12), 0.5, -switchSize[2]/2)
+    toggleTrack.Position = UDim2.new(1, -switchSize[1] - (self.isMobile and 6 or 8), 0.5, -switchSize[2]/2)
     toggleTrack.BackgroundColor3 = defaultValue and Color3.fromRGB(33, 150, 243) or Color3.fromRGB(97, 97, 97)
     toggleTrack.BorderSizePixel = 0
     toggleTrack.Parent = toggleFrame
@@ -391,8 +392,8 @@ function GUI:addToggle(name, defaultValue, callback)
     
     local toggleButton = Instance.new("TextButton")
     toggleButton.Name = "ToggleButton"
-    toggleButton.Size = UDim2.new(1, 20, 1, 20)
-    toggleButton.Position = UDim2.new(0, -10, 0, -10)
+    toggleButton.Size = UDim2.new(1, 16, 1, 16)
+    toggleButton.Position = UDim2.new(0, -8, 0, -8)
     toggleButton.BackgroundTransparency = 1
     toggleButton.Text = ""
     toggleButton.ZIndex = 3
@@ -419,8 +420,8 @@ function GUI:addToggle(name, defaultValue, callback)
         rippleCorner.Parent = ripple
         
         local rippleExpand = TweenService:Create(ripple, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 24, 0, 24),
-            Position = UDim2.new(0.5, -12, 0.5, -12),
+            Size = UDim2.new(0, 20, 0, 20),
+            Position = UDim2.new(0.5, -10, 0.5, -10),
             BackgroundTransparency = 1
         })
         
@@ -449,7 +450,7 @@ function GUI:addToggle(name, defaultValue, callback)
 end
 
 function GUI:addDropdown(name, options, defaultOption, callback)
-    local dropdownHeight = self.isMobile and 35 or 42
+    local dropdownHeight = self.isMobile and 28 or 32
     
     local dropdownFrame = Instance.new("Frame")
     dropdownFrame.Name = name .. "Dropdown"
@@ -459,50 +460,52 @@ function GUI:addDropdown(name, options, defaultOption, callback)
     dropdownFrame.Parent = self.contentScrolling
     
     local dropdownCorner = Instance.new("UICorner")
-    dropdownCorner.CornerRadius = UDim.new(0, 6)
+    dropdownCorner.CornerRadius = UDim.new(0, 4)
     dropdownCorner.Parent = dropdownFrame
     
     local dropdownLabel = Instance.new("TextLabel")
     dropdownLabel.Name = "DropdownLabel"
     dropdownLabel.Size = UDim2.new(0.5, 0, 1, 0)
-    dropdownLabel.Position = UDim2.new(0, self.isMobile and 8 or 12, 0, 0)
+    dropdownLabel.Position = UDim2.new(0, self.isMobile and 6 or 8, 0, 0)
     dropdownLabel.BackgroundTransparency = 1
     dropdownLabel.Text = name
     dropdownLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    dropdownLabel.TextSize = self.isMobile and 10 or 12
+    dropdownLabel.TextSize = self.isMobile and 8 or 10
     dropdownLabel.Font = Enum.Font.Gotham
     dropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
     dropdownLabel.Parent = dropdownFrame
     
-    local buttonWidth = self.isMobile and 100 or 130
-    local buttonHeight = self.isMobile and 20 or 25
+    local buttonWidth = self.isMobile and 80 or 100
+    local buttonHeight = self.isMobile and 18 or 20
     
     local dropdownButton = Instance.new("TextButton")
     dropdownButton.Name = "DropdownButton"
     dropdownButton.Size = UDim2.new(0, buttonWidth, 0, buttonHeight)
-    dropdownButton.Position = UDim2.new(1, -buttonWidth - (self.isMobile and 8 or 12), 0.5, -buttonHeight/2)
+    dropdownButton.Position = UDim2.new(1, -buttonWidth - (self.isMobile and 6 or 8), 0.5, -buttonHeight/2)
     dropdownButton.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
     dropdownButton.BorderSizePixel = 0
     dropdownButton.Text = defaultOption or options[1] or "Select"
     dropdownButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    dropdownButton.TextSize = self.isMobile and 9 or 11
+    dropdownButton.TextSize = self.isMobile and 7 or 9
     dropdownButton.Font = Enum.Font.Gotham
     dropdownButton.Parent = dropdownFrame
     
     local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 4)
+    buttonCorner.CornerRadius = UDim.new(0, 3)
     buttonCorner.Parent = dropdownButton
     
     local arrow = Instance.new("TextLabel")
     arrow.Name = "Arrow"
-    arrow.Size = UDim2.new(0, 12, 0, 12)
-    arrow.Position = UDim2.new(1, -16, 0.5, -6)
+    arrow.Size = UDim2.new(0, 10, 0, 10)
+    arrow.Position = UDim2.new(1, -12, 0.5, -5)
     arrow.BackgroundTransparency = 1
     arrow.Text = "▼"
     arrow.TextColor3 = Color3.fromRGB(200, 200, 200)
-    arrow.TextSize = self.isMobile and 8 or 10
+    arrow.TextSize = self.isMobile and 6 or 8
     arrow.Font = Enum.Font.Gotham
     arrow.Parent = dropdownButton
+    
+    self.dropdownSelections[name] = defaultOption or options[1] or ""
     
     dropdownButton.MouseButton1Click:Connect(function()
         self:createDropdownDialog(name, options, defaultOption, callback, dropdownButton)
@@ -512,7 +515,7 @@ function GUI:addDropdown(name, options, defaultOption, callback)
 end
 
 function GUI:createDropdownDialog(title, options, defaultOption, callback, button)
-    local dialogSize = self.isMobile and {300, 250} or {350, 300}
+    local dialogSize = self.isMobile and {260, 220} or {300, 260}
     
     local overlay = Instance.new("Frame")
     overlay.Name = "DropdownOverlay"
@@ -534,63 +537,109 @@ function GUI:createDropdownDialog(title, options, defaultOption, callback, butto
     dialog.Parent = overlay
     
     local dialogCorner = Instance.new("UICorner")
-    dialogCorner.CornerRadius = UDim.new(0, 8)
+    dialogCorner.CornerRadius = UDim.new(0, 6)
     dialogCorner.Parent = dialog
     
     local dialogTitle = Instance.new("TextLabel")
     dialogTitle.Name = "DialogTitle"
-    dialogTitle.Size = UDim2.new(1, -40, 0, 30)
-    dialogTitle.Position = UDim2.new(0, 12, 0, 8)
+    dialogTitle.Size = UDim2.new(1, -30, 0, 25)
+    dialogTitle.Position = UDim2.new(0, 8, 0, 6)
     dialogTitle.BackgroundTransparency = 1
     dialogTitle.Text = "Select " .. title
     dialogTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    dialogTitle.TextSize = self.isMobile and 12 or 14
+    dialogTitle.TextSize = self.isMobile and 10 or 12
     dialogTitle.Font = Enum.Font.GothamBold
     dialogTitle.TextXAlignment = Enum.TextXAlignment.Left
     dialogTitle.Parent = dialog
     
     local closeButton = Instance.new("TextButton")
     closeButton.Name = "CloseButton"
-    closeButton.Size = UDim2.new(0, 20, 0, 20)
-    closeButton.Position = UDim2.new(1, -28, 0, 8)
+    closeButton.Size = UDim2.new(0, 16, 0, 16)
+    closeButton.Position = UDim2.new(1, -22, 0, 6)
     closeButton.BackgroundColor3 = Color3.fromRGB(255, 95, 87)
     closeButton.BorderSizePixel = 0
     closeButton.Text = "×"
     closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    closeButton.TextSize = self.isMobile and 10 or 12
+    closeButton.TextSize = self.isMobile and 8 or 10
     closeButton.Font = Enum.Font.GothamBold
     closeButton.Parent = dialog
     
     local closeCorner = Instance.new("UICorner")
-    closeCorner.CornerRadius = UDim.new(0, 10)
+    closeCorner.CornerRadius = UDim.new(0, 8)
     closeCorner.Parent = closeButton
+    
+    local searchFrame = Instance.new("Frame")
+    searchFrame.Name = "SearchFrame"
+    searchFrame.Size = UDim2.new(1, -16, 0, self.isMobile and 20 or 24)
+    searchFrame.Position = UDim2.new(0, 8, 0, 32)
+    searchFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    searchFrame.BorderSizePixel = 0
+    searchFrame.Parent = dialog
+    
+    local searchCorner = Instance.new("UICorner")
+    searchCorner.CornerRadius = UDim.new(0, 3)
+    searchCorner.Parent = searchFrame
+    
+    local searchBox = Instance.new("TextBox")
+    searchBox.Name = "SearchBox"
+    searchBox.Size = UDim2.new(1, -20, 1, 0)
+    searchBox.Position = UDim2.new(0, 6, 0, 0)
+    searchBox.BackgroundTransparency = 1
+    searchBox.Text = ""
+    searchBox.PlaceholderText = "Search options..."
+    searchBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    searchBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 160)
+    searchBox.TextSize = self.isMobile and 8 or 10
+    searchBox.Font = Enum.Font.Gotham
+    searchBox.TextXAlignment = Enum.TextXAlignment.Left
+    searchBox.Parent = searchFrame
+    
+    local searchIcon = Instance.new("TextLabel")
+    searchIcon.Name = "SearchIcon"
+    searchIcon.Size = UDim2.new(0, 10, 0, 10)
+    searchIcon.Position = UDim2.new(1, -14, 0.5, -5)
+    searchIcon.BackgroundTransparency = 1
+    searchIcon.Text = "🔍"
+    searchIcon.TextColor3 = Color3.fromRGB(150, 150, 160)
+    searchIcon.TextSize = self.isMobile and 6 or 8
+    searchIcon.Parent = searchFrame
     
     local scrollFrame = Instance.new("ScrollingFrame")
     scrollFrame.Name = "OptionsScroll"
-    scrollFrame.Size = UDim2.new(1, -24, 1, -80)
-    scrollFrame.Position = UDim2.new(0, 12, 0, 40)
+    scrollFrame.Size = UDim2.new(1, -16, 1, -66)
+    scrollFrame.Position = UDim2.new(0, 8, 0, 58)
     scrollFrame.BackgroundTransparency = 1
     scrollFrame.BorderSizePixel = 0
-    scrollFrame.ScrollBarThickness = 3
+    scrollFrame.ScrollBarThickness = 2
     scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 120)
     scrollFrame.Parent = dialog
     
     local optionLayout = Instance.new("UIListLayout")
     optionLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    optionLayout.Padding = UDim.new(0, 2)
+    optionLayout.Padding = UDim.new(0, 1)
     optionLayout.Parent = scrollFrame
+    
+    local optionFrames = {}
+    local currentSelection = self.dropdownSelections[title]
     
     for i, option in ipairs(options) do
         local optionFrame = Instance.new("Frame")
         optionFrame.Name = "Option" .. i
-        optionFrame.Size = UDim2.new(1, 0, 0, self.isMobile and 28 or 32)
+        optionFrame.Size = UDim2.new(1, 0, 0, self.isMobile and 22 or 26)
         optionFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
         optionFrame.BorderSizePixel = 0
         optionFrame.Parent = scrollFrame
         
         local optionCorner = Instance.new("UICorner")
-        optionCorner.CornerRadius = UDim.new(0, 4)
+        optionCorner.CornerRadius = UDim.new(0, 3)
         optionCorner.Parent = optionFrame
+        
+        local highlightBorder = Instance.new("UIStroke")
+        highlightBorder.Name = "HighlightBorder"
+        highlightBorder.Color = Color3.fromRGB(76, 175, 80)
+        highlightBorder.Thickness = 2
+        highlightBorder.Enabled = (option == currentSelection)
+        highlightBorder.Parent = optionFrame
         
         local optionButton = Instance.new("TextButton")
         optionButton.Name = "OptionButton"
@@ -598,26 +647,39 @@ function GUI:createDropdownDialog(title, options, defaultOption, callback, butto
         optionButton.BackgroundTransparency = 1
         optionButton.Text = option
         optionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-        optionButton.TextSize = self.isMobile and 10 or 12
+        optionButton.TextSize = self.isMobile and 8 or 10
         optionButton.Font = Enum.Font.Gotham
         optionButton.TextXAlignment = Enum.TextXAlignment.Left
         optionButton.Parent = optionFrame
         
         local optionPadding = Instance.new("UIPadding")
-        optionPadding.PaddingLeft = UDim.new(0, 8)
+        optionPadding.PaddingLeft = UDim.new(0, 6)
         optionPadding.Parent = optionButton
         
+        optionFrames[option] = {frame = optionFrame, border = highlightBorder}
+        
         optionButton.MouseEnter:Connect(function()
-            local tween = TweenService:Create(optionFrame, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(50, 120, 200)})
-            tween:Play()
+            if not highlightBorder.Enabled then
+                local tween = TweenService:Create(optionFrame, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(50, 50, 60)})
+                tween:Play()
+            end
         end)
         
         optionButton.MouseLeave:Connect(function()
-            local tween = TweenService:Create(optionFrame, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(40, 40, 50)})
-            tween:Play()
+            if not highlightBorder.Enabled then
+                local tween = TweenService:Create(optionFrame, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(40, 40, 50)})
+                tween:Play()
+            end
         end)
         
         optionButton.MouseButton1Click:Connect(function()
+            for _, data in pairs(optionFrames) do
+                data.border.Enabled = false
+            end
+            
+            highlightBorder.Enabled = true
+            self.dropdownSelections[title] = option
+            
             button.Text = option
             overlay:Destroy()
             
@@ -626,6 +688,21 @@ function GUI:createDropdownDialog(title, options, defaultOption, callback, butto
             end
         end)
     end
+    
+    local function filterOptions(searchText)
+        searchText = searchText:lower()
+        for option, data in pairs(optionFrames) do
+            if searchText == "" or option:lower():find(searchText) then
+                data.frame.Visible = true
+            else
+                data.frame.Visible = false
+            end
+        end
+    end
+    
+    searchBox.Changed:Connect(function()
+        filterOptions(searchBox.Text)
+    end)
     
     closeButton.MouseButton1Click:Connect(function()
         overlay:Destroy()
@@ -639,7 +716,7 @@ function GUI:createDropdownDialog(title, options, defaultOption, callback, butto
         input.Handled = true
     end)
     
-    dialog.Position = UDim2.new(0.5, -dialogSize[1]/2, 0.5, -dialogSize[2] - 50)
+    dialog.Position = UDim2.new(0.5, -dialogSize[1]/2, 0.5, -dialogSize[2] - 40)
     local tween = TweenService:Create(dialog, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Position = UDim2.new(0.5, -dialogSize[1]/2, 0.5, -dialogSize[2]/2)})
     tween:Play()
     
@@ -647,41 +724,41 @@ function GUI:createDropdownDialog(title, options, defaultOption, callback, butto
 end
 
 function GUI:addButton(name, callback)
-    local buttonHeight = self.isMobile and 30 or 36
+    local buttonHeight = self.isMobile and 24 or 28
     
     local buttonFrame = Instance.new("Frame")
     buttonFrame.Name = name .. "ButtonFrame"
-    buttonFrame.Size = UDim2.new(1, 0, 0, buttonHeight + 8)
+    buttonFrame.Size = UDim2.new(1, 0, 0, buttonHeight + 6)
     buttonFrame.BackgroundTransparency = 1
     buttonFrame.Parent = self.contentScrolling
     
     local button = Instance.new("TextButton")
     button.Name = name .. "Button"
-    button.Size = UDim2.new(1, -16, 0, buttonHeight)
-    button.Position = UDim2.new(0, 8, 0, 4)
+    button.Size = UDim2.new(1, -12, 0, buttonHeight)
+    button.Position = UDim2.new(0, 6, 0, 3)
     button.BackgroundColor3 = Color3.fromRGB(33, 150, 243)
     button.BorderSizePixel = 0
     button.Text = name
     button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    button.TextSize = self.isMobile and 10 or 12
+    button.TextSize = self.isMobile and 8 or 10
     button.Font = Enum.Font.GothamBold
     button.Parent = buttonFrame
     
     local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 6)
+    buttonCorner.CornerRadius = UDim.new(0, 4)
     buttonCorner.Parent = button
     
     local buttonShadow = Instance.new("Frame")
     buttonShadow.Name = "ButtonShadow"
-    buttonShadow.Size = UDim2.new(1, 4, 1, 4)
-    buttonShadow.Position = UDim2.new(0, -2, 0, -2)
+    buttonShadow.Size = UDim2.new(1, 3, 1, 3)
+    buttonShadow.Position = UDim2.new(0, -1.5, 0, -1.5)
     buttonShadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     buttonShadow.BackgroundTransparency = 0.6
     buttonShadow.ZIndex = -1
     buttonShadow.Parent = button
     
     local shadowCorner = Instance.new("UICorner")
-    shadowCorner.CornerRadius = UDim.new(0, 8)
+    shadowCorner.CornerRadius = UDim.new(0, 5.5)
     shadowCorner.Parent = buttonShadow
     
     button.MouseEnter:Connect(function()
@@ -695,6 +772,13 @@ function GUI:addButton(name, callback)
     end)
     
     button.MouseButton1Click:Connect(function()
+        for _, dialog in ipairs(self.dialogs) do
+            if dialog and dialog.Parent then
+                dialog:Destroy()
+            end
+        end
+        self.dialogs = {}
+        
         local ripple = Instance.new("Frame")
         ripple.Name = "Ripple"
         ripple.Size = UDim2.new(0, 0, 0, 0)
@@ -710,8 +794,8 @@ function GUI:addButton(name, callback)
         rippleCorner.Parent = ripple
         
         local rippleExpand = TweenService:Create(ripple, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Size = UDim2.new(0, 100, 0, 100),
-            Position = UDim2.new(0.5, -50, 0.5, -50),
+            Size = UDim2.new(0, 80, 0, 80),
+            Position = UDim2.new(0.5, -40, 0.5, -40),
             BackgroundTransparency = 1
         })
         
@@ -729,7 +813,7 @@ function GUI:addButton(name, callback)
 end
 
 function GUI:addSlider(name, minValue, maxValue, defaultValue, callback)
-    local sliderHeight = self.isMobile and 40 or 48
+    local sliderHeight = self.isMobile and 32 or 36
     
     local sliderFrame = Instance.new("Frame")
     sliderFrame.Name = name .. "Slider"
@@ -739,43 +823,43 @@ function GUI:addSlider(name, minValue, maxValue, defaultValue, callback)
     sliderFrame.Parent = self.contentScrolling
     
     local sliderCorner = Instance.new("UICorner")
-    sliderCorner.CornerRadius = UDim.new(0, 6)
+    sliderCorner.CornerRadius = UDim.new(0, 4)
     sliderCorner.Parent = sliderFrame
     
     local sliderLabel = Instance.new("TextLabel")
     sliderLabel.Name = "SliderLabel"
-    sliderLabel.Size = UDim2.new(1, -60, 0, 18)
-    sliderLabel.Position = UDim2.new(0, self.isMobile and 8 or 12, 0, 4)
+    sliderLabel.Size = UDim2.new(1, -40, 0, 14)
+    sliderLabel.Position = UDim2.new(0, self.isMobile and 6 or 8, 0, 2)
     sliderLabel.BackgroundTransparency = 1
     sliderLabel.Text = name
     sliderLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    sliderLabel.TextSize = self.isMobile and 10 or 12
+    sliderLabel.TextSize = self.isMobile and 8 or 10
     sliderLabel.Font = Enum.Font.Gotham
     sliderLabel.TextXAlignment = Enum.TextXAlignment.Left
     sliderLabel.Parent = sliderFrame
     
     local valueLabel = Instance.new("TextLabel")
     valueLabel.Name = "ValueLabel"
-    valueLabel.Size = UDim2.new(0, 50, 0, 18)
-    valueLabel.Position = UDim2.new(1, -58, 0, 4)
+    valueLabel.Size = UDim2.new(0, 35, 0, 14)
+    valueLabel.Position = UDim2.new(1, -41, 0, 2)
     valueLabel.BackgroundTransparency = 1
     valueLabel.Text = tostring(defaultValue)
     valueLabel.TextColor3 = Color3.fromRGB(33, 150, 243)
-    valueLabel.TextSize = self.isMobile and 10 or 12
+    valueLabel.TextSize = self.isMobile and 8 or 10
     valueLabel.Font = Enum.Font.GothamBold
     valueLabel.TextXAlignment = Enum.TextXAlignment.Right
     valueLabel.Parent = sliderFrame
     
     local sliderTrack = Instance.new("Frame")
     sliderTrack.Name = "SliderTrack"
-    sliderTrack.Size = UDim2.new(1, -24, 0, 4)
-    sliderTrack.Position = UDim2.new(0, 12, 1, -16)
+    sliderTrack.Size = UDim2.new(1, -16, 0, 3)
+    sliderTrack.Position = UDim2.new(0, 8, 1, -12)
     sliderTrack.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
     sliderTrack.BorderSizePixel = 0
     sliderTrack.Parent = sliderFrame
     
     local trackCorner = Instance.new("UICorner")
-    trackCorner.CornerRadius = UDim.new(0, 2)
+    trackCorner.CornerRadius = UDim.new(0, 1.5)
     trackCorner.Parent = sliderTrack
     
     local sliderFill = Instance.new("Frame")
@@ -787,13 +871,13 @@ function GUI:addSlider(name, minValue, maxValue, defaultValue, callback)
     sliderFill.Parent = sliderTrack
     
     local fillCorner = Instance.new("UICorner")
-    fillCorner.CornerRadius = UDim.new(0, 2)
+    fillCorner.CornerRadius = UDim.new(0, 1.5)
     fillCorner.Parent = sliderFill
     
     local sliderKnob = Instance.new("Frame")
     sliderKnob.Name = "SliderKnob"
-    sliderKnob.Size = UDim2.new(0, self.isMobile and 16 or 20, 0, self.isMobile and 16 or 20)
-    sliderKnob.Position = UDim2.new((defaultValue - minValue) / (maxValue - minValue), self.isMobile and -8 or -10, 0.5, self.isMobile and -8 or -10)
+    sliderKnob.Size = UDim2.new(0, self.isMobile and 12 or 14, 0, self.isMobile and 12 or 14)
+    sliderKnob.Position = UDim2.new((defaultValue - minValue) / (maxValue - minValue), self.isMobile and -6 or -7, 0.5, self.isMobile and -6 or -7)
     sliderKnob.BackgroundColor3 = Color3.fromRGB(33, 150, 243)
     sliderKnob.BorderSizePixel = 0
     sliderKnob.ZIndex = 2
@@ -805,8 +889,8 @@ function GUI:addSlider(name, minValue, maxValue, defaultValue, callback)
     
     local knobShadow = Instance.new("Frame")
     knobShadow.Name = "KnobShadow"
-    knobShadow.Size = UDim2.new(1, 4, 1, 4)
-    knobShadow.Position = UDim2.new(0, -2, 0, -2)
+    knobShadow.Size = UDim2.new(1, 3, 1, 3)
+    knobShadow.Position = UDim2.new(0, -1.5, 0, -1.5)
     knobShadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     knobShadow.BackgroundTransparency = 0.3
     knobShadow.ZIndex = 1
@@ -826,7 +910,7 @@ function GUI:addSlider(name, minValue, maxValue, defaultValue, callback)
         valueLabel.Text = tostring(currentValue)
         
         local fillTween = TweenService:Create(sliderFill, TweenInfo.new(0.1), {Size = UDim2.new(relativePos, 0, 1, 0)})
-        local knobTween = TweenService:Create(sliderKnob, TweenInfo.new(0.1), {Position = UDim2.new(relativePos, self.isMobile and -8 or -10, 0.5, self.isMobile and -8 or -10)})
+        local knobTween = TweenService:Create(sliderKnob, TweenInfo.new(0.1), {Position = UDim2.new(relativePos, self.isMobile and -6 or -7, 0.5, self.isMobile and -6 or -7)})
         
         fillTween:Play()
         knobTween:Play()
@@ -859,7 +943,7 @@ function GUI:addSlider(name, minValue, maxValue, defaultValue, callback)
 end
 
 function GUI:addTextInput(name, placeholder, callback)
-    local inputHeight = self.isMobile and 45 or 55
+    local inputHeight = self.isMobile and 36 or 42
     
     local inputFrame = Instance.new("Frame")
     inputFrame.Name = name .. "Input"
@@ -869,19 +953,19 @@ function GUI:addTextInput(name, placeholder, callback)
     inputFrame.Parent = self.contentScrolling
     
     local inputCorner = Instance.new("UICorner")
-    inputCorner.CornerRadius = UDim.new(0, 6)
+    inputCorner.CornerRadius = UDim.new(0, 4)
     inputCorner.Parent = inputFrame
     
     local inputContainer = Instance.new("Frame")
     inputContainer.Name = "InputContainer"
-    inputContainer.Size = UDim2.new(1, -24, 0, self.isMobile and 30 or 35)
-    inputContainer.Position = UDim2.new(0, 12, 1, self.isMobile and -38 or -43)
+    inputContainer.Size = UDim2.new(1, -16, 0, self.isMobile and 22 or 26)
+    inputContainer.Position = UDim2.new(0, 8, 1, self.isMobile and -28 or -32)
     inputContainer.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
     inputContainer.BorderSizePixel = 0
     inputContainer.Parent = inputFrame
     
     local containerCorner = Instance.new("UICorner")
-    containerCorner.CornerRadius = UDim.new(0, 4)
+    containerCorner.CornerRadius = UDim.new(0, 3)
     containerCorner.Parent = inputContainer
     
     local underline = Instance.new("Frame")
@@ -894,14 +978,14 @@ function GUI:addTextInput(name, placeholder, callback)
     
     local textBox = Instance.new("TextBox")
     textBox.Name = "TextBox"
-    textBox.Size = UDim2.new(1, -16, 1, 0)
-    textBox.Position = UDim2.new(0, 8, 0, 0)
+    textBox.Size = UDim2.new(1, -12, 1, 0)
+    textBox.Position = UDim2.new(0, 6, 0, 0)
     textBox.BackgroundTransparency = 1
     textBox.Text = ""
     textBox.PlaceholderText = ""
     textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
     textBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 160)
-    textBox.TextSize = self.isMobile and 11 or 13
+    textBox.TextSize = self.isMobile and 8 or 10
     textBox.Font = Enum.Font.Gotham
     textBox.TextXAlignment = Enum.TextXAlignment.Left
     textBox.ClearTextOnFocus = false
@@ -909,24 +993,24 @@ function GUI:addTextInput(name, placeholder, callback)
     
     local floatingLabel = Instance.new("TextLabel")
     floatingLabel.Name = "FloatingLabel"
-    floatingLabel.Size = UDim2.new(1, -16, 0, 20)
-    floatingLabel.Position = UDim2.new(0, 8, 0, self.isMobile and 8 or 10)
+    floatingLabel.Size = UDim2.new(1, -12, 0, 16)
+    floatingLabel.Position = UDim2.new(0, 6, 0, self.isMobile and 6 or 8)
     floatingLabel.BackgroundTransparency = 1
     floatingLabel.Text = placeholder or name
     floatingLabel.TextColor3 = Color3.fromRGB(150, 150, 160)
-    floatingLabel.TextSize = self.isMobile and 11 or 13
+    floatingLabel.TextSize = self.isMobile and 8 or 10
     floatingLabel.Font = Enum.Font.Gotham
     floatingLabel.TextXAlignment = Enum.TextXAlignment.Left
     floatingLabel.Parent = inputContainer
     
     local labelName = Instance.new("TextLabel")
     labelName.Name = "LabelName"
-    labelName.Size = UDim2.new(1, -24, 0, 15)
-    labelName.Position = UDim2.new(0, 12, 0, 2)
+    labelName.Size = UDim2.new(1, -16, 0, 12)
+    labelName.Position = UDim2.new(0, 8, 0, 2)
     labelName.BackgroundTransparency = 1
     labelName.Text = name
     labelName.TextColor3 = Color3.fromRGB(255, 255, 255)
-    labelName.TextSize = self.isMobile and 10 or 12
+    labelName.TextSize = self.isMobile and 8 or 10
     labelName.Font = Enum.Font.Gotham
     labelName.TextXAlignment = Enum.TextXAlignment.Left
     labelName.Parent = inputFrame
@@ -934,15 +1018,15 @@ function GUI:addTextInput(name, placeholder, callback)
     local function animateLabel(focused)
         if focused or textBox.Text ~= "" then
             local labelTween = TweenService:Create(floatingLabel, TweenInfo.new(0.2), {
-                Position = UDim2.new(0, 8, 0, -8),
-                TextSize = self.isMobile and 9 or 10,
+                Position = UDim2.new(0, 6, 0, -6),
+                TextSize = self.isMobile and 6 or 8,
                 TextColor3 = focused and Color3.fromRGB(33, 150, 243) or Color3.fromRGB(150, 150, 160)
             })
             labelTween:Play()
         else
             local labelTween = TweenService:Create(floatingLabel, TweenInfo.new(0.2), {
-                Position = UDim2.new(0, 8, 0, self.isMobile and 8 or 10),
-                TextSize = self.isMobile and 11 or 13,
+                Position = UDim2.new(0, 6, 0, self.isMobile and 6 or 8),
+                TextSize = self.isMobile and 8 or 10,
                 TextColor3 = Color3.fromRGB(150, 150, 160)
             })
             labelTween:Play()
@@ -975,7 +1059,7 @@ function GUI:addTextInput(name, placeholder, callback)
 end
 
 function GUI:createDialog(title, content, buttons)
-    local dialogSize = self.isMobile and {280, 180} or {320, 200}
+    local dialogSize = self.isMobile and {240, 160} or {280, 180}
     
     local overlay = Instance.new("Frame")
     overlay.Name = "DialogOverlay"
@@ -997,31 +1081,31 @@ function GUI:createDialog(title, content, buttons)
     dialog.Parent = overlay
     
     local dialogCorner = Instance.new("UICorner")
-    dialogCorner.CornerRadius = UDim.new(0, 6)
+    dialogCorner.CornerRadius = UDim.new(0, 4)
     dialogCorner.Parent = dialog
     
     local dialogTitle = Instance.new("TextLabel")
     dialogTitle.Name = "DialogTitle"
-    dialogTitle.Size = UDim2.new(1, -24, 0, 25)
-    dialogTitle.Position = UDim2.new(0, 12, 0, 8)
+    dialogTitle.Size = UDim2.new(1, -16, 0, 20)
+    dialogTitle.Position = UDim2.new(0, 8, 0, 6)
     dialogTitle.BackgroundTransparency = 1
     dialogTitle.Text = title
     dialogTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    dialogTitle.TextSize = self.isMobile and 12 or 14
+    dialogTitle.TextSize = self.isMobile and 10 or 12
     dialogTitle.Font = Enum.Font.GothamBold
     dialogTitle.TextXAlignment = Enum.TextXAlignment.Left
     dialogTitle.Parent = dialog
     
-    local contentHeight = self.isMobile and 90 or 100
+    local contentHeight = self.isMobile and 80 or 90
     
     local dialogContent = Instance.new("TextLabel")
     dialogContent.Name = "DialogContent"
-    dialogContent.Size = UDim2.new(1, -24, 0, contentHeight)
-    dialogContent.Position = UDim2.new(0, 12, 0, 35)
+    dialogContent.Size = UDim2.new(1, -16, 0, contentHeight)
+    dialogContent.Position = UDim2.new(0, 8, 0, 28)
     dialogContent.BackgroundTransparency = 1
     dialogContent.Text = content
     dialogContent.TextColor3 = Color3.fromRGB(200, 200, 200)
-    dialogContent.TextSize = self.isMobile and 10 or 12
+    dialogContent.TextSize = self.isMobile and 8 or 10
     dialogContent.Font = Enum.Font.Gotham
     dialogContent.TextXAlignment = Enum.TextXAlignment.Left
     dialogContent.TextYAlignment = Enum.TextYAlignment.Top
@@ -1030,8 +1114,8 @@ function GUI:createDialog(title, content, buttons)
     
     local buttonFrame = Instance.new("Frame")
     buttonFrame.Name = "ButtonFrame"
-    buttonFrame.Size = UDim2.new(1, -24, 0, self.isMobile and 25 or 30)
-    buttonFrame.Position = UDim2.new(0, 12, 1, self.isMobile and -35 or -40)
+    buttonFrame.Size = UDim2.new(1, -16, 0, self.isMobile and 20 or 24)
+    buttonFrame.Position = UDim2.new(0, 8, 1, self.isMobile and -28 or -32)
     buttonFrame.BackgroundTransparency = 1
     buttonFrame.Parent = dialog
     
@@ -1039,7 +1123,7 @@ function GUI:createDialog(title, content, buttons)
     buttonLayout.FillDirection = Enum.FillDirection.Horizontal
     buttonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
     buttonLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    buttonLayout.Padding = UDim.new(0, 6)
+    buttonLayout.Padding = UDim.new(0, 4)
     buttonLayout.Parent = buttonFrame
     
     buttons = buttons or {{"OK", function() overlay:Destroy() end}}
@@ -1049,17 +1133,17 @@ function GUI:createDialog(title, content, buttons)
         
         local dialogButton = Instance.new("TextButton")
         dialogButton.Name = "DialogButton" .. i
-        dialogButton.Size = UDim2.new(0, self.isMobile and 50 or 60, 1, 0)
+        dialogButton.Size = UDim2.new(0, self.isMobile and 40 or 50, 1, 0)
         dialogButton.BackgroundColor3 = i == 1 and Color3.fromRGB(33, 150, 243) or Color3.fromRGB(60, 60, 70)
         dialogButton.BorderSizePixel = 0
         dialogButton.Text = buttonName
         dialogButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-        dialogButton.TextSize = self.isMobile and 9 or 11
+        dialogButton.TextSize = self.isMobile and 7 or 9
         dialogButton.Font = Enum.Font.Gotham
         dialogButton.Parent = buttonFrame
         
         local buttonCorner = Instance.new("UICorner")
-        buttonCorner.CornerRadius = UDim.new(0, 4)
+        buttonCorner.CornerRadius = UDim.new(0, 3)
         buttonCorner.Parent = dialogButton
         
         dialogButton.MouseButton1Click:Connect(function()
@@ -1082,11 +1166,11 @@ function GUI:createDialog(title, content, buttons)
         end)
     end
     
-    dialog.Position = UDim2.new(0.5, -dialogSize[1]/2, 0.5, -dialogSize[2] - 50)
+    dialog.Position = UDim2.new(0.5, -dialogSize[1]/2, 0.5, -dialogSize[2] - 40)
     local tween = TweenService:Create(dialog, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Position = UDim2.new(0.5, -dialogSize[1]/2, 0.5, -dialogSize[2]/2)})
     tween:Play()
     
-    table.insert(self.dialogs, dialog)
+    table.insert(self.dialogs, overlay)
     
     return overlay
 end
