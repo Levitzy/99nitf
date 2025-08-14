@@ -21,9 +21,9 @@ function GUI.new(title)
     self.screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     self.screenGui.Parent = PlayerGui
     
-    local guiSize = self.isMobile and {400, 280} or {500, 350}
-    if self.screenSize.X < 500 then
-        guiSize = {self.screenSize.X * 0.85, self.screenSize.Y * 0.7}
+    local guiSize = self.isMobile and {450, 320} or {600, 450}
+    if self.screenSize.X < 600 then
+        guiSize = {self.screenSize.X * 0.9, self.screenSize.Y * 0.75}
     end
     
     self.mainFrame = Instance.new("Frame")
@@ -117,7 +117,7 @@ function GUI:createTitleBar(title)
 end
 
 function GUI:createSidebar()
-    local sidebarWidth = self.isMobile and 90 or 110
+    local sidebarWidth = self.isMobile and 100 or 130
     local titleHeight = self.isMobile and 25 or 30
     
     self.sidebar = Instance.new("Frame")
@@ -189,7 +189,7 @@ function GUI:createSearchBar()
 end
 
 function GUI:createContentArea()
-    local sidebarWidth = self.isMobile and 90 or 110
+    local sidebarWidth = self.isMobile and 100 or 130
     local titleHeight = self.isMobile and 25 or 30
     
     self.contentArea = Instance.new("Frame")
@@ -943,7 +943,7 @@ function GUI:addSlider(name, minValue, maxValue, defaultValue, callback)
 end
 
 function GUI:addTextInput(name, placeholder, callback)
-    local inputHeight = self.isMobile and 36 or 42
+    local inputHeight = self.isMobile and 40 or 48
     
     local inputFrame = Instance.new("Frame")
     inputFrame.Name = name .. "Input"
@@ -958,8 +958,8 @@ function GUI:addTextInput(name, placeholder, callback)
     
     local inputContainer = Instance.new("Frame")
     inputContainer.Name = "InputContainer"
-    inputContainer.Size = UDim2.new(1, -16, 0, self.isMobile and 22 or 26)
-    inputContainer.Position = UDim2.new(0, 8, 1, self.isMobile and -28 or -32)
+    inputContainer.Size = UDim2.new(1, -16, 0, self.isMobile and 26 or 30)
+    inputContainer.Position = UDim2.new(0, 8, 1, self.isMobile and -32 or -36)
     inputContainer.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
     inputContainer.BorderSizePixel = 0
     inputContainer.Parent = inputFrame
@@ -967,6 +967,12 @@ function GUI:addTextInput(name, placeholder, callback)
     local containerCorner = Instance.new("UICorner")
     containerCorner.CornerRadius = UDim.new(0, 3)
     containerCorner.Parent = inputContainer
+    
+    local containerStroke = Instance.new("UIStroke")
+    containerStroke.Name = "ContainerStroke"
+    containerStroke.Color = Color3.fromRGB(70, 70, 80)
+    containerStroke.Thickness = 1
+    containerStroke.Parent = inputContainer
     
     local underline = Instance.new("Frame")
     underline.Name = "Underline"
@@ -985,7 +991,7 @@ function GUI:addTextInput(name, placeholder, callback)
     textBox.PlaceholderText = ""
     textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
     textBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 160)
-    textBox.TextSize = self.isMobile and 8 or 10
+    textBox.TextSize = self.isMobile and 9 or 11
     textBox.Font = Enum.Font.Gotham
     textBox.TextXAlignment = Enum.TextXAlignment.Left
     textBox.ClearTextOnFocus = false
@@ -993,15 +999,24 @@ function GUI:addTextInput(name, placeholder, callback)
     
     local floatingLabel = Instance.new("TextLabel")
     floatingLabel.Name = "FloatingLabel"
-    floatingLabel.Size = UDim2.new(1, -12, 0, 16)
-    floatingLabel.Position = UDim2.new(0, 6, 0, self.isMobile and 6 or 8)
+    floatingLabel.Size = UDim2.new(1, -12, 0, 18)
+    floatingLabel.Position = UDim2.new(0, 6, 0, self.isMobile and 8 or 10)
     floatingLabel.BackgroundTransparency = 1
     floatingLabel.Text = placeholder or name
     floatingLabel.TextColor3 = Color3.fromRGB(150, 150, 160)
-    floatingLabel.TextSize = self.isMobile and 8 or 10
+    floatingLabel.TextSize = self.isMobile and 9 or 11
     floatingLabel.Font = Enum.Font.Gotham
     floatingLabel.TextXAlignment = Enum.TextXAlignment.Left
     floatingLabel.Parent = inputContainer
+    
+    local labelBackground = Instance.new("Frame")
+    labelBackground.Name = "LabelBackground"
+    labelBackground.Size = UDim2.new(0, 0, 0, 2)
+    labelBackground.Position = UDim2.new(0, 6, 0, -1)
+    labelBackground.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    labelBackground.BorderSizePixel = 0
+    labelBackground.Visible = false
+    labelBackground.Parent = inputContainer
     
     local labelName = Instance.new("TextLabel")
     labelName.Name = "LabelName"
@@ -1010,32 +1025,66 @@ function GUI:addTextInput(name, placeholder, callback)
     labelName.BackgroundTransparency = 1
     labelName.Text = name
     labelName.TextColor3 = Color3.fromRGB(255, 255, 255)
-    labelName.TextSize = self.isMobile and 8 or 10
-    labelName.Font = Enum.Font.Gotham
+    labelName.TextSize = self.isMobile and 9 or 11
+    labelName.Font = Enum.Font.GothamMedium
     labelName.TextXAlignment = Enum.TextXAlignment.Left
     labelName.Parent = inputFrame
     
     local function animateLabel(focused)
-        if focused or textBox.Text ~= "" then
-            local labelTween = TweenService:Create(floatingLabel, TweenInfo.new(0.2), {
-                Position = UDim2.new(0, 6, 0, -6),
-                TextSize = self.isMobile and 6 or 8,
-                TextColor3 = focused and Color3.fromRGB(33, 150, 243) or Color3.fromRGB(150, 150, 160)
+        local isActive = focused or textBox.Text ~= ""
+        
+        if isActive then
+            local labelSize = floatingLabel.TextBounds.X + 8
+            local labelTween = TweenService:Create(floatingLabel, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                Position = UDim2.new(0, 6, 0, -9),
+                TextSize = self.isMobile and 7 or 9,
+                TextColor3 = focused and Color3.fromRGB(33, 150, 243) or Color3.fromRGB(180, 180, 190)
             })
+            
+            local backgroundTween = TweenService:Create(labelBackground, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, labelSize, 0, 2)
+            })
+            
+            labelBackground.Visible = true
             labelTween:Play()
+            backgroundTween:Play()
         else
-            local labelTween = TweenService:Create(floatingLabel, TweenInfo.new(0.2), {
-                Position = UDim2.new(0, 6, 0, self.isMobile and 6 or 8),
-                TextSize = self.isMobile and 8 or 10,
+            local labelTween = TweenService:Create(floatingLabel, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                Position = UDim2.new(0, 6, 0, self.isMobile and 8 or 10),
+                TextSize = self.isMobile and 9 or 11,
                 TextColor3 = Color3.fromRGB(150, 150, 160)
             })
+            
+            local backgroundTween = TweenService:Create(labelBackground, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, 0, 0, 2)
+            })
+            
             labelTween:Play()
+            backgroundTween:Play()
+            
+            backgroundTween.Completed:Connect(function()
+                if not (focused or textBox.Text ~= "") then
+                    labelBackground.Visible = false
+                end
+            end)
         end
         
-        local underlineTween = TweenService:Create(underline, TweenInfo.new(0.2), {
+        local strokeTween = TweenService:Create(containerStroke, TweenInfo.new(0.2), {
+            Color = focused and Color3.fromRGB(33, 150, 243) or Color3.fromRGB(70, 70, 80),
+            Thickness = focused and 2 or 1
+        })
+        
+        local underlineTween = TweenService:Create(underline, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
             Size = focused and UDim2.new(1, 0, 0, 2) or UDim2.new(0, 0, 0, 2)
         })
+        
+        local containerTween = TweenService:Create(inputContainer, TweenInfo.new(0.2), {
+            BackgroundColor3 = focused and Color3.fromRGB(50, 50, 60) or Color3.fromRGB(45, 45, 55)
+        })
+        
+        strokeTween:Play()
         underlineTween:Play()
+        containerTween:Play()
     end
     
     textBox.Focused:Connect(function()
@@ -1050,8 +1099,26 @@ function GUI:addTextInput(name, placeholder, callback)
     end)
     
     textBox.Changed:Connect(function()
-        if textBox.Text ~= "" then
-            animateLabel(true)
+        if textBox.Text ~= "" and floatingLabel.Position.Y.Offset > 0 then
+            animateLabel(false)
+        end
+    end)
+    
+    inputContainer.MouseEnter:Connect(function()
+        if not textBox:IsFocused() then
+            local hoverTween = TweenService:Create(inputContainer, TweenInfo.new(0.1), {
+                BackgroundColor3 = Color3.fromRGB(48, 48, 58)
+            })
+            hoverTween:Play()
+        end
+    end)
+    
+    inputContainer.MouseLeave:Connect(function()
+        if not textBox:IsFocused() then
+            local hoverTween = TweenService:Create(inputContainer, TweenInfo.new(0.1), {
+                BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+            })
+            hoverTween:Play()
         end
     end)
     
