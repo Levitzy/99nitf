@@ -21,9 +21,9 @@ function GUI.new(title)
     self.screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     self.screenGui.Parent = PlayerGui
     
-    local guiSize = self.isMobile and {450, 320} or {600, 450}
-    if self.screenSize.X < 600 then
-        guiSize = {self.screenSize.X * 0.9, self.screenSize.Y * 0.75}
+    local guiSize = self.isMobile and {400, 280} or {520, 380}
+    if self.screenSize.X < 550 then
+        guiSize = {self.screenSize.X * 0.9, self.screenSize.Y * 0.7}
     end
     
     self.mainFrame = Instance.new("Frame")
@@ -62,9 +62,7 @@ function GUI.new(title)
     self.dialogs = {}
     self.dropdownSelections = {}
     
-    if not self.isMobile then
-        self:makeDraggable()
-    end
+    self:makeDraggable()
     
     return self
 end
@@ -119,7 +117,7 @@ function GUI:createTitleBar(title)
 end
 
 function GUI:createSidebar()
-    local sidebarWidth = self.isMobile and 100 or 130
+    local sidebarWidth = self.isMobile and 90 or 115
     local titleHeight = self.isMobile and 25 or 30
     
     self.sidebar = Instance.new("Frame")
@@ -192,7 +190,7 @@ function GUI:createSearchBar()
 end
 
 function GUI:createContentArea()
-    local sidebarWidth = self.isMobile and 100 or 130
+    local sidebarWidth = self.isMobile and 90 or 115
     local titleHeight = self.isMobile and 25 or 30
     
     self.contentArea = Instance.new("Frame")
@@ -519,7 +517,7 @@ function GUI:addDropdown(name, options, defaultOption, callback)
 end
 
 function GUI:createDropdownDialog(title, options, defaultOption, callback, button)
-    local dialogSize = self.isMobile and {260, 220} or {300, 260}
+    local dialogSize = self.isMobile and {240, 200} or {280, 240}
     
     local overlay = Instance.new("Frame")
     overlay.Name = "DropdownOverlay"
@@ -641,9 +639,37 @@ function GUI:createDropdownDialog(title, options, defaultOption, callback, butto
         local highlightBorder = Instance.new("UIStroke")
         highlightBorder.Name = "HighlightBorder"
         highlightBorder.Color = Color3.fromRGB(76, 175, 80)
-        highlightBorder.Thickness = 2
+        highlightBorder.Thickness = 2.5
         highlightBorder.Enabled = (option == currentSelection)
+        highlightBorder.Transparency = 0
         highlightBorder.Parent = optionFrame
+        
+        local highlightGlow = Instance.new("Frame")
+        highlightGlow.Name = "HighlightGlow"
+        highlightGlow.Size = UDim2.new(1, 0, 1, 0)
+        highlightGlow.Position = UDim2.new(0, 0, 0, 0)
+        highlightGlow.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
+        highlightGlow.BackgroundTransparency = (option == currentSelection) and 0.85 or 1
+        highlightGlow.BorderSizePixel = 0
+        highlightGlow.ZIndex = 0
+        highlightGlow.Parent = optionFrame
+        
+        local glowCorner = Instance.new("UICorner")
+        glowCorner.CornerRadius = UDim.new(0, 3)
+        glowCorner.Parent = highlightGlow
+        
+        local checkIcon = Instance.new("TextLabel")
+        checkIcon.Name = "CheckIcon"
+        checkIcon.Size = UDim2.new(0, 16, 0, 16)
+        checkIcon.Position = UDim2.new(1, -20, 0.5, -8)
+        checkIcon.BackgroundTransparency = 1
+        checkIcon.Text = "✓"
+        checkIcon.TextColor3 = Color3.fromRGB(76, 175, 80)
+        checkIcon.TextSize = self.isMobile and 10 or 12
+        checkIcon.Font = Enum.Font.GothamBold
+        checkIcon.Visible = (option == currentSelection)
+        checkIcon.ZIndex = 2
+        checkIcon.Parent = optionFrame
         
         local optionButton = Instance.new("TextButton")
         optionButton.Name = "OptionButton"
@@ -660,31 +686,69 @@ function GUI:createDropdownDialog(title, options, defaultOption, callback, butto
         optionPadding.PaddingLeft = UDim.new(0, 6)
         optionPadding.Parent = optionButton
         
-        optionFrames[option] = {frame = optionFrame, border = highlightBorder}
+        optionFrames[option] = {frame = optionFrame, border = highlightBorder, glow = highlightGlow, check = checkIcon}
         
         optionButton.MouseEnter:Connect(function()
             if not highlightBorder.Enabled then
-                local tween = TweenService:Create(optionFrame, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(50, 50, 60)})
-                tween:Play()
+                local hoverTween = TweenService:Create(optionFrame, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(55, 55, 65)})
+                local glowTween = TweenService:Create(highlightGlow, TweenInfo.new(0.15), {BackgroundTransparency = 0.92})
+                hoverTween:Play()
+                glowTween:Play()
             end
         end)
         
         optionButton.MouseLeave:Connect(function()
             if not highlightBorder.Enabled then
-                local tween = TweenService:Create(optionFrame, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(40, 40, 50)})
-                tween:Play()
+                local hoverTween = TweenService:Create(optionFrame, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(40, 40, 50)})
+                local glowTween = TweenService:Create(highlightGlow, TweenInfo.new(0.15), {BackgroundTransparency = 1})
+                hoverTween:Play()
+                glowTween:Play()
             end
         end)
         
         optionButton.MouseButton1Click:Connect(function()
             for _, data in pairs(optionFrames) do
                 data.border.Enabled = false
+                data.check.Visible = false
+                local glowTween = TweenService:Create(data.glow, TweenInfo.new(0.2), {BackgroundTransparency = 1})
+                glowTween:Play()
             end
             
             highlightBorder.Enabled = true
+            checkIcon.Visible = true
+            local selectGlowTween = TweenService:Create(highlightGlow, TweenInfo.new(0.2), {BackgroundTransparency = 0.85})
+            selectGlowTween:Play()
+            
+            local ripple = Instance.new("Frame")
+            ripple.Name = "SelectRipple"
+            ripple.Size = UDim2.new(0, 0, 0, 0)
+            ripple.Position = UDim2.new(0.5, 0, 0.5, 0)
+            ripple.AnchorPoint = Vector2.new(0.5, 0.5)
+            ripple.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
+            ripple.BackgroundTransparency = 0.3
+            ripple.BorderSizePixel = 0
+            ripple.ZIndex = 1
+            ripple.Parent = optionFrame
+            
+            local rippleCorner = Instance.new("UICorner")
+            rippleCorner.CornerRadius = UDim.new(1, 0)
+            rippleCorner.Parent = ripple
+            
+            local rippleExpand = TweenService:Create(ripple, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0, 100, 0, 100),
+                BackgroundTransparency = 1
+            })
+            
+            rippleExpand:Play()
+            rippleExpand.Completed:Connect(function()
+                ripple:Destroy()
+            end)
+            
             self.dropdownSelections[title] = option
             
             button.Text = option
+            
+            wait(0.1)
             overlay:Destroy()
             
             if callback then
@@ -1202,7 +1266,7 @@ function GUI:addTextInput(name, placeholder, callback)
 end
 
 function GUI:createDialog(title, content, buttons)
-    local dialogSize = self.isMobile and {240, 160} or {280, 180}
+    local dialogSize = self.isMobile and {220, 150} or {260, 170}
     
     local overlay = Instance.new("Frame")
     overlay.Name = "DialogOverlay"
@@ -1336,7 +1400,7 @@ function GUI:makeDraggable()
     local startPos = nil
     
     self.titleBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
             startPos = self.mainFrame.Position
@@ -1344,14 +1408,14 @@ function GUI:makeDraggable()
     end)
     
     UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = input.Position - dragStart
             self.mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
     
     UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = false
         end
     end)
