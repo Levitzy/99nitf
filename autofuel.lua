@@ -65,6 +65,66 @@ function AutoFuel.findAllFuelItems()
     return fuelItems
 end
 
+--[[
+    Moves a fuel item as if the player carried it and places it directly
+    on top of the MainFire.  This avoids relying on any teleport patches
+    while ensuring the item ends up precisely at the campfire.
+]]
+function AutoFuel.bringItemToMainFire(fuelItem)
+    local mainFire = AutoFuel.getMainFire()
+    if not mainFire or not fuelItem or not fuelItem.Parent then
+        return false
+    end
+
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then
+        return false
+    end
+
+    local fuelHandle
+    if fuelItem.Name == "Log" then
+        fuelHandle = fuelItem:FindFirstChild("Handle") or fuelItem:FindFirstChild("Meshes/log_Cylinder")
+    elseif fuelItem.Name == "Coal" then
+        fuelHandle = fuelItem:FindFirstChild("Coal")
+    elseif fuelItem.Name == "Fuel Canister" then
+        fuelHandle = fuelItem:FindFirstChild("Handle") or fuelItem:FindFirstChildOfClass("Part")
+    end
+
+    if not fuelHandle then
+        fuelHandle = fuelItem:FindFirstChildOfClass("Part") or fuelItem:FindFirstChildOfClass("MeshPart")
+    end
+    if not fuelHandle then return false end
+
+    -- move item near the player to simulate carrying it
+    fuelHandle.CFrame = hrp.CFrame * CFrame.new(0, 0, -2)
+
+    if fuelHandle:FindFirstChild("BodyVelocity") then
+        fuelHandle.BodyVelocity:Destroy()
+    end
+    if fuelHandle:FindFirstChild("BodyAngularVelocity") then
+        fuelHandle.BodyAngularVelocity:Destroy()
+    end
+
+    -- brief delay so the item appears carried
+    task.wait(0.05)
+
+    -- place directly above the campfire so it falls onto it
+    local target = mainFire.Position + Vector3.new(0, 1, 0)
+    fuelHandle.CFrame = CFrame.new(target)
+
+    -- remove any lingering velocity so it drops straight down
+    fuelHandle.Velocity = Vector3.zero
+    fuelHandle.AngularVelocity = Vector3.zero
+    if fuelHandle:FindFirstChild("AssemblyLinearVelocity") then
+        fuelHandle.AssemblyLinearVelocity = Vector3.zero
+    end
+    if fuelHandle:FindFirstChild("AssemblyAngularVelocity") then
+        fuelHandle.AssemblyAngularVelocity = Vector3.zero
+    end
+
+    return true
+end
+
 function AutoFuel.teleportItemToMainFire(fuelItem)
     local mainFire = AutoFuel.getMainFire()
     if not mainFire or not fuelItem or not fuelItem.Parent then
@@ -87,50 +147,29 @@ function AutoFuel.teleportItemToMainFire(fuelItem)
         end
         
         if fuelHandle then
-            local targetPosition = Vector3.new(0, 4, -3)
-            
-            fuelHandle.CFrame = CFrame.new(targetPosition + Vector3.new(
-                math.random(-2, 2),
-                math.random(15, 25),
-                math.random(-2, 2)
-            ))
-            
+            local targetPosition = mainFire.Position + Vector3.new(0, 1, 0)
+
+            fuelHandle.CFrame = CFrame.new(targetPosition)
+
             if fuelHandle:FindFirstChild("BodyVelocity") then
                 fuelHandle.BodyVelocity:Destroy()
             end
             if fuelHandle:FindFirstChild("BodyAngularVelocity") then
                 fuelHandle.BodyAngularVelocity:Destroy()
             end
-            
-            fuelHandle.Velocity = Vector3.new(
-                math.random(-1, 1),
-                math.random(-20, -15),
-                math.random(-1, 1)
-            )
-            
-            fuelHandle.AngularVelocity = Vector3.new(
-                math.random(-10, 10),
-                math.random(-10, 10),
-                math.random(-10, 10)
-            )
-            
+
+            fuelHandle.Velocity = Vector3.zero
+            fuelHandle.AngularVelocity = Vector3.zero
+
             if fuelHandle:FindFirstChild("AssemblyLinearVelocity") then
-                fuelHandle.AssemblyLinearVelocity = Vector3.new(
-                    math.random(-1, 1),
-                    math.random(-20, -15),
-                    math.random(-1, 1)
-                )
+                fuelHandle.AssemblyLinearVelocity = Vector3.zero
             end
             if fuelHandle:FindFirstChild("AssemblyAngularVelocity") then
-                fuelHandle.AssemblyAngularVelocity = Vector3.new(
-                    math.random(-10, 10),
-                    math.random(-10, 10),
-                    math.random(-10, 10)
-                )
+                fuelHandle.AssemblyAngularVelocity = Vector3.zero
             end
         end
     end)
-    
+
     return success
 end
 
@@ -148,7 +187,9 @@ function AutoFuel.autoFuelLoop()
         for i = 1, math.min(#fuelItems, 3) do
             local fuelItem = fuelItems[i]
             if fuelItem and fuelItem.Parent then
-                AutoFuel.teleportItemToMainFire(fuelItem)
+                if not AutoFuel.bringItemToMainFire(fuelItem) then
+                    AutoFuel.teleportItemToMainFire(fuelItem)
+                end
                 wait(0.1)
             end
         end
@@ -182,13 +223,13 @@ function AutoFuel.getStatus()
             return "Status: MainFire not found!", 0
         elseif #fuelItems > 0 then
             local playerPos = AutoFuel.getPlayerPosition()
-            local mainFirePos = Vector3.new(0, 4, -3)
+            local mainFirePos = mainFire.Position
             local distance = playerPos and AutoFuel.getDistance(playerPos, mainFirePos) or 0
-            
+
             local logCount = 0
             local coalCount = 0
             local canisterCount = 0
-            
+
             for _, item in pairs(fuelItems) do
                 if item.Name == "Log" then
                     logCount = logCount + 1
@@ -198,8 +239,8 @@ function AutoFuel.getStatus()
                     canisterCount = canisterCount + 1
                 end
             end
-            
-            return string.format("Status: Teleporting to (0,4,-3) - Logs:%d Coal:%d Canisters:%d - Fast Drop!", 
+
+            return string.format("Status: Delivering to MainFire - Logs:%d Coal:%d Canisters:%d - Direct Drop!",
                    logCount, coalCount, canisterCount), distance
         else
             return "Status: No fuel items found", 0
