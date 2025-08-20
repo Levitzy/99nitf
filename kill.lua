@@ -4,9 +4,11 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
+local Remote = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("ToolDamageObject")
 
 AutoKill.autoKillEnabled = false
 AutoKill.killDelay = 0.1
+AutoKill.maxTargets = 5
 AutoKill.killConnection = nil
 AutoKill.lastKillTime = 0
 
@@ -22,30 +24,22 @@ function AutoKill.getDistance(pos1, pos2)
 end
 
 function AutoKill.findAllTargets()
-    local workspace = game:GetService("Workspace")
-    local charactersFolder = workspace:WaitForChild("Characters")
-    
+    local charactersFolder = game:GetService("Workspace"):WaitForChild("Characters")
     local allTargets = {}
     local playerPos = AutoKill.getPlayerPosition()
-    
     for _, target in pairs(charactersFolder:GetChildren()) do
-        if (target.Name == "Bunny" or target.Name == "Wolf" or target.Name == "Alpha Wolf" or target.Name == "Cultist" or target.Name == "Crossbow Cultist") and target:FindFirstChild("HumanoidRootPart") then
+        local name = target.Name
+        if (name == "Bunny" or name == "Wolf" or name == "Alpha Wolf" or name == "Cultist" or name == "Crossbow Cultist") and target:FindFirstChild("HumanoidRootPart") then
             local distance = 0
             if playerPos then
                 distance = AutoKill.getDistance(playerPos, target.HumanoidRootPart.Position)
             end
-            table.insert(allTargets, {
-                target = target, 
-                distance = distance,
-                type = target.Name
-            })
+            table.insert(allTargets, {target = target, distance = distance, type = name})
         end
     end
-    
     table.sort(allTargets, function(a, b)
         return a.distance < b.distance
     end)
-    
     return allTargets
 end
 
@@ -61,36 +55,23 @@ function AutoKill.attackTarget(target)
     if not AutoKill.hasOldAxe() then
         return false
     end
-    
     local inventory = LocalPlayer:WaitForChild("Inventory")
     local oldAxe = inventory:WaitForChild("Old Axe")
-    
     local playerPos = AutoKill.getPlayerPosition()
     if not playerPos then return false end
-    
     local targetPos = target.HumanoidRootPart.Position
-    local lookDirection = (targetPos - playerPos).Unit
     local cframe = CFrame.lookAt(playerPos, targetPos)
-    
     for i = 1, 8 do
-        local args = {
-            target,
-            oldAxe,
-            "6_9111530262",
-            cframe
-        }
-        
-        local success, result = pcall(function()
-            return ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("ToolDamageObject"):InvokeServer(unpack(args))
+        local args = {target, oldAxe, "6_9111530262", cframe}
+        local success = pcall(function()
+            return Remote:InvokeServer(unpack(args))
         end)
-        
         if not success then
-            wait(0.01)
+            task.wait(0.01)
         else
-            wait(0.005)
+            task.wait(0.005)
         end
     end
-    
     return true
 end
 
@@ -98,34 +79,23 @@ function AutoKill.attackAllTargets(targetsData)
     if not AutoKill.hasOldAxe() then
         return false
     end
-    
     local currentTime = tick()
     if currentTime - AutoKill.lastKillTime < AutoKill.killDelay then
         return false
     end
-    
-    local attackedCount = 0
-    
-    for _, targetData in pairs(targetsData) do
+    for i = 1, math.min(#targetsData, AutoKill.maxTargets) do
+        local targetData = targetsData[i]
         if targetData.target and targetData.target.Parent then
-            spawn(function()
-                local success = AutoKill.attackTarget(targetData.target)
-                if success then
-                    attackedCount = attackedCount + 1
-                end
-            end)
+            AutoKill.attackTarget(targetData.target)
         end
     end
-    
     AutoKill.lastKillTime = currentTime
     return true
 end
 
 function AutoKill.autoKillLoop()
     if not AutoKill.autoKillEnabled then return end
-    
     local allTargets = AutoKill.findAllTargets()
-    
     if #allTargets > 0 then
         AutoKill.attackAllTargets(allTargets)
     end
@@ -133,7 +103,6 @@ end
 
 function AutoKill.setEnabled(enabled)
     AutoKill.autoKillEnabled = enabled
-    
     if enabled then
         AutoKill.killConnection = RunService.Heartbeat:Connect(AutoKill.autoKillLoop)
     else
@@ -148,22 +117,23 @@ function AutoKill.setKillDelay(delay)
     AutoKill.killDelay = delay
 end
 
+function AutoKill.setMaxTargets(count)
+    AutoKill.maxTargets = count
+end
+
 function AutoKill.getStatus()
     if AutoKill.autoKillEnabled then
         local allTargets = AutoKill.findAllTargets()
         local hasAxe = AutoKill.hasOldAxe()
-        
         if not hasAxe then
             return "Status: No Old Axe found!", 0, 0
         elseif #allTargets > 0 then
             local closestDistance = allTargets[1] and allTargets[1].distance or 0
-            
             local bunnyCount = 0
             local wolfCount = 0
             local alphaWolfCount = 0
             local cultistCount = 0
             local crossbowCultistCount = 0
-            
             for _, targetData in pairs(allTargets) do
                 if targetData.type == "Bunny" then
                     bunnyCount = bunnyCount + 1
@@ -177,9 +147,7 @@ function AutoKill.getStatus()
                     crossbowCultistCount = crossbowCultistCount + 1
                 end
             end
-            
-            return string.format("B:%d W:%d AW:%d C:%d CC:%d", 
-                   bunnyCount, wolfCount, alphaWolfCount, cultistCount, crossbowCultistCount), #allTargets, closestDistance
+            return string.format("B:%d W:%d AW:%d C:%d CC:%d", bunnyCount, wolfCount, alphaWolfCount, cultistCount, crossbowCultistCount), #allTargets, closestDistance
         else
             return "Status: No targets found", 0, 0
         end
