@@ -65,6 +65,88 @@ function AutoFuel.findAllFuelItems()
     return fuelItems
 end
 
+--[[
+    Attempts to simulate carrying a fuel item to the MainFire and then
+    dropping it from above.  This method is useful when direct teleporting
+    of items is patched by the game.  The item is first moved near the
+    player's HumanoidRootPart and then positioned above the camp fire with
+    a downward velocity so it falls naturally.
+]]
+function AutoFuel.bringItemToMainFire(fuelItem)
+    local mainFire = AutoFuel.getMainFire()
+    if not mainFire or not fuelItem or not fuelItem.Parent then
+        return false
+    end
+
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then
+        return false
+    end
+
+    local fuelHandle = nil
+    if fuelItem.Name == "Log" then
+        fuelHandle = fuelItem:FindFirstChild("Handle") or fuelItem:FindFirstChild("Meshes/log_Cylinder")
+    elseif fuelItem.Name == "Coal" then
+        fuelHandle = fuelItem:FindFirstChild("Coal")
+    elseif fuelItem.Name == "Fuel Canister" then
+        fuelHandle = fuelItem:FindFirstChild("Handle") or fuelItem:FindFirstChildOfClass("Part")
+    end
+
+    if not fuelHandle then
+        fuelHandle = fuelItem:FindFirstChildOfClass("Part") or fuelItem:FindFirstChildOfClass("MeshPart")
+    end
+    if not fuelHandle then return false end
+
+    -- move item near the player to simulate carrying it
+    fuelHandle.CFrame = hrp.CFrame * CFrame.new(0, 0, -2)
+
+    if fuelHandle:FindFirstChild("BodyVelocity") then
+        fuelHandle.BodyVelocity:Destroy()
+    end
+    if fuelHandle:FindFirstChild("BodyAngularVelocity") then
+        fuelHandle.BodyAngularVelocity:Destroy()
+    end
+
+    -- small delay so the item appears to be carried briefly
+    task.wait(0.05)
+
+    local target = mainFire.Position or Vector3.new(0, 4, -3)
+    local dropPos = target + Vector3.new(
+        math.random(-2, 2),
+        math.random(15, 25),
+        math.random(-2, 2)
+    )
+
+    fuelHandle.CFrame = CFrame.new(dropPos)
+    fuelHandle.Velocity = Vector3.new(
+        math.random(-1, 1),
+        math.random(-20, -15),
+        math.random(-1, 1)
+    )
+    fuelHandle.AngularVelocity = Vector3.new(
+        math.random(-10, 10),
+        math.random(-10, 10),
+        math.random(-10, 10)
+    )
+
+    if fuelHandle:FindFirstChild("AssemblyLinearVelocity") then
+        fuelHandle.AssemblyLinearVelocity = Vector3.new(
+            math.random(-1, 1),
+            math.random(-20, -15),
+            math.random(-1, 1)
+        )
+    end
+    if fuelHandle:FindFirstChild("AssemblyAngularVelocity") then
+        fuelHandle.AssemblyAngularVelocity = Vector3.new(
+            math.random(-10, 10),
+            math.random(-10, 10),
+            math.random(-10, 10)
+        )
+    end
+
+    return true
+end
+
 function AutoFuel.teleportItemToMainFire(fuelItem)
     local mainFire = AutoFuel.getMainFire()
     if not mainFire or not fuelItem or not fuelItem.Parent then
@@ -148,7 +230,9 @@ function AutoFuel.autoFuelLoop()
         for i = 1, math.min(#fuelItems, 3) do
             local fuelItem = fuelItems[i]
             if fuelItem and fuelItem.Parent then
-                AutoFuel.teleportItemToMainFire(fuelItem)
+                if not AutoFuel.bringItemToMainFire(fuelItem) then
+                    AutoFuel.teleportItemToMainFire(fuelItem)
+                end
                 wait(0.1)
             end
         end
@@ -199,7 +283,7 @@ function AutoFuel.getStatus()
                 end
             end
             
-            return string.format("Status: Teleporting to (0,4,-3) - Logs:%d Coal:%d Canisters:%d - Fast Drop!", 
+            return string.format("Status: Delivering to (0,4,-3) - Logs:%d Coal:%d Canisters:%d - Fast Drop!",
                    logCount, coalCount, canisterCount), distance
         else
             return "Status: No fuel items found", 0
