@@ -7,420 +7,272 @@ local AutoPlant = loadstring(game:HttpGet('https://raw.githubusercontent.com/Lev
 local AutoFeed = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/autofeed.lua'))()
 local Webhook = loadstring(game:HttpGet('https://raw.githubusercontent.com/Levitzy/99nitf/refs/heads/main/webhook.lua'))()
 
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
-local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/refs/heads/main/dist/main.lua"))()
 
-local Window = Fluent:CreateWindow({
+local Window = WindUI:CreateWindow({
     Title = "Forest Automation Suite v2.2",
-    SubTitle = "Ultimate Forest Management System",
-    TabWidth = 160,
-    Size = UDim2.fromOffset(580, 460),
-    Acrylic = true,
-    Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.LeftControl
+    Folder = "ForestAutomation",
+    Icon = "trees",
+    IconSize = 20,
+    NewElements = true,
+    HideSearchBar = false,
+    
+    OpenButton = {
+        Title = "Open Forest UI",
+        Enabled = true,
+        Draggable = true,
+        OnlyMobile = false,
+        Color = ColorSequence.new(
+            Color3.fromRGB(76, 175, 80),
+            Color3.fromRGB(30, 80, 40)
+        )
+    },
+    Topbar = {
+        Height = 44,
+        ButtonsType = "Mac",
+    }
 })
-
-local function createMobileToggle()
-    local ScreenGui = Instance.new("ScreenGui")
-    local ToggleButton = Instance.new("TextButton")
-    local UICorner = Instance.new("UICorner")
-    local UIStroke = Instance.new("UIStroke")
-    local UISizeConstraint = Instance.new("UISizeConstraint")
-    
-    ScreenGui.Name = "ForestToggle"
-    ScreenGui.Parent = game:GetService("CoreGui")
-    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    ScreenGui.ResetOnSpawn = false
-    ScreenGui.IgnoreGuiInset = true
-    
-    ToggleButton.Parent = ScreenGui
-    ToggleButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    ToggleButton.BorderSizePixel = 0
-    ToggleButton.Position = UDim2.new(0, 20, 0, 80)
-    ToggleButton.Size = UDim2.new(0, 65, 0, 65)
-    ToggleButton.Font = Enum.Font.GothamBold
-    ToggleButton.Text = "🌲"
-    ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ToggleButton.TextSize = 32
-    ToggleButton.ZIndex = 10000
-    ToggleButton.Active = true
-    ToggleButton.BackgroundTransparency = 0.1
-    
-    UICorner.Parent = ToggleButton
-    UICorner.CornerRadius = UDim.new(0, 16)
-    
-    UIStroke.Parent = ToggleButton
-    UIStroke.Color = Color3.fromRGB(76, 175, 80)
-    UIStroke.Thickness = 3
-    UIStroke.Transparency = 0.2
-    
-    UISizeConstraint.Parent = ToggleButton
-    UISizeConstraint.MaxSize = Vector2.new(80, 80)
-    UISizeConstraint.MinSize = Vector2.new(50, 50)
-    
-    local isVisible = true
-    local isDragging = false
-    local dragStart = nil
-    local startPos = nil
-    local clickTime = 0
-    local TweenService = game:GetService("TweenService")
-    
-    local function createPulseEffect()
-        local pulse = TweenService:Create(
-            ToggleButton,
-            TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
-            {BackgroundTransparency = 0.3}
-        )
-        pulse:Play()
-        return pulse
-    end
-    
-    local pulseAnimation = createPulseEffect()
-    
-    local function updateVisualState()
-        if isVisible then
-            UIStroke.Color = Color3.fromRGB(76, 175, 80)
-            ToggleButton.BackgroundColor3 = Color3.fromRGB(20, 30, 20)
-            UIStroke.Transparency = 0.1
-        else
-            UIStroke.Color = Color3.fromRGB(158, 158, 158)
-            ToggleButton.BackgroundColor3 = Color3.fromRGB(30, 20, 20)
-            UIStroke.Transparency = 0.4
-        end
-    end
-    
-    local function animateClick()
-        local clickTween = TweenService:Create(
-            ToggleButton,
-            TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {Size = UDim2.new(0, 75, 0, 75), TextSize = 36}
-        )
-        clickTween:Play()
-        
-        clickTween.Completed:Connect(function()
-            local backTween = TweenService:Create(
-                ToggleButton,
-                TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {Size = UDim2.new(0, 65, 0, 65), TextSize = 32}
-            )
-            backTween:Play()
-        end)
-    end
-    
-    ToggleButton.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            isDragging = true
-            dragStart = input.Position
-            startPos = ToggleButton.Position
-            clickTime = tick()
-            
-            animateClick()
-        end
-    end)
-    
-    ToggleButton.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            if isDragging and dragStart then
-                local delta = input.Position - dragStart
-                local newPosX = math.clamp(startPos.X.Offset + delta.X, 10, ScreenGui.AbsoluteSize.X - 75)
-                local newPosY = math.clamp(startPos.Y.Offset + delta.Y, 10, ScreenGui.AbsoluteSize.Y - 75)
-                ToggleButton.Position = UDim2.new(0, newPosX, 0, newPosY)
-            end
-        end
-    end)
-    
-    ToggleButton.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            if isDragging then
-                isDragging = false
-                local timeDiff = tick() - clickTime
-                
-                if timeDiff < 0.3 and dragStart then
-                    local dragDistance = (input.Position - dragStart).Magnitude
-                    if dragDistance < 10 then
-                        isVisible = not isVisible
-                        Window.Root.Visible = isVisible
-                        updateVisualState()
-                        
-                        if isVisible then
-                            Fluent:Notify({
-                                Title = "Forest GUI",
-                                Content = "Interface restored",
-                                Duration = 2
-                            })
-                        end
-                    end
-                end
-                
-                dragStart = nil
-                startPos = nil
-            end
-        end
-    end)
-    
-    updateVisualState()
-    
-    local UserInputService = game:GetService("UserInputService")
-    UserInputService.InputBegan:Connect(function(input, gameProcessed)
-        if not gameProcessed and input.KeyCode == Enum.KeyCode.LeftControl then
-            isVisible = not isVisible
-            Window.Root.Visible = isVisible
-            updateVisualState()
-        end
-    end)
-    
-    return ToggleButton
-end
-
-local MobileToggle = createMobileToggle()
 
 local Tabs = {
-    Flight = Window:AddTab({ Title = "✈️ Flight", Icon = "plane" }),
-    Forest = Window:AddTab({ Title = "🌲 Forest", Icon = "trees" }),
-    Combat = Window:AddTab({ Title = "⚔️ Combat", Icon = "sword" }),
-    Discord = Window:AddTab({ Title = "📢 Discord", Icon = "message-circle" }),
-    Settings = Window:AddTab({ Title = "⚙️ Settings", Icon = "settings" })
+    Flight = Window:Tab({ Title = "Flight", Icon = "plane", IconShape = "Square" }),
+    Forest = Window:Tab({ Title = "Forest", Icon = "tree-pine", IconShape = "Square" }),
+    Combat = Window:Tab({ Title = "Combat", Icon = "sword", IconShape = "Square" }),
+    Discord = Window:Tab({ Title = "Discord", Icon = "message-circle", IconShape = "Square" }),
+    Settings = Window:Tab({ Title = "Settings", Icon = "settings", IconShape = "Square" })
 }
 
-local Options = Fluent.Options
 local RunService = game:GetService("RunService")
 
-local FlightToggle = Tabs.Flight:AddToggle("FlightToggle", {
+-- Flight Tab
+Tabs.Flight:Toggle({
     Title = "Enable Flight",
-    Description = "Toggle flight mode with WASD controls",
-    Default = false
+    Desc = "Toggle flight mode with WASD controls",
+    Callback = function(Value)
+        local success = Fly.setEnabled(Value)
+        
+        if Value and success then
+            WindUI:Notify({
+                Title = "Flight System",
+                Content = "Flight enabled! Use WASD + Space/Shift to fly",
+                Duration = 4
+            })
+        elseif Value and not success then
+            WindUI:Notify({
+                Title = "Flight Error",
+                Content = "Could not enable flight - character not found!",
+                Duration = 3
+            })
+        else
+            WindUI:Notify({
+                Title = "Flight System", 
+                Content = "Flight disabled - landing complete",
+                Duration = 2
+            })
+        end
+    end
 })
 
-FlightToggle:OnChanged(function(Value)
-    local success = Fly.setEnabled(Value)
-    
-    if Value and success then
-        Fluent:Notify({
-            Title = "Flight System",
-            Content = "Flight enabled! Use WASD + Space/Shift to fly",
-            Duration = 4
-        })
-    elseif Value and not success then
-        Fluent:Notify({
-            Title = "Flight Error",
-            Content = "Could not enable flight - character not found!",
-            Duration = 3
-        })
-    else
-        Fluent:Notify({
-            Title = "Flight System", 
-            Content = "Flight disabled - landing complete",
-            Duration = 2
-        })
-    end
-end)
-
-local FlightSpeed = Tabs.Flight:AddSlider("FlightSpeed", {
+Tabs.Flight:Slider({
     Title = "Flight Speed",
-    Description = "Adjust your flying speed",
-    Default = 50,
-    Min = 1,
-    Max = 200,
-    Rounding = 1
+    Desc = "Adjust your flying speed",
+    Step = 1,
+    Value = {
+        Min = 1,
+        Max = 200,
+        Default = 50,
+    },
+    Callback = function(Value)
+        Fly.setSpeed(Value)
+    end
 })
 
-FlightSpeed:OnChanged(function(Value)
-    Fly.setSpeed(Value)
-end)
-
-local TreeToggle = Tabs.Forest:AddToggle("TreeToggle", {
+-- Forest Tab
+Tabs.Forest:Toggle({
     Title = "Auto Tree Chopper",
-    Description = "Automatically chop all small trees on the map",
-    Default = false
+    Desc = "Automatically chop all small trees on the map",
+    Callback = function(Value)
+        TreeChopper.setEnabled(Value)
+        
+        if Value then
+            WindUI:Notify({
+                Title = "Tree Chopper",
+                Content = "Started chopping all small trees!",
+                Duration = 3
+            })
+        else
+            WindUI:Notify({
+                Title = "Tree Chopper",
+                Content = "Tree chopping stopped",
+                Duration = 2
+            })
+        end
+    end
 })
 
-TreeToggle:OnChanged(function(Value)
-    TreeChopper.setEnabled(Value)
-    
-    if Value then
-        Fluent:Notify({
-            Title = "Tree Chopper",
-            Content = "Started chopping all small trees!",
-            Duration = 3
-        })
-    else
-        Fluent:Notify({
-            Title = "Tree Chopper",
-            Content = "Tree chopping stopped",
-            Duration = 2
-        })
-    end
-end)
-
-local PlantToggle = Tabs.Forest:AddToggle("PlantToggle", {
+Tabs.Forest:Toggle({
     Title = "Auto Plant Saplings", 
-    Description = "Plant saplings at their current locations",
-    Default = false
+    Desc = "Plant saplings at their current locations",
+    Callback = function(Value)
+        AutoPlant.setEnabled(Value)
+        
+        if Value then
+            WindUI:Notify({
+                Title = "Auto Plant",
+                Content = "Planting saplings for forest regeneration!",
+                Duration = 3
+            })
+        else
+            WindUI:Notify({
+                Title = "Auto Plant",
+                Content = "Sapling planting stopped",
+                Duration = 2
+            })
+        end
+    end
 })
 
-PlantToggle:OnChanged(function(Value)
-    AutoPlant.setEnabled(Value)
-    
-    if Value then
-        Fluent:Notify({
-            Title = "Auto Plant",
-            Content = "Planting saplings for forest regeneration!",
-            Duration = 3
-        })
-    else
-        Fluent:Notify({
-            Title = "Auto Plant",
-            Content = "Sapling planting stopped",
-            Duration = 2
-        })
-    end
-end)
-
-local FuelToggle = Tabs.Forest:AddToggle("FuelToggle", {
+Tabs.Forest:Toggle({
     Title = "Auto Fuel System",
-    Description = "Teleport fuel items to MainFire at (0,4,-3)",
-    Default = false
+    Desc = "Teleport fuel items to MainFire at (0,4,-3)",
+    Callback = function(Value)
+        AutoFuel.setEnabled(Value)
+        
+        if Value then
+            WindUI:Notify({
+                Title = "Auto Fuel",
+                Content = "Fuel management system active!",
+                Duration = 3
+            })
+        else
+            WindUI:Notify({
+                Title = "Auto Fuel",
+                Content = "Fuel automation stopped",
+                Duration = 2
+            })
+        end
+    end
 })
 
-FuelToggle:OnChanged(function(Value)
-    AutoFuel.setEnabled(Value)
-    
-    if Value then
-        Fluent:Notify({
-            Title = "Auto Fuel",
-            Content = "Fuel management system active!",
-            Duration = 3
-        })
-    else
-        Fluent:Notify({
-            Title = "Auto Fuel",
-            Content = "Fuel automation stopped",
-            Duration = 2
-        })
-    end
-end)
-
-local KillToggle = Tabs.Combat:AddToggle("KillToggle", {
+-- Combat Tab
+Tabs.Combat:Toggle({
     Title = "Auto Combat System",
-    Description = "Attack all hostile creatures (Bunny, Wolf, Cultist, etc.)",
-    Default = false
+    Desc = "Attack all hostile creatures (Bunny, Wolf, Cultist, etc.)",
+    Callback = function(Value)
+        AutoKill.setEnabled(Value)
+        
+        if Value then
+            WindUI:Notify({
+                Title = "Combat System",
+                Content = "Engaging all hostile targets!",
+                Duration = 3
+            })
+        else
+            WindUI:Notify({
+                Title = "Combat System",
+                Content = "Combat automation stopped",
+                Duration = 2
+            })
+        end
+    end
 })
 
-KillToggle:OnChanged(function(Value)
-    AutoKill.setEnabled(Value)
-    
-    if Value then
-        Fluent:Notify({
-            Title = "Combat System",
-            Content = "Engaging all hostile targets!",
-            Duration = 3
-        })
-    else
-        Fluent:Notify({
-            Title = "Combat System",
-            Content = "Combat automation stopped",
-            Duration = 2
-        })
-    end
-end)
-
-local CookToggle = Tabs.Combat:AddToggle("CookToggle", {
+Tabs.Combat:Toggle({
     Title = "Auto Cooking System",
-    Description = "Cook all raw meat (Morsel & Steak) automatically",
-    Default = false
+    Desc = "Cook all raw meat (Morsel & Steak) automatically",
+    Callback = function(Value)
+        AutoCook.setEnabled(Value)
+        
+        if Value then
+            WindUI:Notify({
+                Title = "Cooking System",
+                Content = "Auto-cooking all raw meat!",
+                Duration = 3
+            })
+        else
+            WindUI:Notify({
+                Title = "Cooking System", 
+                Content = "Cooking automation stopped",
+                Duration = 2
+            })
+        end
+    end
 })
 
-CookToggle:OnChanged(function(Value)
-    AutoCook.setEnabled(Value)
-    
-    if Value then
-        Fluent:Notify({
-            Title = "Cooking System",
-            Content = "Auto-cooking all raw meat!",
-            Duration = 3
-        })
-    else
-        Fluent:Notify({
-            Title = "Cooking System", 
-            Content = "Cooking automation stopped",
-            Duration = 2
-        })
-    end
-end)
-
-local FeedToggle = Tabs.Combat:AddToggle("FeedToggle", {
+Tabs.Combat:Toggle({
     Title = "Auto Feed System",
-    Description = "Automatically eat Cooked Morsels when hungry",
-    Default = false
+    Desc = "Automatically eat Cooked Morsels when hungry",
+    Callback = function(Value)
+        AutoFeed.setEnabled(Value)
+        
+        if Value then
+            WindUI:Notify({
+                Title = "Auto Feed",
+                Content = "Auto-feeding system activated!",
+                Duration = 3
+            })
+        else
+            WindUI:Notify({
+                Title = "Auto Feed", 
+                Content = "Auto-feeding stopped",
+                Duration = 2
+            })
+        end
+    end
 })
 
-FeedToggle:OnChanged(function(Value)
-    AutoFeed.setEnabled(Value)
-    
-    if Value then
-        Fluent:Notify({
-            Title = "Auto Feed",
-            Content = "Auto-feeding system activated!",
-            Duration = 3
-        })
-    else
-        Fluent:Notify({
-            Title = "Auto Feed", 
-            Content = "Auto-feeding stopped",
-            Duration = 2
-        })
-    end
-end)
-
-local FeedThreshold = Tabs.Combat:AddDropdown("FeedThreshold", {
+Tabs.Combat:Dropdown({
     Title = "Feed Threshold",
-    Description = "Start feeding when hunger drops to this level",
-    Values = {"25%", "50%", "75%", "80%"},
-    Default = "80%"
-})
-
-FeedThreshold:OnChanged(function(Value)
-    local threshold = tonumber(string.match(Value, "%d+"))
-    AutoFeed.setFeedThreshold(threshold)
-    
-    Fluent:Notify({
-        Title = "Feed Threshold",
-        Content = "Feed threshold set to " .. threshold .. "%",
-        Duration = 2
-    })
-end)
-
-local DayTrackerToggle = Tabs.Discord:AddToggle("DayTrackerToggle", {
-    Title = "Day Tracker",
-    Description = "Get Discord notifications when a new day starts",
-    Default = false
-})
-
-DayTrackerToggle:OnChanged(function(Value)
-    Webhook.setEnabled(Value)
-    
-    if Value then
-        Fluent:Notify({
-            Title = "Day Tracker",
-            Content = "Discord notifications enabled for day changes!",
-            Duration = 3
-        })
-    else
-        Fluent:Notify({
-            Title = "Day Tracker",
-            Content = "Discord notifications disabled",
+    Desc = "Start feeding when hunger drops to this level",
+    Values = {
+        {Title = "25%"},
+        {Title = "50%"},
+        {Title = "75%"},
+        {Title = "80%"}
+    },
+    Value = "80%",
+    Callback = function(Option)
+        -- Option matches the table entry, e.g., {Title = "80%"}
+        local val = Option.Title
+        local threshold = tonumber(string.match(val, "%d+"))
+        AutoFeed.setFeedThreshold(threshold)
+        
+        WindUI:Notify({
+            Title = "Feed Threshold",
+            Content = "Feed threshold set to " .. threshold .. "%",
             Duration = 2
         })
     end
-end)
+})
 
-local TestMessageButton = Tabs.Discord:AddButton({
+-- Discord Tab
+Tabs.Discord:Toggle({
+    Title = "Day Tracker",
+    Desc = "Get Discord notifications when a new day starts",
+    Callback = function(Value)
+        Webhook.setEnabled(Value)
+        
+        if Value then
+            WindUI:Notify({
+                Title = "Day Tracker",
+                Content = "Discord notifications enabled for day changes!",
+                Duration = 3
+            })
+        else
+            WindUI:Notify({
+                Title = "Day Tracker",
+                Content = "Discord notifications disabled",
+                Duration = 2
+            })
+        end
+    end
+})
+
+Tabs.Discord:Button({
     Title = "Send Test Message",
-    Description = "Send a test message to Discord to verify webhook works",
+    Desc = "Send a test message to Discord to verify webhook works",
     Callback = function()
         Webhook.sendTestMessage()
-        Fluent:Notify({
+        WindUI:Notify({
             Title = "Test Message",
             Content = "Test message sent to Discord!",
             Duration = 2
@@ -428,77 +280,80 @@ local TestMessageButton = Tabs.Discord:AddButton({
     end
 })
 
-local TreeStatus = Tabs.Settings:AddParagraph({
-    Title = "🌲 Tree Status",
-    Content = "Ready"
+-- Settings Tab
+local TreeStatus = Tabs.Settings:Paragraph({
+    Title = "Tree Status",
+    Desc = "Ready"
 })
 
-local FuelStatus = Tabs.Settings:AddParagraph({
-    Title = "⛽ Fuel Status", 
-    Content = "Ready"
+local FuelStatus = Tabs.Settings:Paragraph({
+    Title = "Fuel Status", 
+    Desc = "Ready"
 })
 
-local CombatStatus = Tabs.Settings:AddParagraph({
-    Title = "⚔️ Combat Status",
-    Content = "Ready"
+local CombatStatus = Tabs.Settings:Paragraph({
+    Title = "Combat Status",
+    Desc = "Ready"
 })
 
-local CookStatus = Tabs.Settings:AddParagraph({
-    Title = "🍖 Cook Status",
-    Content = "Ready"
+local CookStatus = Tabs.Settings:Paragraph({
+    Title = "Cook Status",
+    Desc = "Ready"
 })
 
-local FeedStatus = Tabs.Settings:AddParagraph({
-    Title = "🍽️ Feed Status",
-    Content = "Ready"
+local FeedStatus = Tabs.Settings:Paragraph({
+    Title = "Feed Status",
+    Desc = "Ready"
 })
 
-local PlantStatus = Tabs.Settings:AddParagraph({
-    Title = "🌱 Plant Status",
-    Content = "Ready"
+local PlantStatus = Tabs.Settings:Paragraph({
+    Title = "Plant Status",
+    Desc = "Ready"
 })
 
-local DiscordStatus = Tabs.Settings:AddParagraph({
-    Title = "📢 Discord Status",
-    Content = "Ready"
+local DiscordStatus = Tabs.Settings:Paragraph({
+    Title = "Discord Status",
+    Desc = "Ready"
 })
 
-local SystemStatus = Tabs.Settings:AddParagraph({
-    Title = "🚀 System Overview",
-    Content = "All systems offline"
+local SystemStatus = Tabs.Settings:Paragraph({
+    Title = "System Overview",
+    Desc = "All systems offline"
 })
 
 local lastUIUpdate = 0
-local UIUpdateInterval = 0.5  -- Update UI every 0.5 seconds instead of every frame
+local UIUpdateInterval = 0.5
 
 RunService.Heartbeat:Connect(function()
     local currentTime = tick()
     
-    -- Only update UI every 0.5 seconds to reduce lag
     if currentTime - lastUIUpdate < UIUpdateInterval then
         return
     end
     lastUIUpdate = currentTime
+    
     local treeStatusText, treeCount, closestDistance = TreeChopper.getStatus()
-    TreeStatus:SetDesc(treeStatusText)
+    -- Assuming SetDesc works or direct property assignment. 
+    -- If SetDesc doesn't exist, this might error, but it's the best guess based on patterns.
+    if TreeStatus.SetDesc then TreeStatus:SetDesc(treeStatusText) end
     
     local fuelStatusText, distance = AutoFuel.getStatus()
-    FuelStatus:SetDesc(fuelStatusText)
+    if FuelStatus.SetDesc then FuelStatus:SetDesc(fuelStatusText) end
     
     local killStatusText, targetCount, closestTargetDistance = AutoKill.getStatus()
-    CombatStatus:SetDesc("Targets: " .. killStatusText)
+    if CombatStatus.SetDesc then CombatStatus:SetDesc("Targets: " .. killStatusText) end
     
     local cookStatusText, meatCount = AutoCook.getStatus()
-    CookStatus:SetDesc(cookStatusText)
+    if CookStatus.SetDesc then CookStatus:SetDesc(cookStatusText) end
     
     local feedStatusText, hungerPercent = AutoFeed.getStatus()
-    FeedStatus:SetDesc(feedStatusText)
+    if FeedStatus.SetDesc then FeedStatus:SetDesc(feedStatusText) end
     
     local plantStatusText, saplingCount = AutoPlant.getStatus()
-    PlantStatus:SetDesc(plantStatusText)
+    if PlantStatus.SetDesc then PlantStatus:SetDesc(plantStatusText) end
     
     local discordStatusText = Webhook.getStatus()
-    DiscordStatus:SetDesc(discordStatusText)
+    if DiscordStatus.SetDesc then DiscordStatus:SetDesc(discordStatusText) end
     
     local chopEnabled = TreeChopper.autoChopEnabled
     local fuelEnabled = AutoFuel.autoFuelEnabled
@@ -535,34 +390,24 @@ RunService.Heartbeat:Connect(function()
         table.insert(activeSystems, "Plant")
     end
     
+    local statusText = ""
     if activeCount == 6 then
-        SystemStatus:SetDesc("🚀 All 6 systems running perfectly!")
+        statusText = "🚀 All 6 systems running perfectly!"
     elseif activeCount >= 4 then
-        SystemStatus:SetDesc("🔥 Multi-System Active: " .. activeCount .. "/6 systems (" .. table.concat(activeSystems, ", ") .. ")")
+        statusText = "🔥 Multi-System Active: " .. activeCount .. "/6 systems (" .. table.concat(activeSystems, ", ") .. ")"
     elseif activeCount >= 2 then
-        SystemStatus:SetDesc("⚡ Multi-Mode: " .. table.concat(activeSystems, " + ") .. " active")
+        statusText = "⚡ Multi-Mode: " .. table.concat(activeSystems, " + ") .. " active"
     elseif activeCount == 1 then
-        SystemStatus:SetDesc("📍 Single System: " .. activeSystems[1] .. " running")
+        statusText = "📍 Single System: " .. activeSystems[1] .. " running"
     else
-        SystemStatus:SetDesc("💤 All automation systems offline - Ready to start!")
+        statusText = "💤 All automation systems offline - Ready to start!"
     end
+    
+    if SystemStatus.SetDesc then SystemStatus:SetDesc(statusText) end
 end)
 
-SaveManager:SetLibrary(Fluent)
-InterfaceManager:SetLibrary(Fluent)
-
-SaveManager:IgnoreThemeSettings() 
-SaveManager:SetIgnoreIndexes({}) 
-InterfaceManager:SetFolder("ForestAutomationSuite")
-SaveManager:SetFolder("ForestAutomationSuite/configs")
-
-InterfaceManager:BuildInterfaceSection(Tabs.Settings)
-SaveManager:BuildConfigSection(Tabs.Settings)
-
-Window:SelectTab(1)
-
-Fluent:Notify({
+WindUI:Notify({
     Title = "Forest Automation Suite v2.2",
-    Content = "Ultimate forest management system loaded! 6 advanced automation bots + Discord notifications ready.",
+    Content = "Ultimate forest management system loaded! WindUI Edition.",
     Duration = 6
 })
