@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local Remote = ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("ToolDamageObject")
+local Remote = nil
 
 AutoKill.autoKillEnabled = false
 AutoKill.killDelay = 0.1
@@ -55,6 +55,19 @@ function AutoKill.attackTarget(target)
     if not AutoKill.hasOldAxe() then
         return false
     end
+    
+    if not Remote then
+        local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents", 5)
+        if remoteEvents then
+            Remote = remoteEvents:WaitForChild("ToolDamageObject", 5)
+        end
+        
+        if not Remote then
+            warn("AutoKill: ToolDamageObject remote not found! Attack cancelled.")
+            return false
+        end
+    end
+
     local inventory = LocalPlayer:WaitForChild("Inventory")
     local oldAxe = inventory:WaitForChild("Old Axe")
     local playerPos = AutoKill.getPlayerPosition()
