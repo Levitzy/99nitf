@@ -43,16 +43,26 @@ function AutoKill.findAllTargets()
     return allTargets
 end
 
-function AutoKill.hasOldAxe()
+function AutoKill.getWeapon()
     local inventory = LocalPlayer:FindFirstChild("Inventory")
-    if inventory then
-        return inventory:FindFirstChild("Old Axe") ~= nil
+    if not inventory then return nil, nil end
+
+    local katana = inventory:FindFirstChild("Katana")
+    if katana then
+        return katana, "1_8592674679"
     end
-    return false
+
+    local oldAxe = inventory:FindFirstChild("Old Axe")
+    if oldAxe then
+        return oldAxe, "6_9111530262"
+    end
+
+    return nil, nil
 end
 
 function AutoKill.attackTarget(target)
-    if not AutoKill.hasOldAxe() then
+    local weapon, animId = AutoKill.getWeapon()
+    if not weapon then
         return false
     end
     
@@ -68,14 +78,12 @@ function AutoKill.attackTarget(target)
         end
     end
 
-    local inventory = LocalPlayer:WaitForChild("Inventory")
-    local oldAxe = inventory:WaitForChild("Old Axe")
     local playerPos = AutoKill.getPlayerPosition()
     if not playerPos then return false end
     local targetPos = target.HumanoidRootPart.Position
     local cframe = CFrame.lookAt(playerPos, targetPos)
     for i = 1, 8 do
-        local args = {target, oldAxe, "6_9111530262", cframe}
+        local args = {target, weapon, animId, cframe}
         local success = pcall(function()
             return Remote:InvokeServer(unpack(args))
         end)
@@ -89,7 +97,8 @@ function AutoKill.attackTarget(target)
 end
 
 function AutoKill.attackAllTargets(targetsData)
-    if not AutoKill.hasOldAxe() then
+    local weapon, _ = AutoKill.getWeapon()
+    if not weapon then
         return false
     end
     local currentTime = tick()
@@ -137,9 +146,9 @@ end
 function AutoKill.getStatus()
     if AutoKill.autoKillEnabled then
         local allTargets = AutoKill.findAllTargets()
-        local hasAxe = AutoKill.hasOldAxe()
-        if not hasAxe then
-            return "Status: No Old Axe found!", 0, 0
+        local weapon, _ = AutoKill.getWeapon()
+        if not weapon then
+            return "Status: No Weapon found!", 0, 0
         elseif #allTargets > 0 then
             local closestDistance = allTargets[1] and allTargets[1].distance or 0
             local bunnyCount = 0
