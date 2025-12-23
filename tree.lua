@@ -13,7 +13,7 @@ TreeChopper.lastChopTime = 0
 TreeChopper.lastScanTime = 0
 TreeChopper.isChopping = false
 TreeChopper.cachedTrees = {}
-TreeChopper.maxChopsPerBatch = 3 -- Limit concurrent chops
+TreeChopper.maxChopsPerBatch = 5 -- Limit concurrent chops
 
 function TreeChopper.getPlayerPosition()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
