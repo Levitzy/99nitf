@@ -7,9 +7,12 @@ local LocalPlayer = Players.LocalPlayer
 
 AutoPlant.autoPlantEnabled = false
 AutoPlant.plantDelay = 0.5
+AutoPlant.scanInterval = 2.0 -- Scan every 2 seconds
 AutoPlant.plantConnection = nil
 AutoPlant.lastPlantTime = 0
+AutoPlant.lastScanTime = 0
 AutoPlant.isPlanting = false
+AutoPlant.cachedSaplings = {}
 
 function AutoPlant.getPlayerPosition()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -22,11 +25,19 @@ function AutoPlant.getDistance(pos1, pos2)
     return (pos1 - pos2).Magnitude
 end
 
-function AutoPlant.findAllSaplings()
+function AutoPlant.updateSaplingCache()
+    local currentTime = tick()
+    if currentTime - AutoPlant.lastScanTime < AutoPlant.scanInterval then
+        return AutoPlant.cachedSaplings
+    end
+
     local workspace = game:GetService("Workspace")
     local itemsFolder = workspace:FindFirstChild("Items")
     
-    if not itemsFolder then return {} end
+    if not itemsFolder then 
+        AutoPlant.cachedSaplings = {}
+        return {} 
+    end
     
     local allSaplings = {}
     local playerPos = AutoPlant.getPlayerPosition()
@@ -69,7 +80,13 @@ function AutoPlant.findAllSaplings()
         return a.distance < b.distance
     end)
     
+    AutoPlant.cachedSaplings = allSaplings
+    AutoPlant.lastScanTime = currentTime
     return allSaplings
+end
+
+function AutoPlant.findAllSaplings()
+    return AutoPlant.updateSaplingCache()
 end
 
 function AutoPlant.plantSapling(sapling, plantPosition)
@@ -95,18 +112,20 @@ function AutoPlant.plantAllSaplings(saplingsData)
         return false
     end
     
+    -- Limit concurrency (optional, but good practice)
     local plantedCount = 0
+    local maxPlants = 5 
     
     for _, saplingData in pairs(saplingsData) do
+        if plantedCount >= maxPlants then break end
+        
         if saplingData.sapling and saplingData.sapling.Parent then
-            spawn(function()
+            task.spawn(function()
                 local plantPosition = saplingData.position
                 local success = AutoPlant.plantSapling(saplingData.sapling, plantPosition)
-                if success then
-                    plantedCount = plantedCount + 1
-                end
             end)
-            wait(0.1)
+            plantedCount = plantedCount + 1
+            task.wait(0.05)
         end
     end
     
@@ -126,13 +145,12 @@ function AutoPlant.autoPlantLoop()
     
     AutoPlant.isPlanting = true
     
-    local allSaplings = AutoPlant.findAllSaplings()
+    local allSaplings = AutoPlant.updateSaplingCache()
     
     if #allSaplings > 0 then
         AutoPlant.plantAllSaplings(allSaplings)
     end
     
-    AutoPlant.lastPlantTime = tick()
     AutoPlant.isPlanting = false
 end
 
@@ -140,6 +158,7 @@ function AutoPlant.setEnabled(enabled)
     AutoPlant.autoPlantEnabled = enabled
     
     if enabled then
+        if AutoPlant.plantConnection then AutoPlant.plantConnection:Disconnect() end
         AutoPlant.plantConnection = RunService.Heartbeat:Connect(AutoPlant.autoPlantLoop)
     else
         if AutoPlant.plantConnection then
@@ -155,12 +174,16 @@ end
 
 function AutoPlant.getStatus()
     if AutoPlant.autoPlantEnabled then
-        local allSaplings = AutoPlant.findAllSaplings()
+        local allSaplings = AutoPlant.cachedSaplings
+        
+         if #allSaplings == 0 and (tick() - AutoPlant.lastScanTime > AutoPlant.scanInterval) then
+            allSaplings = AutoPlant.updateSaplingCache()
+        end
         
         if #allSaplings > 0 then
             local closestDistance = allSaplings[1] and allSaplings[1].distance or 0
             
-            return string.format("Status: Planting %d saplings at their locations!", 
+            return string.format("Status: Planting %d saplings (Batch 5)...", 
                    #allSaplings), #allSaplings, closestDistance
         else
             return "Status: No saplings found", 0, 0

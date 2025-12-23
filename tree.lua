@@ -6,10 +6,14 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
 TreeChopper.autoChopEnabled = false
-TreeChopper.chopDelay = 0.1
+TreeChopper.chopDelay = 0.5 -- Increased delay to reduce lag
+TreeChopper.scanInterval = 2.0 -- Only scan for trees every 2 seconds
 TreeChopper.chopConnection = nil
 TreeChopper.lastChopTime = 0
+TreeChopper.lastScanTime = 0
 TreeChopper.isChopping = false
+TreeChopper.cachedTrees = {}
+TreeChopper.maxChopsPerBatch = 3 -- Limit concurrent chops
 
 function TreeChopper.getPlayerPosition()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -35,11 +39,19 @@ function TreeChopper.setTargetNames(names)
     end
 end
 
-function TreeChopper.findTrees()
+function TreeChopper.updateTreeCache()
+    local currentTime = tick()
+    -- Return cached result if within interval
+    if currentTime - TreeChopper.lastScanTime < TreeChopper.scanInterval then
+        return TreeChopper.cachedTrees
+    end
+
     local workspace = game:GetService("Workspace")
-    
     local mapFolder = workspace:FindFirstChild("Map")
-    if not mapFolder then return {} end
+    if not mapFolder then 
+        TreeChopper.cachedTrees = {}
+        return {} 
+    end
     
     local foliageFolder = mapFolder:FindFirstChild("Foliage")
     local landmarksFolder = mapFolder:FindFirstChild("Landmarks")
@@ -80,7 +92,13 @@ function TreeChopper.findTrees()
         return a.distance < b.distance
     end)
     
+    TreeChopper.cachedTrees = allTrees
+    TreeChopper.lastScanTime = currentTime
     return allTrees
+end
+
+function TreeChopper.findTrees()
+    return TreeChopper.updateTreeCache()
 end
 
 function TreeChopper.hasOldAxe()
@@ -92,40 +110,27 @@ function TreeChopper.hasOldAxe()
 end
 
 function TreeChopper.chopTree(tree)
-    if not TreeChopper.hasOldAxe() then
-        return false
-    end
-    
-    if not tree or not tree.Parent then
-        return false
-    end
+    if not tree or not tree.Parent then return false end
     
     local trunk = tree:FindFirstChild("Trunk")
-    if not trunk or not trunk.Parent then
-        return false
-    end
+    if not trunk or not trunk.Parent then return false end
     
     local inventory = LocalPlayer:FindFirstChild("Inventory")
-    if not inventory then return false end
-    
-    local oldAxe = inventory:FindFirstChild("Old Axe")
+    local oldAxe = inventory and inventory:FindFirstChild("Old Axe")
     if not oldAxe then return false end
     
     local playerPos = TreeChopper.getPlayerPosition()
     if not playerPos then return false end
     
     local success, cframe = pcall(function()
-        local treePos = trunk.Position
-        local lookDirection = (treePos - playerPos).Unit
-        return CFrame.lookAt(playerPos, treePos)
+        return CFrame.lookAt(playerPos, trunk.Position)
     end)
     
     if not success then return false end
     
-    for i = 1, 8 do
-        if not tree or not tree.Parent or not trunk or not trunk.Parent then
-            break
-        end
+    -- Reduced hit count slightly to avoid rate limits
+    for i = 1, 5 do
+        if not tree.Parent or not trunk.Parent then break end
         
         local args = {
             tree,
@@ -134,40 +139,37 @@ function TreeChopper.chopTree(tree)
             cframe
         }
         
-        local chopSuccess, result = pcall(function()
+        local chopSuccess = pcall(function()
             return ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("ToolDamageObject"):InvokeServer(unpack(args))
         end)
         
         if not chopSuccess then
-            wait(0.01)
+            task.wait(0.05)
         else
-            wait(0.005)
+            task.wait(0.01)
         end
     end
     
     return true
 end
 
-function TreeChopper.chopAllTrees(treesData)
-    if not TreeChopper.hasOldAxe() then
-        return false
-    end
+function TreeChopper.chopTargetTrees(treesData)
+    if not TreeChopper.hasOldAxe() then return false end
     
     local currentTime = tick()
-    if currentTime - TreeChopper.lastChopTime < TreeChopper.chopDelay then
-        return false
-    end
+    if currentTime - TreeChopper.lastChopTime < TreeChopper.chopDelay then return false end
     
     local choppedCount = 0
     
     for _, treeData in pairs(treesData) do
+        -- Limit concurrent chops to prevent lag
+        if choppedCount >= TreeChopper.maxChopsPerBatch then break end
+        
         if treeData.tree and treeData.tree.Parent then
-            spawn(function()
-                local success = TreeChopper.chopTree(treeData.tree)
-                if success then
-                    choppedCount = choppedCount + 1
-                end
+            task.spawn(function()
+                TreeChopper.chopTree(treeData.tree)
             end)
+            choppedCount = choppedCount + 1
         end
     end
     
@@ -178,7 +180,6 @@ end
 function TreeChopper.autoChopLoop()
     if not TreeChopper.autoChopEnabled then return end
     
-    -- Debounce
     if TreeChopper.isChopping then return end
     
     local currentTime = tick()
@@ -188,16 +189,13 @@ function TreeChopper.autoChopLoop()
     
     TreeChopper.isChopping = true
     
-    local allTrees = TreeChopper.findTrees()
+    -- Use cached trees efficiently
+    local allTrees = TreeChopper.updateTreeCache()
     
-    if #allTrees == 0 then
-        -- Optional: Disable or just wait
-        -- TreeChopper.setEnabled(false)
-    elseif #allTrees > 0 then
-        TreeChopper.chopAllTrees(allTrees)
+    if #allTrees > 0 then
+        TreeChopper.chopTargetTrees(allTrees)
     end
     
-    TreeChopper.lastChopTime = tick()
     TreeChopper.isChopping = false
 end
 
@@ -205,6 +203,7 @@ function TreeChopper.setEnabled(enabled)
     TreeChopper.autoChopEnabled = enabled
     
     if enabled then
+        if TreeChopper.chopConnection then TreeChopper.chopConnection:Disconnect() end
         TreeChopper.chopConnection = RunService.Heartbeat:Connect(TreeChopper.autoChopLoop)
     else
         if TreeChopper.chopConnection then
@@ -220,7 +219,14 @@ end
 
 function TreeChopper.getStatus()
     if TreeChopper.autoChopEnabled then
-        local allTrees = TreeChopper.findTrees()
+        -- Use cache for status display to avoid lag
+        local allTrees = TreeChopper.cachedTrees
+        
+        -- Refresh if stale (backup check)
+        if #allTrees == 0 and (tick() - TreeChopper.lastScanTime > TreeChopper.scanInterval) then
+            allTrees = TreeChopper.updateTreeCache()
+        end
+        
         local hasAxe = TreeChopper.hasOldAxe()
         
         if not hasAxe then
@@ -238,10 +244,10 @@ function TreeChopper.getStatus()
                 end
             end
             
-            return string.format("Status: Chopping ALL %d trees (F:%d L:%d) - Fast Mode 0.1s!", 
-                   #allTrees, foliageCount, landmarkCount), #allTrees, closestDistance
+            return string.format("Status: Batch Chopping %d trees (Batch:%d)", 
+                   #allTrees, TreeChopper.maxChopsPerBatch), #allTrees, closestDistance
         else
-            return "Status: All trees chopped! Auto-stopped.", 0, 0
+            return "Status: No trees found.", 0, 0
         end
     else
         return "Status: Auto chop disabled", 0, 0
