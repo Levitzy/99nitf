@@ -22,7 +22,20 @@ function TreeChopper.getDistance(pos1, pos2)
     return (pos1 - pos2).Magnitude
 end
 
-function TreeChopper.findAllSmallTrees()
+TreeChopper.targetNames = {
+    ["Small Tree"] = true,
+    ["Snowy Small Tree"] = true,
+    ["TreeBig1"] = true
+}
+
+function TreeChopper.setTargetNames(names)
+    TreeChopper.targetNames = {}
+    for _, name in pairs(names) do
+        TreeChopper.targetNames[name] = true
+    end
+end
+
+function TreeChopper.findTrees()
     local workspace = game:GetService("Workspace")
     
     local mapFolder = workspace:FindFirstChild("Map")
@@ -38,7 +51,7 @@ function TreeChopper.findAllSmallTrees()
         if not folder then return end
         
         for _, tree in pairs(folder:GetChildren()) do
-            if tree and tree.Parent and tree.Name == "Small Tree" then
+            if tree and tree.Parent and TreeChopper.targetNames[tree.Name] then
                 local trunk = tree:FindFirstChild("Trunk")
                 if trunk and trunk.Parent then
                     local distance = 0
@@ -175,7 +188,7 @@ function TreeChopper.autoChopLoop()
     
     TreeChopper.isChopping = true
     
-    local allTrees = TreeChopper.findAllSmallTrees()
+    local allTrees = TreeChopper.findTrees()
     
     if #allTrees == 0 then
         -- Optional: Disable or just wait
@@ -207,7 +220,7 @@ end
 
 function TreeChopper.getStatus()
     if TreeChopper.autoChopEnabled then
-        local allTrees = TreeChopper.findAllSmallTrees()
+        local allTrees = TreeChopper.findTrees()
         local hasAxe = TreeChopper.hasOldAxe()
         
         if not hasAxe then

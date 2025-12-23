@@ -86,7 +86,48 @@ Tabs.Flight:Slider({
     end
 })
 
--- Forest Tab
+Tabs.Forest:Dropdown({
+    Title = "Tree Selection",
+    Desc = "Select which trees to chop",
+    Multi = true,
+    Values = {
+        "Small Tree",
+        "Snowy Small Tree",
+        "TreeBig1"
+    },
+    Value = {"Small Tree", "Snowy Small Tree", "TreeBig1"},
+    Callback = function(Value)
+        -- Handle Multi-Select (Table) or Single-Select (String/Table)
+        local names = {}
+        if type(Value) == "table" then
+            for k, v in pairs(Value) do
+                -- If it's a list of strings { "A", "B" }
+                if type(k) == "number" and type(v) == "string" then
+                    table.insert(names, v)
+                -- If it's a dictionary { ["A"] = true }
+                elseif type(k) == "string" and v == true then
+                    table.insert(names, k)
+                end
+            end
+        elseif type(Value) == "string" then
+            table.insert(names, Value)
+        end
+        
+        -- Fallback if empty (prevent breaking)
+        if #names == 0 then
+            names = {"Small Tree", "Snowy Small Tree", "TreeBig1"} 
+        end
+        
+        TreeChopper.setTargetNames(names)
+        
+        WindUI:Notify({
+            Title = "Tree Selector",
+            Content = "Target trees updated!",
+            Duration = 2
+        })
+    end
+})
+
 Tabs.Forest:Toggle({
     Title = "Auto Tree Chopper",
     Desc = "Automatically chop all small trees on the map",
