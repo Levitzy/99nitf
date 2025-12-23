@@ -9,6 +9,7 @@ AutoPlant.autoPlantEnabled = false
 AutoPlant.plantDelay = 0.5
 AutoPlant.plantConnection = nil
 AutoPlant.lastPlantTime = 0
+AutoPlant.isPlanting = false
 
 function AutoPlant.getPlayerPosition()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -116,15 +117,23 @@ end
 function AutoPlant.autoPlantLoop()
     if not AutoPlant.autoPlantEnabled then return end
     
-    local allSaplings = AutoPlant.findAllSaplings()
+    if AutoPlant.isPlanting then return end
     
-    if #allSaplings == 0 then
+    local currentTime = tick()
+    if currentTime - AutoPlant.lastPlantTime < AutoPlant.plantDelay then
         return
     end
+    
+    AutoPlant.isPlanting = true
+    
+    local allSaplings = AutoPlant.findAllSaplings()
     
     if #allSaplings > 0 then
         AutoPlant.plantAllSaplings(allSaplings)
     end
+    
+    AutoPlant.lastPlantTime = tick()
+    AutoPlant.isPlanting = false
 end
 
 function AutoPlant.setEnabled(enabled)

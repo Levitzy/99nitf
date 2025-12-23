@@ -8,6 +8,7 @@ AutoFuel.autoFuelEnabled = false
 AutoFuel.fuelDelay = 0.5
 AutoFuel.fuelConnection = nil
 AutoFuel.lastFuelTime = 0
+AutoFuel.isFueling = false
 
 
 function AutoFuel.getPlayerPosition()
@@ -219,11 +220,15 @@ end
 function AutoFuel.autoFuelLoop()
     if not AutoFuel.autoFuelEnabled then return end
     
+    if AutoFuel.isFueling then return end
+
     local currentTime = tick()
     if currentTime - AutoFuel.lastFuelTime < AutoFuel.fuelDelay then
         return
     end
     
+    AutoFuel.isFueling = true
+
     local fuelItems = AutoFuel.findAllFuelItems()
     
     if #fuelItems > 0 then
@@ -236,8 +241,12 @@ function AutoFuel.autoFuelLoop()
                 wait(0.1)
             end
         end
-        AutoFuel.lastFuelTime = currentTime
+        AutoFuel.lastFuelTime = tick()
+    else
+        AutoFuel.lastFuelTime = currentTime -- Update even if no items to prevent rapid retry? Or keep retrying? Better to wait.
     end
+    
+    AutoFuel.isFueling = false
 end
 
 function AutoFuel.setEnabled(enabled)

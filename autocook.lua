@@ -9,6 +9,7 @@ AutoCook.autoCookEnabled = false
 AutoCook.cookDelay = 0.1
 AutoCook.cookConnection = nil
 AutoCook.lastCookTime = 0
+AutoCook.isCooking = false
 
 function AutoCook.getMainFire()
     local workspace = game:GetService("Workspace")
@@ -82,11 +83,23 @@ end
 function AutoCook.autoCookLoop()
     if not AutoCook.autoCookEnabled then return end
     
+    if AutoCook.isCooking then return end
+    
+    local currentTime = tick()
+    if currentTime - AutoCook.lastCookTime < AutoCook.cookDelay then
+        return
+    end
+    
+    AutoCook.isCooking = true
+    
     local allRawMeat = AutoCook.findAllRawMeat()
     
     if #allRawMeat > 0 then
         AutoCook.cookAllItems(allRawMeat)
     end
+    
+    AutoCook.lastCookTime = tick()
+    AutoCook.isCooking = false
 end
 
 function AutoCook.setEnabled(enabled)

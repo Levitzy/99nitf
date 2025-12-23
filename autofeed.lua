@@ -227,8 +227,8 @@ function AutoFeed.consumeItem(item)
     return false
 end
 
-function AutoFeed.shouldFeed()
-    local currentHunger = AutoFeed.getHungerPercentage()
+function AutoFeed.shouldFeed(currentHunger)
+    currentHunger = currentHunger or AutoFeed.getHungerPercentage()
     
     if currentHunger >= 100 then
         return false
@@ -245,24 +245,28 @@ function AutoFeed.autoFeedLoop()
     if not AutoFeed.autoFeedEnabled then return end
     
     local currentTime = tick()
+    
+    -- Throttle hunger check (every 1 second instead of every frame)
+    if currentTime - AutoFeed.lastHungerCheck < 1.0 then
+        return
+    end
+    
     local currentHunger = AutoFeed.getHungerPercentage()
     
-    if currentTime - AutoFeed.lastHungerCheck >= 2.0 then
-        if AutoFeed.previousHunger > 0 and currentHunger ~= AutoFeed.previousHunger then
-            local change = currentHunger - AutoFeed.previousHunger
-            if math.abs(change) >= 5 then
-                print("AutoFeed - Hunger changed: " .. AutoFeed.previousHunger .. "% -> " .. currentHunger .. "% (" .. (change > 0 and "+" or "") .. change .. "%)")
-            end
+    if AutoFeed.previousHunger > 0 and currentHunger ~= AutoFeed.previousHunger then
+        local change = currentHunger - AutoFeed.previousHunger
+        if math.abs(change) >= 5 then
+            print("AutoFeed - Hunger changed: " .. AutoFeed.previousHunger .. "% -> " .. currentHunger .. "% (" .. (change > 0 and "+" or "") .. change .. "%)")
         end
-        AutoFeed.previousHunger = currentHunger
-        AutoFeed.lastHungerCheck = currentTime
     end
+    AutoFeed.previousHunger = currentHunger
+    AutoFeed.lastHungerCheck = currentTime
     
     if currentTime - AutoFeed.lastFeedTime < AutoFeed.feedDelay then
         return
     end
     
-    if not AutoFeed.shouldFeed() then
+    if not AutoFeed.shouldFeed(currentHunger) then
         AutoFeed.failedAttempts = 0
         return
     end

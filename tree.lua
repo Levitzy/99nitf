@@ -9,6 +9,7 @@ TreeChopper.autoChopEnabled = false
 TreeChopper.chopDelay = 0.1
 TreeChopper.chopConnection = nil
 TreeChopper.lastChopTime = 0
+TreeChopper.isChopping = false
 
 function TreeChopper.getPlayerPosition()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -164,16 +165,27 @@ end
 function TreeChopper.autoChopLoop()
     if not TreeChopper.autoChopEnabled then return end
     
-    local allTrees = TreeChopper.findAllSmallTrees()
+    -- Debounce
+    if TreeChopper.isChopping then return end
     
-    if #allTrees == 0 then
-        TreeChopper.setEnabled(false)
+    local currentTime = tick()
+    if currentTime - TreeChopper.lastChopTime < TreeChopper.chopDelay then
         return
     end
     
-    if #allTrees > 0 then
+    TreeChopper.isChopping = true
+    
+    local allTrees = TreeChopper.findAllSmallTrees()
+    
+    if #allTrees == 0 then
+        -- Optional: Disable or just wait
+        -- TreeChopper.setEnabled(false)
+    elseif #allTrees > 0 then
         TreeChopper.chopAllTrees(allTrees)
     end
+    
+    TreeChopper.lastChopTime = tick()
+    TreeChopper.isChopping = false
 end
 
 function TreeChopper.setEnabled(enabled)

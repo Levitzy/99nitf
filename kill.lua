@@ -11,6 +11,7 @@ AutoKill.killDelay = 0.1
 AutoKill.maxTargets = 5
 AutoKill.killConnection = nil
 AutoKill.lastKillTime = 0
+AutoKill.isAttacking = false
 
 function AutoKill.getPlayerPosition()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -117,10 +118,24 @@ end
 
 function AutoKill.autoKillLoop()
     if not AutoKill.autoKillEnabled then return end
+    
+    -- Debounce to prevent thread piling
+    if AutoKill.isAttacking then return end
+    
+    local currentTime = tick()
+    if currentTime - AutoKill.lastKillTime < AutoKill.killDelay then
+        return
+    end
+    
+    AutoKill.isAttacking = true
+    
     local allTargets = AutoKill.findAllTargets()
     if #allTargets > 0 then
         AutoKill.attackAllTargets(allTargets)
     end
+    
+    AutoKill.lastKillTime = tick()
+    AutoKill.isAttacking = false
 end
 
 function AutoKill.setEnabled(enabled)
